@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es5",
+    "target": "es6",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
@@ -10,7 +10,8 @@
     "outDir": "./dist"
   },
   "files": [
-    "src/drop-target.ts",
-    "src/file-stream.ts"
+    "src/websocket/websocket.ts",
+    "src/systems-service/systems-service.ts",
+    "src/debug/debug.ts",
   ]
 }

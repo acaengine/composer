@@ -12,10 +12,12 @@
     "karma-jasmine": "latest",
     "karma-webpack": "latest",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "angular2-websocket": "lastest"
   },
-  "dependencies": {},
-  "description": "Angular 2 file drag and drop manager",
+  "dependencies": {
+  },
+  "description": "Angular 2 Control System Client Library",
   "directories": {},
   "homepage": "https://github.com/advancedcontrol/a2-composer",
   "license": "MIT",
