@@ -1,6 +1,6 @@
 {
   "bugs": {
-    "url": "https://github.com/cotag/a2-file-drop/issues"
+    "url": "https://github.com/advancedcontrol/a2-composer/issues"
   },
   "contributors": [],
   "devDependencies": {
@@ -17,24 +17,28 @@
   "dependencies": {},
   "description": "Angular 2 file drag and drop manager",
   "directories": {},
-  "homepage": "https://github.com/cotag/a2-file-drop",
+  "homepage": "https://github.com/advancedcontrol/a2-composer",
   "license": "MIT",
   "maintainers": [
     {
       "name": "Stephen von Takach",
       "email": "steve@cotag.me"
+    },
+    {
+      "name": "Alex Sorafumo",
+      "email": "alex@yuion.net"
     }
   ],
-  "name": "a2-file-drop",
+  "name": "a2-composer",
   "optionalDependencies": {},
   "peerDependencies": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cotag/a2-file-drop.git"
+    "url": "git+https://github.com/advancedcontrol/a2-composer.git"
   },
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc",
     "test": "node node_modules/karma/bin/karma start karma.conf.js"
   },
-  "version": "2.0.3"
+  "version": "0.1.0"
 }
