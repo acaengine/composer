@@ -1,0 +1,40 @@
+{
+  "bugs": {
+    "url": "https://github.com/cotag/a2-file-drop/issues"
+  },
+  "contributors": [],
+  "devDependencies": {
+    "angular2": "latest",
+    "rxjs": "latest",
+    "jasmine-core": "latest",
+    "karma": "latest",
+    "karma-chrome-launcher": "latest",
+    "karma-jasmine": "latest",
+    "karma-webpack": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "dependencies": {},
+  "description": "Angular 2 file drag and drop manager",
+  "directories": {},
+  "homepage": "https://github.com/cotag/a2-file-drop",
+  "license": "MIT",
+  "maintainers": [
+    {
+      "name": "Stephen von Takach",
+      "email": "steve@cotag.me"
+    }
+  ],
+  "name": "a2-file-drop",
+  "optionalDependencies": {},
+  "peerDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cotag/a2-file-drop.git"
+  },
+  "scripts": {
+    "build": "node node_modules/typescript/bin/tsc",
+    "test": "node node_modules/karma/bin/karma start karma.conf.js"
+  },
+  "version": "2.0.3"
+}
