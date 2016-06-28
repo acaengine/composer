@@ -12,6 +12,5 @@
   "files": [
     "src/websocket/websocket.ts",
     "src/systems-service/systems-service.ts",
-    "src/debug/debug.ts",
   ]
 }

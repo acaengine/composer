@@ -5,18 +5,17 @@
   "contributors": [],
   "devDependencies": {
     "angular2": "latest",
-    "rxjs": "latest",
+    "angular2-websocket": "lastest",
     "jasmine-core": "latest",
-    "karma": "latest",
-    "karma-chrome-launcher": "latest",
+    "karma": "1.1.0",
+    "karma-chrome-launcher": "1.0.1",
     "karma-jasmine": "latest",
     "karma-webpack": "latest",
+    "rxjs": "latest",
     "ts-loader": "latest",
-    "typescript": "latest",
-    "angular2-websocket": "lastest"
+    "typescript": "latest"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "description": "Angular 2 Control System Client Library",
   "directories": {},
   "homepage": "https://github.com/advancedcontrol/a2-composer",
