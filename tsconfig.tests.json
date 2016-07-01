@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
+    "target": "es5",
     "module": "commonjs",
-    "target": "es6",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
-    "moduleResolution": "node"
+    "noEmitHelpers": true
   },
-  "files": []
+  "compileOnSave": false,
+  "buildOnSave": false
 }

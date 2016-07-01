@@ -13,17 +13,17 @@ const SECONDS = 1000;
 const RECONNECT_TIMER_SECONDS  = 5 * SECONDS;
 const KEEP_ALIVE_TIMER_SECONDS = 60 * SECONDS;
 
-export class  Web_Socket {
-    counters : number[];
-    io : any;
-    end_point : string;
-    serv : any;
+export class WebSocketInterface {
+    counters: number[];
+    io: any;
+    end_point: string;
+    serv: any;
     req_id = 0;
-    uri : string;
+    uri: string;
     connected = false;
-    keepAliveInterval : any;
+    keepAliveInterval: any;
 
-    constructor(srv: any, host : string, port : string = '443'){
+    constructor(srv: any, host: string, port: string = '443'){
         this.end_point = 'wss://' + host + ':' + port;
         this.serv = srv;
         this.uri = this.end_point + '';
@@ -46,17 +46,17 @@ export class  Web_Socket {
     }
 
     onmessage(evt) {
-        var msg, meta, system, module, binding;
+        let msg, meta, system, module, binding;
 
         // message data will either be the string 'PONG', or json
         // data with an associated type
-        if (evt.data == PONG) {
+        if (evt.data === PONG) {
             return;
         } else {
             msg = JSON.parse(evt.data);
         }
 
-        if (msg.type == SUCCESS || msg.type == ERROR || msg.type == NOTIFY) {
+        if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
             if (!meta) return this.fail(msg);
             system = this.serv.get(meta.sys);
@@ -66,7 +66,7 @@ export class  Web_Socket {
             binding = module.get(meta.name);
             if(!binding) return this.fail(msg);
             else binding[meta.type](msg);
-        } else if (msg.type == 'debug') { }
+        } else if (msg.type === 'debug') { }
     }
 
     fail (msg){
@@ -90,7 +90,7 @@ export class  Web_Socket {
 
         this.req_id += 1;
 
-        var request = {
+        let request = {
             id:     this.req_id,
             cmd:    type,
             sys:    system,
@@ -106,15 +106,15 @@ export class  Web_Socket {
         return true;
     };
 
-    bind(sys_id : string, mod_id : string, i : number, name : string, callback : Function){
+    bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
         return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
     }
 
-    unbind(sys_id : string, mod_id : string, i : number, name : string, callback : Function){
+    unbind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
         return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
     }
 
-    exec(sys_id : string, mod_id : string, i : number, name : string, fn : any, args : any){
+    exec(sys_id: string, mod_id: string, i: number, name: string, fn: any, args: any){
         return this.sendRequest(EXEC, sys_id, mod_id, i, name, args);
     }
 

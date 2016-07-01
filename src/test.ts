@@ -1,4 +1,4 @@
-var data = {
+let systemData = {
     'sys-B0' : {
        System: [{
            $power_on: function () {
@@ -41,4 +41,4 @@ var data = {
     }
 }
 
-window.systemData = data;
+window['systemData'] = systemData;

@@ -15,8 +15,8 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-            'node_modules/angular2/bundles/angular2-polyfills.js',
-            'src/test.js',
+            "src/polyfill",
+            'src/test.ts',
             'src/**/*.spec.ts'
         ],
 
