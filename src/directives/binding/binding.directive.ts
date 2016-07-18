@@ -1,36 +1,32 @@
 import { Directive, ElementRef, Input, Output, EventEmitter } from '@angular/core';
-import { SystemsService } from '../systems-service';
+import { SystemsService } from '../../services/systems-service';
 
 @Directive({
     selector: '[binding]',
-    providers: [SystemsService]
+    providers: [ ]
 })
 export class Binding {
     @Input() bind: any;
     @Input() sys: any;
     @Input() mod: any;
     @Input() value: any;
-    @Output() change = new EventEmitter(); // an event emitter
+    @Output() valueChange = new EventEmitter(); // an event emitter
     @Input() exec: any;
     @Input() params: any;
     @Input() index: number;
     system: any;
     module: any;
     binding: any;
+    prev: any;
     prev_exec: any;
     unbind : Function;
 
     service: SystemsService;
     constructor(serv?: SystemsService){
         this.service = serv;
-        setInterval(() => {
-                // Update value to value set by user
-            this.module.exec(this.exec, this.binding.id, !this.value);
-        }, 5000);
     }
 
     ngAfterContentInit(){
-        console.log('After Init');
             // Load Binding
         if(typeof this.mod === 'object'){
             this.module = this.mod;
@@ -43,35 +39,26 @@ export class Binding {
             this.module = this.system.get(this.mod, this.index ? this.index : 1);
         }
         this.getBinding();
-            // Update binding
-        if(this.exec === null || this.exec === ''){
-            this.exec = '$' + this.binding.id;
-            this.call_exec();
-        } else if(this.exec === undefined) this.exec = '$' + this.binding.id;
     }
 
     ngOnChanges(changes: any) {
-            // Execute Function Changed
+            // Execute Function changes
         if(this.prev_exec !== this.exec){
-            console.log('New exec function.');
             this.call_exec();
         }
-            // System changed
+            // System changes
         if(this.sys !== this.system && (typeof this.system !== 'object' || this.sys !== this.system.id)) {
-            console.log('Changed System to ' + this.sys + '.');
             this.getSystem();
             this.getModule();
             this.getBinding();
         }
-            // Module Changed
+            // Module changes
         if(this.mod !== this.module && (typeof this.module !== 'object' || this.mod !== this.module.id)) {
-            console.log('Changed Module to ' + this.mod + ' ' + (this.index ? this.index : 1) + '.');
             this.getModule();
             this.getBinding();
         }
-            // Binding value changed
-        if(this.binding && this.value !== this.binding.current && this.exec !== undefined){
-            console.log('Updating Value');
+            // Binding value changes
+        if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
             this.call_exec();
         }
     }
@@ -88,23 +75,29 @@ export class Binding {
     }
 
     private getBinding(){
-        console.log('Getting Binding.');
-        if(this.unbind) this.unbind();
+        if(this.unbind !== undefined && this.unbind !== null) this.unbind();
         this.binding = this.module.get(this.bind);
         this.unbind = this.module.bind(this.bind, (curr: any, prev: any) => {
-            console.log(curr);
-                //Update local value
-            if(this.value != curr) {
-                this.change.emit(curr);
-                this.value = curr;
-            }
+                //changes local value
+            this.valueChange.emit(curr)
         });
+        this.value = this.binding.current;
+        this.prev = this.value;
+        if(this.unbind === null) {
+            setTimeout(() => {
+                this.getBinding();
+            }, 200);
+        }
+        //this.valueChange.emit(this.binding.current);
     }
 
     private call_exec(){
+        if(!this || this.exec === undefined || !this.binding) return;
+        if(this.exec === null || this.exec === '') this.exec = this.binding.id;
+            // Update binding
         this.prev_exec = this.exec;
             // Update value to value set by user
-        this.module.exec(this.exec, this.binding.id, this.value);
+        this.module.exec(this.exec, this.binding.id, this.params ? this.params : this.value);
     }
 
 }
