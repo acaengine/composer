@@ -22,23 +22,36 @@ export class Binding {
     unbind : Function;
 
     service: SystemsService;
-    constructor(serv?: SystemsService){
-        this.service = serv;
-    }
+    i: number = 0;
 
-    ngAfterContentInit(){
-            // Load Binding
-        if(typeof this.mod === 'object'){
-            this.module = this.mod;
-            this.system = this.module.parent;
-        } if (typeof this.sys === 'object') {
-            this.system = this.sys;
-            this.module = this.system.get(this.mod, this.index ? this.index : 1);
+    constructor(private el: ElementRef, serv?: SystemsService){
+        this.service = serv;
+        /*
+        setInterval(() => {
+            this.checkVisibility();
+        }, 50);
+        //*/
+    }
+    //*
+    checkVisibility() {
+        if(!this.checkElement()){
+            if(this.unbind) {
+                this.unbind();
+                this.unbind = null;
+            }
         } else {
-            this.system = this.service.get(this.sys);
-            this.module = this.system.get(this.mod, this.index ? this.index : 1);
+            if(!this.unbind) this.getBinding();
         }
-        this.getBinding();
+    }
+    //*/
+
+    checkElement() {
+        let el = this.el.nativeElement;
+        while(el !== null){
+            if(el.nodeName === 'BODY' || el.nodeName === 'HTML') return true;
+            el = el.parentElement;
+        }
+        return false;
     }
 
     ngOnChanges(changes: any) {
@@ -61,6 +74,7 @@ export class Binding {
         if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
             this.call_exec();
         }
+        if(changes.value) this.valueChange.emit(changes.value.currentValue);
     }
 
     private getSystem(){
@@ -88,7 +102,13 @@ export class Binding {
                 this.getBinding();
             }, 200);
         }
-        //this.valueChange.emit(this.binding.current);
+    }
+
+    ngOnDestory() {
+        if(this.unbind) {
+            this.unbind();
+            this.unbind = null;
+        }
     }
 
     private call_exec(){

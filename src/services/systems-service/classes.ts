@@ -70,7 +70,7 @@ export class StatusVariable {
 
     private callback(){
         for(var i = 0; i < this.callbacks.length; i++) {
-            this.callbacks[i](this.current, this.previous);
+            if(this.callbacks[i]) this.callbacks[i](this.current, this.previous);
         }
     }
 
@@ -86,7 +86,7 @@ export class StatusVariable {
                 let id = this.service.io.exec(mod.parent.id, mod.id, mod.index, e.fn, e.value);
                 if(this.parent.debugger && this.parent.debugger.enabled) {
                     this.parent.debugger.addMessage('Exec request: ' + id + ' | fn: ' + e.fn + ', params: ' + e.value);
-                } else console.debug(this.parent.now + ' - Exec request: ' + id + ' | fn: ' + e.fn + ', params: ' + e.value);
+                } //else console.debug(this.parent.now + ' - Exec request: ' + id + ' | fn: ' + e.fn + ', params: ' + e.value);
             }
             this.execs = [];
         }
@@ -123,7 +123,7 @@ export class Module {
     bind(prop: string, cb_fn?: Function) {
         let success = this.service.io.bind(this.parent.id, this.id, this.index, prop);
         if(this.debugger && this.debugger.enabled) this.debugger.addMessage('Bind request: ' + success);
-        else console.debug(this.now + ' - Bind request: ' + success);
+        //else console.debug(this.now + ' - Bind request: ' + success);
         if(success){
             let val = this.get(prop);
             val.bindings++;

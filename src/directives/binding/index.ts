@@ -1,1 +1,1 @@
-export * from './binding.directive.ts';
+export * from './binding.directive';

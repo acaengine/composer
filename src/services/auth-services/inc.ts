@@ -1,5 +1,5 @@
-import { ACAHttp } from './aca-http.service.ts';
-import { OAuthService } from './oauth2.service.ts';
+import { ACAHttp } from './aca-http.service';
+import { OAuthService } from './oauth2.service';
 
 export let ACA_AUTH_PROVIDERS = [
     ACAHttp, OAuthService

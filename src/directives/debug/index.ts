@@ -1,1 +1,1 @@
-export * from './debug.directive.ts';
+export * from './debug.directive';

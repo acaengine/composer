@@ -1,6 +1,6 @@
 {
-  "name": "@aca/a2-composer",
-  "version": "0.1.0",
+  "name": "@aca-1/a2-composer",
+  "version": "0.1.6",
   "scripts": {
     "lint": "tslint src/**/*.ts",
     "test": "tsc && karma start",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/advancedcontrol/aca/a2-composer"
+    "url": "https://github.com/advancedcontrol/a2-composer"
   },
   "author": {
     "name": "Alex Sorafumo",
@@ -23,13 +23,11 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/advancedcontrol/aca/a2-composer/issues"
+    "url": "https://github.com/advancedcontrol/a2-composer/issues"
   },
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "dependencies": {
-  },
-  "devDependencies": {
     "@angular/core": "2.0.0-rc.4",
     "@angular/common": "2.0.0-rc.4",
     "@angular/http": "2.0.0-rc.4",
@@ -40,7 +38,6 @@
     "ts-md5": "latest",
     "codelyzer": "^0.0.20",
     "rxjs": "5.0.0-beta.6",
-    "tslint": "^3.6.0",
     "typescript": "^1.8.10",
     "typings":"^1.0.4",
     "zone.js": "0.6.12",
@@ -48,6 +45,9 @@
     "buffer": "^3",
     "js-base64": "^2.1.9",
     "sha256": "^0.2.0"
+  },
+  "devDependencies": {
+    "tslint": "^3.6.0"
   },
   "engines": {
     "node": ">=0.8.0"

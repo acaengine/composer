@@ -119,11 +119,11 @@ export class WebSocketInterface {
             if(msg.type === NOTIFY){
                 debugMsg = msg.meta.sys + ' -> ' + msg.meta.mod + ' ' + msg.meta.index + ': Status updated: ' + msg.meta.name + ' = ' + msg.value;
                 if(module.debugger && module.debugger.enabled) module.debugger.addMessage(debugMsg);
-                else console.debug(module.now + ' - ' + debugMsg);
+                //else console.debug(module.now + ' - ' + debugMsg);
             } else {
                 debugMsg = msg.type.toUpperCase() + ' ' + msg.id + ': ' + JSON.stringify(msg.meta)
                 if(module.debugger && module.debugger.enabled) module.debugger.addMessage(debugMsg);
-                else console.debug(module.now + ' - ' + debugMsg);
+                //else console.debug(module.now + ' - ' + debugMsg);
             }
             binding = module.get(meta.name);
             if(!binding) return this.fail(msg, 'binding');

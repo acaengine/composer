@@ -24,23 +24,6 @@ export class Debug {
         this.msgs = [];
     }
 
-    ngAfterContentInit(){
-            // Load Binding
-        if(typeof this.mod === 'object'){
-            this.module = this.mod;
-            this.system = this.module.parent;
-        } if (typeof this.sys === 'object') {
-            this.system = this.sys;
-            this.module = this.system.get(this.mod, this.index ? this.index : 1);
-        } else {
-            this.system = this.service.get(this.sys);
-            this.module = this.system.get(this.mod, this.index ? this.index : 1);
-        }
-        if(this.output !== this.msgs){
-            //this.output = this.msgs;
-        }
-    }
-
     ngOnChanges(changes: any) {
         this.change = true;
             // System changes

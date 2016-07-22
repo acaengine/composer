@@ -1,6 +1,4 @@
-# a2-composer
-
-## Usage
+# Angular 2 - Composer
 
 Note:: You can create your own components that are customised for your application.
 `Composer` does all the heavy lifting allowing maximum flexibility for app integration.

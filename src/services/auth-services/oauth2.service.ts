@@ -1,4 +1,4 @@
-/// <reference path="../../../deps.d.ts" />
+/// <reference path="../../deps.d.ts" />
 
 import { Injectable } from '@angular/core';
 //*
