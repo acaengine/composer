@@ -20,7 +20,8 @@ export class ACAHttp {
             `${window.location.origin}/auth/oauth/authorize`,
             `${window.location.origin}/auth/token`,
             `${window.location.origin}/oauth-resp.html`,
-            this.hash(`${window.location.origin}/oauth-resp.html`)
+            this.hash(`${window.location.origin}/oauth-resp.html`),
+            `${window.location.origin}/auth/login`
         );
         //*
         this.sub = this.router
@@ -32,9 +33,10 @@ export class ACAHttp {
         //*/
     }
 
-    setupOAuth(url: string, refresh: string, redirect: string, c_id: string, issuer?: string, scope?: string, oidc?: boolean, logout?: string) {
+    setupOAuth(url: string, refresh: string, redirect: string, c_id: string, login:string, issuer?: string, scope?: string, oidc?: boolean, logout?: string) {
         let oauth = this.oAuthService;
         oauth.loginUrl = url;
+        oauth.loginRedirect = login;
         oauth.refreshUri = refresh;
         oauth.redirectUri = redirect;
         oauth.clientId = c_id;
@@ -45,6 +47,7 @@ export class ACAHttp {
     }
 
     tryLogin() {
+    	console.error('Try Login');
         if(this.oAuthService.code) this.login().then(() => {
             console.log('OAuth: Got Access Token.')
             this.cleanUrl();
@@ -276,9 +279,14 @@ export class ACAHttp {
                             () => obs.complete()
                         );
                     }
+            }, (err) => {
+            	console.error('ACA_COMPOSER OAUTH: Error logging in.');
+            	console.error(err);
             });
             //*/
         } else { // Return error
+        	console.error('ACA_COMPOSER OAUTH: Error processing request.');
+        	console.error(err);
             obs.error(err);
         }
     }

@@ -1,5 +1,6 @@
 
 import { Injectable } from '@angular/core';
+import { Http } from '@angular/http';
 import { ACAHttp } from '../auth-services';
 import { Observable } from 'rxjs/Observable';
 
@@ -245,148 +246,158 @@ class ResourceFactory {
 export class Resources {
     factories: any;
     url: string;
-    constructor(public http: ACAHttp) {
+    constructor(public http: ACAHttp, private http_unauth: Http) {
+
     }
 
-    initAuth() {
+    initAuth(resolve: any, reject: any) {
         let parts = this.url.split('/');
-        let uri = parts.splice(0, 3).join('/') + '/';
-        this.http.setupOAuth(
-            `${uri}auth/oauth/authorize`,
-            `${uri}auth/token`,
-            `${location.origin}/oauth-resp.html`,
-            this.http.hash(`${location.origin}/oauth-resp.html`)
-        );
-        this.http.tryLogin();
+        let uri = parts.splice(0, 3).join('/');
+        this.get('Authority').get_authority().then((auth) => {
+        	let url = encodeURIComponent(document.location.href);
+        	url = auth.login_url.replace('{{url}}', url);
+	        this.http.setupOAuth( `${uri}/auth/oauth/authorize`, `${uri}/auth/token`, `${location.origin}/oauth-resp.html`, this.http.hash(`${uri}/oauth-resp.html`), (url[0] === '/' ? (uri + url) : url) );
+        	this.http.tryLogin();
+        	resolve();
+        }, (err) => {
+        	console.error('ACA_COMPOSER_RESOURCE: Error getting authority.');
+        	console.error(err);
+	        this.http.setupOAuth(`${uri}/auth/oauth/authorize`, `${uri}/auth/token`, `${location.origin}/oauth-resp.html`, this.http.hash(`${uri}/oauth-resp.html`), `${uri}/auth/login`);
+        	this.http.tryLogin();
+        	reject(err);
+        })
     }
 
     init(url_base?: string) {
-        if(!url_base) this.url = window.location.origin + '/';
-        else this.url = url_base;
-        this.initAuth();
-        let custom: any;
-            // Factory for API Modules
-        this.new('Module', this.url + 'api/modules/:id/:task', {
-            id: '@id',
-            task: '@_task'
-        }, common_crud);
-            // Factory for System Modules
-        this.new('SystemModule', this.url + 'api/systems/:sys_id/modules/:mod_id', {
-            mod_id: '@module_id',
-            sys_id: '@system_id'
-        }, common_crud);
-            // Factory for API Triggers
-        this.new('Trigger', this.url + 'api/triggers/:id', {
-            id: '@id'
-        }, common_crud);
-            // Factory for system triggers
-        custom = JSON.parse(JSON.stringify(common_crud));
-        custom.query = {
-            method: GET,
-            headers: common_headers,
-            url: this.url + 'api/system_triggers'
-        }
-        this.new('SystemTrigger', this.url + 'api/triggers/:id', {
-            id: '@id'
-        }, custom);
-            // Factory for System
-        custom = JSON.parse(JSON.stringify(common_crud));
-        custom.funcs = {
-            method:'GET',
-            headers: common_headers,
-            url: this.url + 'api/systems/:id/funcs'
-        }
-        custom.exec = {
-            method:'POST',
-            headers: common_headers,
-            url: this.url + 'api/systems/:id/exec',
-            isArray: true
-        }
-        custom.types = {
-            method:'GET',
-            headers: common_headers,
-            url: this.url + 'api/systems/:id/types',
-            isArray: true
-        }
-        custom.count = {
-            method:'GET',
-            headers: common_headers,
-            url: this.url + 'api/systems/:id/count'
-        }
-        this.new('System', this.url + 'api/systems/:id/:task', {
-            id: '@id',
-            task: '@_task'
-        }, custom);
-            // Factory for Dependencies
-        this.new('Dependency', this.url + 'api/dependencies/:id/:task', {
-            id: '@id',
-            task: '@_task'
-        }, common_crud);
-            // Factory for Node
-        this.new('Node', this.url + 'api/nodes/:id', {
-            id: '@id'
-        }, common_crud);
-            // Factory for Group
-        this.new('Group', this.url + 'api/groups/:id', {
-            id: '@id'
-        }, common_crud);
-            // Factory for Zone
-        this.new('Zone', this.url + 'api/zones/:id', {
-            id: '@id'
-        }, common_crud);
-            // Factory for Discovery
-        custom = JSON.parse(JSON.stringify(common_crud));
-        custom.scan = {
-            method: 'POST',
-            headers: common_headers,
-            url: this.url + 'api/discovery/scan'
-        }
-        this.new('Discovery', this.url + 'api/discovery/:id', {
-            id: '@id'
-        }, custom);
-            // Factory for Logs
-        custom = JSON.parse(JSON.stringify(common_crud));
-        custom.missing_connections = {
-            method:'GET',
-            headers: common_headers,
-            url: this.url + 'api/logs/missing_connections'
-        },
-        custom.system_logs = {
-            method:'GET',
-            headers: common_headers,
-            url: this.url + 'api/logs/system_logs'
-        }
-        this.new('Log', this.url + 'api/logs/:id', {
-            id: '@id'
-        }, custom);
-            // Factory for User
-        custom = JSON.parse(JSON.stringify(common_crud));
-        custom.current = {
-            method:'GET',
-            headers: common_headers,
-            url: this.url + 'api/users/current'
-        }
-        this.new('User', this.url + 'api/users/:id', {
-            id: '@id'
-        }, custom);
+    	return new Promise((resolve, reject) => {
+	        if(!url_base) this.url = window.location.origin + '/';
+	        else this.url = url_base;
+	        let custom: any;
+	            // Factory for API Modules
+	        this.new('Module', this.url + 'api/modules/:id/:task', {
+	            id: '@id',
+	            task: '@_task'
+	        }, common_crud);
+	            // Factory for System Modules
+	        this.new('SystemModule', this.url + 'api/systems/:sys_id/modules/:mod_id', {
+	            mod_id: '@module_id',
+	            sys_id: '@system_id'
+	        }, common_crud);
+	            // Factory for API Triggers
+	        this.new('Trigger', this.url + 'api/triggers/:id', {
+	            id: '@id'
+	        }, common_crud);
+	            // Factory for system triggers
+	        custom = JSON.parse(JSON.stringify(common_crud));
+	        custom.query = {
+	            method: GET,
+	            headers: common_headers,
+	            url: this.url + 'api/system_triggers'
+	        }
+	        this.new('SystemTrigger', this.url + 'api/triggers/:id', {
+	            id: '@id'
+	        }, custom);
+	            // Factory for System
+	        custom = JSON.parse(JSON.stringify(common_crud));
+	        custom.funcs = {
+	            method:'GET',
+	            headers: common_headers,
+	            url: this.url + 'api/systems/:id/funcs'
+	        }
+	        custom.exec = {
+	            method:'POST',
+	            headers: common_headers,
+	            url: this.url + 'api/systems/:id/exec',
+	            isArray: true
+	        }
+	        custom.types = {
+	            method:'GET',
+	            headers: common_headers,
+	            url: this.url + 'api/systems/:id/types',
+	            isArray: true
+	        }
+	        custom.count = {
+	            method:'GET',
+	            headers: common_headers,
+	            url: this.url + 'api/systems/:id/count'
+	        }
+	        this.new('System', this.url + 'api/systems/:id/:task', {
+	            id: '@id',
+	            task: '@_task'
+	        }, custom);
+	            // Factory for Dependencies
+	        this.new('Dependency', this.url + 'api/dependencies/:id/:task', {
+	            id: '@id',
+	            task: '@_task'
+	        }, common_crud);
+	            // Factory for Node
+	        this.new('Node', this.url + 'api/nodes/:id', {
+	            id: '@id'
+	        }, common_crud);
+	            // Factory for Group
+	        this.new('Group', this.url + 'api/groups/:id', {
+	            id: '@id'
+	        }, common_crud);
+	            // Factory for Zone
+	        this.new('Zone', this.url + 'api/zones/:id', {
+	            id: '@id'
+	        }, common_crud);
+	            // Factory for Discovery
+	        custom = JSON.parse(JSON.stringify(common_crud));
+	        custom.scan = {
+	            method: 'POST',
+	            headers: common_headers,
+	            url: this.url + 'api/discovery/scan'
+	        }
+	        this.new('Discovery', this.url + 'api/discovery/:id', {
+	            id: '@id'
+	        }, custom);
+	            // Factory for Logs
+	        custom = JSON.parse(JSON.stringify(common_crud));
+	        custom.missing_connections = {
+	            method:'GET',
+	            headers: common_headers,
+	            url: this.url + 'api/logs/missing_connections'
+	        },
+	        custom.system_logs = {
+	            method:'GET',
+	            headers: common_headers,
+	            url: this.url + 'api/logs/system_logs'
+	        }
+	        this.new('Log', this.url + 'api/logs/:id', {
+	            id: '@id'
+	        }, custom);
+	            // Factory for User
+	        custom = JSON.parse(JSON.stringify(common_crud));
+	        custom.current = {
+	            method:'GET',
+	            headers: common_headers,
+	            url: this.url + 'api/users/current'
+	        }
+	        this.new('User', this.url + 'api/users/:id', {
+	            id: '@id'
+	        }, custom);
 
-            // Resource for Authority
-        let auth;
-        auth = {};
-        auth.get_authority = () => {
-            return (new Promise((resolve, reject) => {
-                let authority;
-                let parts = this.url.split('/');
-                let url = parts.splice(0, 3).join('/') + '/';
-                this.http.get('/auth/authority').subscribe(
-                    data => authority = data,
-                    err => reject(err),
-                    () => resolve(authority)
-                );
-            }));
-        }
-        if(this.factories === undefined) this.factories = {};
-        this.factories['Authority'] = auth;
+	            // Resource for Authority
+	        let auth;
+	        auth = {};
+	        auth.get_authority = (auth_url?: string) => {
+	        	if(!auth_url) auth_url = this.url;
+	            return (new Promise((resolve, reject) => {
+	                let authority;
+	                let parts = auth_url.split('/');
+	                let url = parts.splice(0, 3).join('/');
+	                this.http_unauth.get(url + '/auth/authority').map(res => res.json()).subscribe(
+	                    data => authority = data,
+	                    err => reject(err),
+	                    () => resolve(authority)
+	                );
+	            }));
+	        }
+	        if(this.factories === undefined) this.factories = {};
+	        this.factories['Authority'] = auth;
+	        this.initAuth(resolve, reject);
+    	});
     }
 
     getToken(){

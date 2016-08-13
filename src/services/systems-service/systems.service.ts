@@ -6,7 +6,7 @@ import { $WebSocket } from '../websocket/index';
 import { Resources } from '../resources';
 
 @Injectable()
-export class  SystemsService {
+export class SystemsService {
     systems: System[] = [];
     bound_systems: System[] = [];
     io: any;
@@ -15,21 +15,34 @@ export class  SystemsService {
     //private r: any;
 
     constructor(private r: Resources) {
-        let auth = null
-        if(r) auth = r
-        this.io = new $WebSocket(this, auth);
         setInterval(() => {
             this.updateSystems();
         }, 60 * 1000);
-        this.r.init(this.io.end_point.replace('ws', 'http') + '/control/');
     }
 
     setSocket(ws: any) {
         this.io = ws;
         this.io.serv = this;
+        this.r.init(this.io.end_point.replace('ws', 'http') + '/control');
+    }
+
+    newSocket(url: string, port: string = '3000'){
+    		//Clean old websockets
+    	if(this.io) {
+
+    	}
+        this.r.init((port === '443' ? 'https' : 'http') + '://' + url).then(() => {
+        	this.io = new $WebSocket(this, this.r, url, port);
+        });
+    }
+
+    private initSocket() {
+        this.io = new $WebSocket(this, this.r);
+        this.r.init(this.io.end_point.replace('ws', 'http') + '/control/');
     }
 
     get(sys_id: string) {
+    	if(!this.io) this.initSocket();
         let system = this.r.get('System');
         system.get({id: sys_id}).then((sys) => {
             let s = this.getSystem(sys_id);
@@ -43,18 +56,22 @@ export class  SystemsService {
     }
 
     private updateSystems(){
-        for(let i = 0; this.systems && i < this.systems.length; i++) {
-            let system = this.systems[i];
-            if(!system.exists){
-                let sys = this.r.get('System');
-                return sys.get({id: system.id}).then((sys) => {
-                    system.exists = true;
-                });
-            }
-        }
+    	if(!this.io) this.initSocket();
+    	if(this.r && this.io) {
+	        for(let i = 0; this.systems && i < this.systems.length; i++) {
+	            let system = this.systems[i];
+	            if(!system.exists){
+	                let sys = this.r.get('System');
+	                return sys.get({id: system.id}).then((sys) => {
+	                    system.exists = true;
+	                });
+	            }
+	        }
+	    }
     }
 
     private getSystem(sys_id: string){
+    	if(!this.io) this.initSocket();
         let system: any = null;
         // Check if system already exists
         for(let i = 0; this.systems && i < this.systems.length; i++) {
@@ -71,16 +88,19 @@ export class  SystemsService {
     }
 
     getModule(sys_id:string, id: string) {
+    	if(!this.io) this.initSocket();
         let system = this.get(sys_id);
         let module = system.get(id);
         return module;
     }
 
     isConnected() {
+    	if(!this.io) this.initSocket();
         return this.io ? this.io.connected : false;
     }
 
     rebind(){
+    	if(!this.io) this.initSocket();
         for(let i = 0; this.systems && i < this.systems.length; i++) {
             this.systems[i].rebind();
         }

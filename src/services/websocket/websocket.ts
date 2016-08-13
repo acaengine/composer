@@ -28,7 +28,7 @@ export class WebSocketInterface {
 
     constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
         this.auth = auth;
-        this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + ':' + port;
+        this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
         this.serv = srv;
         this.uri = this.end_point + '/control/websocket';
         this.connect();

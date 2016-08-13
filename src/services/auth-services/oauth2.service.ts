@@ -20,6 +20,7 @@ export class OAuthService {
     public clientId = "";
     public redirectUri = "";
     public loginUrl = "";
+    public loginRedirect = "";
     public scope = "";
     public rngUrl = "";
     public oidc = false;
@@ -31,6 +32,7 @@ export class OAuthService {
     public response_type: string;
     public refreshUri = '';
     public code: string;
+
 
     public setStorage(storage: Storage) {
         this._storage = storage;
@@ -58,7 +60,7 @@ export class OAuthService {
             }
 
             let url = this.loginUrl
-                        + "?response_type="
+                        + (this.loginUrl.indexOf('?') < 0 ? '?' : '&' ) + "response_type="
                         + response_type
                         + "&client_id="
                         + encodeURIComponent(this.clientId)
@@ -124,8 +126,17 @@ export class OAuthService {
     }
 
     initImplicitFlow(additionalState = "") {
-        this.createLoginUrl(additionalState).then(function (url) {
-            location.href = url;
+        this.createLoginUrl(additionalState).then((url) => {
+        	if(sessionStorage) {
+        		let logged = sessionStorage.getItem(`${this.clientId}_login`);
+        		if(logged) {
+        			location.href = url;
+	        	} else {
+	        		sessionStorage.setItem(`${this.clientId}_login`, 'true');
+	        		let here = location.href;
+	        		location.href = this.loginRedirect + '?continue=' + here;
+	        	}
+        	} else location.href = url;
         })
         .catch(function (error) {
             console.error("Error in initImplicitFlow");
