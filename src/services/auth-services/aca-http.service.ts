@@ -47,10 +47,9 @@ export class ACAHttp {
     }
 
     tryLogin() {
-    	console.error('Try Login');
+    	console.log('Try Login');
         if(this.oAuthService.code) this.login().then(() => {
-            console.log('OAuth: Got Access Token.')
-            this.cleanUrl();
+            console.log('OAuth: Got Access Token.');
         });
     }
 
@@ -58,21 +57,25 @@ export class ACAHttp {
         let redirect: any = this.store.getItem('oauth_redirect');
         let loc = '/';
         if(redirect){
-            redirect = redirect.split('/');
-            redirect.splice(0, 3);
-            redirect = redirect.join('/');
-            loc = '/' + redirect;
+        	let base_el = document.getElementsByTagName('base')[0];
+        	let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
+        	if(location.pathname.indexOf(base) === 0) {
+        		loc = location.pathname.replace(base, '');
+        	}
+	        this.location.replaceState(loc, '');
+	        this.store.removeItem('oauth_redirect');
         }
-        this.location.replaceState(loc);
-        this.store.removeItem('oauth_redirect');
     }
 
     processOptions(url: string, body?: any, options?: any) {
-        let hds = { "Authorization": this.oAuthService ? this.oAuthService.authorizationHeader() : '' };
-        if(options && !options.headers){
-            for(var i in options) hds[i] = options[i];
+        let headers = new Headers({ "Authorization": this.oAuthService ? this.oAuthService.authorizationHeader() : '' });
+        if(options && options.headers){
+        	let h = options.headers.values();
+        	let k = options.headers.keys();
+            for(var i in h) {
+            	if(k[i] !== 'Authorization') headers.append(k[i], h[i][0]);
+            }
         }
-        let headers = new Headers(hds);
             // Store request info for retry if needed.
         let req = {
             type: 'get',
@@ -164,7 +167,7 @@ export class ACAHttp {
                                     .subscribe(
                                         data => tokens = data,
                                         err => this.processLoginError(err, reject),
-                                        () => this.updateToken(tokens, resolve)
+                                        () => { console.log(tokens); this.updateToken(tokens, resolve) }
                                     );
                             });
                         } else { // Token is still valid.
@@ -189,8 +192,17 @@ export class ACAHttp {
         return this.loginPromise;
     }
 
+    setLoginStatus(status: boolean = true) {
+    	if(sessionStorage) {
+        	let oauth:any = this.oAuthService;
+	    	if(status) sessionStorage.setItem(`${oauth.clientId}_login`, 'true');
+	    	else sessionStorage.removeItem(`${oauth.clientId}_login`);
+	    }
+    }
+
     loginDone() {
         this.loginPromise = null;
+        this.cleanUrl();
     }
 
     processLoginError(err, reject) {
@@ -202,6 +214,7 @@ export class ACAHttp {
             this.store.removeItem(`${oauth.clientId}_refresh_token`);
             this.store.removeItem(`${oauth.clientId}_expires_at`);
             this.store.removeItem(`${oauth.clientId}_nonce`);
+            this.store.removeItem(`${oauth.clientId}_login`);
             this.oAuthService.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
             this.login().then(() => {}, (err) => { reject(err); });
@@ -214,11 +227,12 @@ export class ACAHttp {
     }
 
     checkAuth(cb_fn) {
-        console.log('OAuth: Checking Auth.');
+        console.error('OAuth: Checking Auth.');
         if(this.loginPromise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
             let uri:any = parts.splice(0, 3).join('/');
-            this.http.get(uri + '/auth/oauth/token/info').subscribe(
+        	let headers = new Headers({ "Authorization": this.oAuthService ? this.oAuthService.authorizationHeader() : '' });
+            this.http.get(uri + '/auth/oauth/token/info', { headers: headers }).subscribe(
                 data => cb_fn(data),
                 err => this.processLoginError(err, () => {}),
                 () => {}

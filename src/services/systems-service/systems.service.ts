@@ -15,9 +15,18 @@ export class SystemsService {
     //private r: any;
 
     constructor(private r: Resources) {
+    	/*
+        let auth = null
+        if(r) auth = r
+        this.io = new $WebSocket(this, auth);
+        //*/
+        //*
         setInterval(() => {
             this.updateSystems();
         }, 60 * 1000);
+        /*
+        /this.r.init(this.io.end_point.replace('ws', 'http') + '/control/');
+        //*/
     }
 
     setSocket(ws: any) {
@@ -36,13 +45,7 @@ export class SystemsService {
         });
     }
 
-    private initSocket() {
-        this.io = new $WebSocket(this, this.r);
-        this.r.init(this.io.end_point.replace('ws', 'http') + '/control/');
-    }
-
     get(sys_id: string) {
-    	if(!this.io) this.initSocket();
         let system = this.r.get('System');
         system.get({id: sys_id}).then((sys) => {
             let s = this.getSystem(sys_id);
@@ -56,7 +59,6 @@ export class SystemsService {
     }
 
     private updateSystems(){
-    	if(!this.io) this.initSocket();
     	if(this.r && this.io) {
 	        for(let i = 0; this.systems && i < this.systems.length; i++) {
 	            let system = this.systems[i];
@@ -71,7 +73,6 @@ export class SystemsService {
     }
 
     private getSystem(sys_id: string){
-    	if(!this.io) this.initSocket();
         let system: any = null;
         // Check if system already exists
         for(let i = 0; this.systems && i < this.systems.length; i++) {
@@ -88,19 +89,16 @@ export class SystemsService {
     }
 
     getModule(sys_id:string, id: string) {
-    	if(!this.io) this.initSocket();
         let system = this.get(sys_id);
         let module = system.get(id);
         return module;
     }
 
     isConnected() {
-    	if(!this.io) this.initSocket();
         return this.io ? this.io.connected : false;
     }
 
     rebind(){
-    	if(!this.io) this.initSocket();
         for(let i = 0; this.systems && i < this.systems.length; i++) {
             this.systems[i].rebind();
         }

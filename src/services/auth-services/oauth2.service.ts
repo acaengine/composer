@@ -1,6 +1,7 @@
 /// <reference path="../../deps.d.ts" />
 
 import { Injectable } from '@angular/core';
+import { Location } from '@angular/common';
 //*
 import {Base64} from 'js-base64';
 import {fromByteArray} from 'base64-js';
@@ -32,6 +33,10 @@ export class OAuthService {
     public response_type: string;
     public refreshUri = '';
     public code: string;
+
+    constructor(private location: Location) {
+
+    }
 
 
     public setStorage(storage: Storage) {
@@ -130,6 +135,7 @@ export class OAuthService {
         	if(sessionStorage) {
         		let logged = sessionStorage.getItem(`${this.clientId}_login`);
         		if(logged) {
+	        		sessionStorage.removeItem(`${this.clientId}_login`);
         			location.href = url;
 	        	} else {
 	        		sessionStorage.setItem(`${this.clientId}_login`, 'true');
@@ -240,7 +246,7 @@ export class OAuthService {
             win.parent.onOAuthCallback(this.state);
         }
         */
-
+        this.location.replaceState(this.location.path(), '');
         return true;
     };
 

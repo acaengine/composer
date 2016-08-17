@@ -253,16 +253,32 @@ export class Resources {
     initAuth(resolve: any, reject: any) {
         let parts = this.url.split('/');
         let uri = parts.splice(0, 3).join('/');
+        let base_el = document.getElementsByTagName('base')[0];
+        let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
+        let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth) => {
         	let url = encodeURIComponent(document.location.href);
+        	console.log(auth);
         	url = auth.login_url.replace('{{url}}', url);
-	        this.http.setupOAuth( `${uri}/auth/oauth/authorize`, `${uri}/auth/token`, `${location.origin}/oauth-resp.html`, this.http.hash(`${uri}/oauth-resp.html`), (url[0] === '/' ? (uri + url) : url) );
+	        this.http.setupOAuth( 
+	        	`${uri}/auth/oauth/authorize`, 
+	        	`${uri}/auth/token`, 
+	        	`${redirect}oauth-resp.html`, 
+	        	this.http.hash(`${redirect}oauth-resp.html`), 
+	        	(url[0] === '/' ? (uri + url) : url) 
+	        );
+	        if(auth.session) this.http.setLoginStatus(auth.session);
         	this.http.tryLogin();
         	resolve();
         }, (err) => {
         	console.error('ACA_COMPOSER_RESOURCE: Error getting authority.');
         	console.error(err);
-	        this.http.setupOAuth(`${uri}/auth/oauth/authorize`, `${uri}/auth/token`, `${location.origin}/oauth-resp.html`, this.http.hash(`${uri}/oauth-resp.html`), `${uri}/auth/login`);
+	        this.http.setupOAuth(
+	        	`${uri}/auth/oauth/authorize`, 
+	        	`${uri}/auth/token`, 
+	        	`${redirect}oauth-resp.html`, 
+	        	this.http.hash(`${redirect}oauth-resp.html`), 
+	        	`${uri}/auth/login`);
         	this.http.tryLogin();
         	reject(err);
         })
