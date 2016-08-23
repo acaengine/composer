@@ -246,6 +246,7 @@ class ResourceFactory {
 export class Resources {
     factories: any;
     url: string;
+    authLoaded: boolean = false;
     constructor(public http: ACAHttp, private http_unauth: Http) {
 
     }
@@ -268,6 +269,7 @@ export class Resources {
 	        	(url[0] === '/' ? (uri + url) : url) 
 	        );
 	        if(auth.session) this.http.setLoginStatus(auth.session);
+   		 	this.authLoaded = true;
         	this.http.tryLogin();
         	resolve();
         }, (err) => {
@@ -290,17 +292,17 @@ export class Resources {
 	        else this.url = url_base;
 	        let custom: any;
 	            // Factory for API Modules
-	        this.new('Module', this.url + 'api/modules/:id/:task', {
+	        this.new('Module', this.url + '/api/modules/:id/:task', {
 	            id: '@id',
 	            task: '@_task'
 	        }, common_crud);
 	            // Factory for System Modules
-	        this.new('SystemModule', this.url + 'api/systems/:sys_id/modules/:mod_id', {
+	        this.new('SystemModule', this.url + '/api/systems/:sys_id/modules/:mod_id', {
 	            mod_id: '@module_id',
 	            sys_id: '@system_id'
 	        }, common_crud);
 	            // Factory for API Triggers
-	        this.new('Trigger', this.url + 'api/triggers/:id', {
+	        this.new('Trigger', this.url + '/api/triggers/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for system triggers
@@ -308,9 +310,9 @@ export class Resources {
 	        custom.query = {
 	            method: GET,
 	            headers: common_headers,
-	            url: this.url + 'api/system_triggers'
+	            url: this.url + '/api/system_triggers'
 	        }
-	        this.new('SystemTrigger', this.url + 'api/triggers/:id', {
+	        this.new('SystemTrigger', this.url + '/api/triggers/:id', {
 	            id: '@id'
 	        }, custom);
 	            // Factory for System
@@ -318,44 +320,44 @@ export class Resources {
 	        custom.funcs = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + 'api/systems/:id/funcs'
+	            url: this.url + '/api/systems/:id/funcs'
 	        }
 	        custom.exec = {
 	            method:'POST',
 	            headers: common_headers,
-	            url: this.url + 'api/systems/:id/exec',
+	            url: this.url + '/api/systems/:id/exec',
 	            isArray: true
 	        }
 	        custom.types = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + 'api/systems/:id/types',
+	            url: this.url + '/api/systems/:id/types',
 	            isArray: true
 	        }
 	        custom.count = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + 'api/systems/:id/count'
+	            url: this.url + '/api/systems/:id/count'
 	        }
-	        this.new('System', this.url + 'api/systems/:id/:task', {
+	        this.new('System', this.url + '/api/systems/:id/:task', {
 	            id: '@id',
 	            task: '@_task'
 	        }, custom);
 	            // Factory for Dependencies
-	        this.new('Dependency', this.url + 'api/dependencies/:id/:task', {
+	        this.new('Dependency', this.url + '/api/dependencies/:id/:task', {
 	            id: '@id',
 	            task: '@_task'
 	        }, common_crud);
 	            // Factory for Node
-	        this.new('Node', this.url + 'api/nodes/:id', {
+	        this.new('Node', this.url + '/api/nodes/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for Group
-	        this.new('Group', this.url + 'api/groups/:id', {
+	        this.new('Group', this.url + '/api/groups/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for Zone
-	        this.new('Zone', this.url + 'api/zones/:id', {
+	        this.new('Zone', this.url + '/api/zones/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for Discovery
@@ -363,9 +365,9 @@ export class Resources {
 	        custom.scan = {
 	            method: 'POST',
 	            headers: common_headers,
-	            url: this.url + 'api/discovery/scan'
+	            url: this.url + '/api/discovery/scan'
 	        }
-	        this.new('Discovery', this.url + 'api/discovery/:id', {
+	        this.new('Discovery', this.url + '/api/discovery/:id', {
 	            id: '@id'
 	        }, custom);
 	            // Factory for Logs
@@ -373,14 +375,14 @@ export class Resources {
 	        custom.missing_connections = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + 'api/logs/missing_connections'
+	            url: this.url + '/api/logs/missing_connections'
 	        },
 	        custom.system_logs = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + 'api/logs/system_logs'
+	            url: this.url + '/api/logs/system_logs'
 	        }
-	        this.new('Log', this.url + 'api/logs/:id', {
+	        this.new('Log', this.url + '/api/logs/:id', {
 	            id: '@id'
 	        }, custom);
 	            // Factory for User
@@ -388,9 +390,9 @@ export class Resources {
 	        custom.current = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + 'api/users/current'
+	            url: this.url + '/api/users/current'
 	        }
-	        this.new('User', this.url + 'api/users/:id', {
+	        this.new('User', this.url + '/api/users/:id', {
 	            id: '@id'
 	        }, custom);
 

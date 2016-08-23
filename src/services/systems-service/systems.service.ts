@@ -29,6 +29,10 @@ export class SystemsService {
         //*/
     }
 
+    get resources() {
+    	return this.r;
+    }
+
     setSocket(ws: any) {
         this.io = ws;
         this.io.serv = this;

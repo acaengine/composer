@@ -66,7 +66,7 @@ export class OAuthService {
 
             let url = this.loginUrl
                         + (this.loginUrl.indexOf('?') < 0 ? '?' : '&' ) + "response_type="
-                        + response_type
+                        + encodeURIComponent(response_type)
                         + "&client_id="
                         + encodeURIComponent(this.clientId)
                         + "&state="
@@ -96,12 +96,12 @@ export class OAuthService {
 
             if(this._storage.getItem(`${this.clientId}_refresh_token`)){
                 url += "&refresh_token="
-                    +  this._storage.getItem(`${this.clientId}_refresh_token`)
+                    +  encodeURIComponent(this._storage.getItem(`${this.clientId}_refresh_token`))
                     +  "&grant_type="
                     +  encodeURIComponent('refresh_token');
             } else {
                 url += "&code="
-                    +  this.code
+                    +  encodeURIComponent(this.code)
                     +  "&grant_type="
                     +  encodeURIComponent('authorization_code');
             }
