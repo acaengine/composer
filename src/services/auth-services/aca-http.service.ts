@@ -73,7 +73,7 @@ export class ACAHttp {
         	let h = options.headers.values();
         	let k = options.headers.keys();
             for(var i in h) {
-            	if(k[i] !== 'Authorization') headers.append(k[i], h[i][0]);
+            	if(k[i].toLowerCase() !== 'authorization') headers.append(k[i], h[i][0]);
             }
         }
             // Store request info for retry if needed.

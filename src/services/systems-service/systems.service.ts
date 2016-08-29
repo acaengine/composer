@@ -44,7 +44,7 @@ export class SystemsService {
     	if(this.io) {
 
     	}
-        this.r.init((port === '443' ? 'https' : 'http') + '://' + url).then(() => {
+        this.r.init((port === '443' ? 'https' : 'http') + '://' + url + '/control').then(() => {
         	this.io = new $WebSocket(this, this.r, url, port);
         });
     }
