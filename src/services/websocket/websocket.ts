@@ -25,45 +25,53 @@ export class WebSocketInterface {
     private keepAliveInterval: any;
     private auth: any;
     reconnected = false;
+    connect_check: any = null;
 
     constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
         this.auth = auth;
         this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
         this.serv = srv;
         this.uri = this.end_point + '/control/websocket';
-        this.connect();
-        setInterval(() => { this.reconnect(); }, 3 * 1000);
+        if(this.auth !== undefined && this.auth !== null){
+            this.auth.getToken();
+        }
     }
 
     connect() {
-        if(this.auth !== undefined && this.auth !== null){
-            this.auth.getToken().then((token) => {
-                if(token){
-                    let uri = this.uri;
-                        //Setup URI
-                    uri += '?bearer_token=' + token;
-                    let search = window.location.search;
-                    if(search.indexOf('fixed_device') >= 0){
-                        uri += '&fixed_device=true';
-                    }
-                        //Create Web Socket
-                    this.io = new WebSocket(uri);
-                    this.io.onmessage = (evt) => { this.onmessage(evt); }
-                    this.io.onclose = (evt) => { this.onclose(evt); }
-                    this.io.onopen = (evt) => { this.onopen(evt); }
-                    this.io.onerror = (evt) => { this.serv.r.checkAuth(); }
-                } else {
-                    setTimeout(() => { this.connect(); }, 100) ;
-                }
-            });
-        } else {
-                //Create WebSocket
-            this.io = new WebSocket(this.uri);
-            this.io.onmessage = (evt) => { this.onmessage(evt); }
-            this.io.onclose = (evt) => { this.onclose(evt); }
-            this.io.onopen = (evt) => { this.onopen(evt); }
-            this.io.onerror = (evt) => { this.serv.r.checkAuth(); }
-        }
+    	return new Promise((resolve, reject) => {
+	        if(this.auth !== undefined && this.auth !== null){
+	            this.auth.getToken().then((token) => {
+	                if(token){
+	                    let uri = this.uri;
+	                        //Setup URI
+	                    uri += '?bearer_token=' + token;
+	                    let search = window.location.search;
+	                    if(search.indexOf('fixed_device') >= 0){
+	                        uri += '&fixed_device=true';
+	                    }
+	                        //Create Web Socket
+	                    this.io = new WebSocket(uri);
+	                    this.io.onmessage = (evt) => { this.onmessage(evt); }
+	                    this.io.onclose = (evt) => { this.onclose(evt); }
+	                    this.io.onopen = (evt) => { this.onopen(evt); }
+	                    this.io.onerror = (evt) => { this.serv.r.checkAuth(); }
+	                    resolve();
+	                } else {
+	                    setTimeout(() => { this.connect(); }, 100) ;
+	                    reject();
+	                }
+	            });
+	        } else {
+	                //Create WebSocket
+	            this.io = new WebSocket(this.uri);
+	            this.io.onmessage = (evt) => { this.onmessage(evt); }
+	            this.io.onclose = (evt) => { this.onclose(evt); }
+	            this.io.onopen = (evt) => { this.onopen(evt); }
+	            this.io.onerror = (evt) => { this.serv.r.checkAuth(); }
+	            resolve();
+	        }
+	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
+    	})
     }
 
     reconnect() {
@@ -142,9 +150,11 @@ export class WebSocketInterface {
     }
 
     sendRequest(type, system, mod, index, name, args?) {
-        if (!this.connected)
-        return 0;
-
+        if (!this.connected) {
+        	return this.connect().then(() => {
+        		return this.sendRequest(type, system, mod, index, name, args);
+        	}, () => { return 0; });
+	    }
 
         this.req_id += 1;
 
