@@ -261,12 +261,12 @@ export class Resources {
         	let url = encodeURIComponent(document.location.href);
         	console.log(auth);
         	url = auth.login_url.replace('{{url}}', url);
-	        this.http.setupOAuth( 
-	        	`${uri}/auth/oauth/authorize`, 
-	        	`${uri}/auth/token`, 
-	        	`${redirect}oauth-resp.html`, 
-	        	this.http.hash(`${redirect}oauth-resp.html`), 
-	        	(url[0] === '/' ? (uri + url) : url) 
+	        this.http.setupOAuth(
+	        	`${uri}/auth/oauth/authorize`,
+	        	`${uri}/auth/token`,
+	        	`${redirect}oauth-resp.html`,
+	        	this.http.hash(`${redirect}oauth-resp.html`),
+	        	(url[0] === '/' ? (uri + url) : url)
 	        );
 	        if(auth.session) this.http.setLoginStatus(auth.session);
    		 	this.authLoaded = true;
@@ -276,10 +276,10 @@ export class Resources {
         	console.error('ACA_COMPOSER_RESOURCE: Error getting authority.');
         	console.error(err);
 	        this.http.setupOAuth(
-	        	`${uri}/auth/oauth/authorize`, 
-	        	`${uri}/auth/token`, 
-	        	`${redirect}oauth-resp.html`, 
-	        	this.http.hash(`${redirect}oauth-resp.html`), 
+	        	`${uri}/auth/oauth/authorize`,
+	        	`${uri}/auth/token`,
+	        	`${redirect}oauth-resp.html`,
+	        	this.http.hash(`${redirect}oauth-resp.html`),
 	        	`${uri}/auth/login`);
         	this.http.tryLogin();
         	reject(err);
@@ -288,7 +288,7 @@ export class Resources {
 
     init(url_base?: string) {
     	return new Promise((resolve, reject) => {
-	        if(!url_base) this.url = window.location.origin + '/';
+	        if(!url_base) this.url = window.location.origin + '/control';
 	        else this.url = url_base;
 	        let custom: any;
 	            // Factory for API Modules

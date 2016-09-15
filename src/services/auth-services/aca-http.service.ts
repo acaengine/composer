@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { Http, Headers } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { OAuthService } from './oauth2.service';
 import { Md5 } from 'ts-md5/dist/md5'
@@ -15,7 +15,7 @@ export class ACAHttp {
     private refresh = false;
     private loginPromise: Promise<any> = null;
 
-    constructor(private location: Location, private router: Router, private http: Http, private oAuthService: OAuthService){
+    constructor(private location: Location, private route: ActivatedRoute, private router: Router, private http: Http, private oAuthService: OAuthService){
         this.setupOAuth(
             `${window.location.origin}/auth/oauth/authorize`,
             `${window.location.origin}/auth/token`,
@@ -24,10 +24,7 @@ export class ACAHttp {
             `${window.location.origin}/auth/login`
         );
         //*
-        this.sub = this.router
-        .routerState
-        .queryParams
-        .subscribe(params => {
+        this.sub = this.route.params.subscribe( (params: any) => {
             this.trust = params['trust'] ? params['trust'] : this.trust;
         });
         //*/
@@ -200,6 +197,15 @@ export class ACAHttp {
 	    }
     }
 
+    clearStore() {
+        let oauth:any = this.oAuthService;
+        this.store.removeItem(`${oauth.clientId}_access_token`);
+        this.store.removeItem(`${oauth.clientId}_refresh_token`);
+        this.store.removeItem(`${oauth.clientId}_expires_at`);
+        this.store.removeItem(`${oauth.clientId}_nonce`);
+        this.store.removeItem(`${oauth.clientId}_login`);
+    }
+
     loginDone() {
         this.loginPromise = null;
         this.cleanUrl();
@@ -210,11 +216,7 @@ export class ACAHttp {
             // Clear storage
         if(err.status == 400 || err.status == 401 || (err.status == 0 && err.ok == false)){
             console.log('Error with credentials. Getting new credentials...');
-            this.store.removeItem(`${oauth.clientId}_access_token`);
-            this.store.removeItem(`${oauth.clientId}_refresh_token`);
-            this.store.removeItem(`${oauth.clientId}_expires_at`);
-            this.store.removeItem(`${oauth.clientId}_nonce`);
-            this.store.removeItem(`${oauth.clientId}_login`);
+            this.clearStore();
             this.oAuthService.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
             this.login().then(() => {}, (err) => { reject(err); });
@@ -295,6 +297,8 @@ export class ACAHttp {
                     }
             }, (err) => {
             	console.error('ACA_COMPOSER OAUTH: Error logging in.');
+                this.clearStore();
+                location.reload();
             	console.error(err);
             });
             //*/

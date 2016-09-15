@@ -5,6 +5,7 @@ import { HttpModule } from '@angular/http';
 import {ACA_COMPOSER_DIRECTIVES} from './directives';
 import {ACA_COMPOSER_PIPES} from './pipes';
 import {ACA_COMPOSER_PROVIDERS} from './services';
+import 'rxjs/Rx'; 
 
 export * from './directives';
 export * from './pipes';

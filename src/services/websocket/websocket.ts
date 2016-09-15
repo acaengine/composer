@@ -149,11 +149,11 @@ export class WebSocketInterface {
         return false;
     }
 
-    sendRequest(type, system, mod, index, name, args?) {
+    sendRequest(type, system, mod, index, name, args?) :any {
         if (!this.connected) {
         	return this.connect().then(() => {
         		return this.sendRequest(type, system, mod, index, name, args);
-        	}, () => { return 0; });
+        	}, () => { return -1; });
 	    }
 
         this.req_id += 1;
