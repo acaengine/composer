@@ -1,3 +1,1 @@
-
-export * from './src';
-
+export { ACA_COMPOSER_MODULE } from './.build';

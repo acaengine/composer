@@ -2,8 +2,8 @@
 import { Injectable } from '@angular/core';
 import { System } from './classes'
 //import { Web_Socket } from '../websocket/websocket';
-import { $WebSocket } from '../websocket/index';
-import { Resources } from '../resources';
+import { $WebSocket } from '../websocket';
+import { Resources } from '../resources.service';
 
 @Injectable()
 export class SystemsService {
@@ -46,15 +46,15 @@ export class SystemsService {
     	}
         this.r.init((port === '443' ? 'https' : 'http') + '://' + url + '/control').then(() => {
         	this.io = new $WebSocket(this, this.r, url, port);
-        });
+        }, (err: any) => {});
     }
 
     get(sys_id: string) {
         let system = this.r.get('System');
-        system.get({id: sys_id}).then((sys) => {
+        system.get({id: sys_id}).then((sys: any) => {
             let s = this.getSystem(sys_id);
             s.exists = true;
-        }, (err) => {
+        }, (err: any) => {
             let sys = this.getSystem(sys_id);
             sys.exists = false;
         });
@@ -68,9 +68,9 @@ export class SystemsService {
 	            let system = this.systems[i];
 	            if(!system.exists){
 	                let sys = this.r.get('System');
-	                return sys.get({id: system.id}).then((sys) => {
+	                return sys.get({id: system.id}).then((sys: any) => {
 	                    system.exists = true;
-	                });
+	                }, (err: any) => {});
 	            }
 	        }
 	    }

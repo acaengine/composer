@@ -40,7 +40,7 @@ export class WebSocketInterface {
     connect() {
     	return new Promise((resolve, reject) => {
 	        if(this.auth !== undefined && this.auth !== null){
-	            this.auth.getToken().then((token) => {
+	            this.auth.getToken().then((token: any) => {
 	                if(token){
 	                    let uri = this.uri;
 	                        //Setup URI
@@ -51,10 +51,10 @@ export class WebSocketInterface {
 	                    }
 	                        //Create Web Socket
 	                    this.io = new WebSocket(uri);
-	                    this.io.onmessage = (evt) => { this.onmessage(evt); }
-	                    this.io.onclose = (evt) => { this.onclose(evt); }
-	                    this.io.onopen = (evt) => { this.onopen(evt); }
-	                    this.io.onerror = (evt) => { this.serv.r.checkAuth(); }
+	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
+	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
+	                    this.io.onopen = (evt: any) => { this.onopen(evt); }
+	                    this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
 	                    resolve();
 	                } else {
 	                    setTimeout(() => { this.connect(); }, 100) ;
@@ -64,10 +64,10 @@ export class WebSocketInterface {
 	        } else {
 	                //Create WebSocket
 	            this.io = new WebSocket(this.uri);
-	            this.io.onmessage = (evt) => { this.onmessage(evt); }
-	            this.io.onclose = (evt) => { this.onclose(evt); }
-	            this.io.onopen = (evt) => { this.onopen(evt); }
-	            this.io.onerror = (evt) => { this.serv.r.checkAuth(); }
+	            this.io.onmessage = (evt: any) => { this.onmessage(evt); }
+	            this.io.onclose = (evt: any) => { this.onclose(evt); }
+	            this.io.onopen = (evt: any) => { this.onopen(evt); }
+	            this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
 	            resolve();
 	        }
 	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
@@ -91,7 +91,7 @@ export class WebSocketInterface {
         window.clearInterval(this.keepAliveInterval);
     }
 
-    onopen(evt) {
+    onopen(evt: any) {
         this.connected = true;
         this.startKeepAlive();
             // Rebind the connected systems modules
@@ -99,14 +99,14 @@ export class WebSocketInterface {
         this.reconnected = false;
     }
 
-    onclose(evt) {
+    onclose(evt: any) {
         this.connected = false;
         this.io = null;
         this.stopKeepAlive();
     }
 
-    onmessage(evt) {
-        let msg, meta, system, module, binding;
+    onmessage(evt: any) {
+        let msg: any, meta: any, system: any, module: any, binding: any;
 
         // message data will either be the string 'PONG', or json
         // data with an associated type
@@ -140,7 +140,7 @@ export class WebSocketInterface {
         return true;
     }
 
-    fail (msg, type){
+    fail (msg: any, type: any){
         /*
         console.error('Unable to update system.');
         console.log(type);
@@ -149,7 +149,7 @@ export class WebSocketInterface {
         return false;
     }
 
-    sendRequest(type, system, mod, index, name, args?) :any {
+    sendRequest(type: any, system: any, mod: any, index: any, name: any, args?: any) :any {
         if (!this.connected) {
         	return this.connect().then(() => {
         		return this.sendRequest(type, system, mod, index, name, args);
@@ -194,5 +194,6 @@ export class WebSocketInterface {
         return this.sendRequest(IGNORE, sys_id, mod_id, null, IGNORE);
     }
 
-
 }
+
+export let $WebSocket = WebSocketInterface;

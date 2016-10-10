@@ -1,19 +1,11 @@
-/// <reference path="../../deps.d.ts" />
 
 import { Injectable } from '@angular/core';
 import { Location } from '@angular/common';
-//*
-import {Base64} from 'js-base64';
-import {fromByteArray} from 'base64-js';
-import * as _sha256 from 'sha256';
-//*/
-/*
-let Base64          = require('js-base64/base64.js').Base64;
-let fromByteArray   = require('base64-js/lib/b64.js').fromByteArray;
-let  _sha256        = require('sha256/lib/sha256.js');
-//*/
 
-let sha256: any = _sha256;
+//*
+import { Base64 } from './inc/js-base64';
+import { fromByteArrayFunc, toByteArrayFunc } from './inc/base64-js';
+import * as sha256 from "fast-sha256";
 
 @Injectable()
 export class OAuthService {
@@ -45,7 +37,7 @@ export class OAuthService {
 
     private _storage: Storage = localStorage;
 
-    createLoginUrl(state) {
+    createLoginUrl(state: any) {
         let that = this;
 
         if (typeof state === "undefined") { state = ""; }
@@ -84,7 +76,7 @@ export class OAuthService {
         });
     };
 
-    createRefreshUrl(state) {
+    createRefreshUrl(state: any) {
         if (typeof state === "undefined") { state = ""; }
 
         return this.createAndSaveNonce().then((nonce: any) => {
@@ -163,7 +155,7 @@ export class OAuthService {
         }
     }
 
-    tryLogin(options?) {
+    tryLogin(options?: any) {
         options = options || { };
 
 
@@ -230,7 +222,7 @@ export class OAuthService {
                 .then(() => {
                     this.callEventIfExists(options);
                 })
-                .catch(function(reason) {
+                .catch(function(reason: any) {
                     console.error('Error validating tokens');
                     console.error(reason);
                 })
@@ -250,7 +242,7 @@ export class OAuthService {
         return true;
     };
 
-    processIdToken(idToken, accessToken) {
+    processIdToken(idToken: any, accessToken: any) {
             let tokenParts = idToken.split(".");
             let claimsBase64 = this.padBase64(tokenParts[1]);
             let claimsJson = Base64.decode(claimsBase64);
@@ -316,7 +308,7 @@ export class OAuthService {
         return this._storage.getItem(`${this.clientId}_id_token`);
     }
 
-    padBase64(base64data) {
+    padBase64(base64data: any) {
         while (base64data.length % 4 !== 0) {
             base64data += "=";
         }
@@ -327,7 +319,7 @@ export class OAuthService {
         throw new Error("tryLoginWithIFrame has not been implemented so far");
     };
 
-    tryRefresh(timeoutInMsec) {
+    tryRefresh(timeoutInMsec: any) {
         throw new Error("tryRefresh has not been implemented so far");
     };
 
@@ -422,8 +414,8 @@ export class OAuthService {
         }
     };
 
-    parseQueryString(queryString) {
-        let data = {}, pairs, pair, separatorIndex, escapedKey, escapedValue, key, value;
+    parseQueryString(queryString: any) {
+        let data = {}, pairs: any, pair: any, separatorIndex: any, escapedKey: any, escapedValue: any, key: any, value: any;
 
         if (queryString === null) {
             return data;
@@ -455,11 +447,11 @@ export class OAuthService {
         return data;
     };
 
-    checkAtHash(accessToken, idClaims) {
+    checkAtHash(accessToken: any, idClaims: any) {
         if (!accessToken || !idClaims || !idClaims.at_hash ) return true;
-        let tokenHash: Array<any> = sha256(accessToken, { asBytes: true });
+        let tokenHash: Array<any> = toByteArrayFunc(sha256.hash(accessToken));
         let leftMostHalf = tokenHash.slice(0, (tokenHash.length/2) );
-        let tokenHashBase64 = fromByteArray(leftMostHalf);
+        let tokenHashBase64 = fromByteArrayFunc(leftMostHalf);
         let atHash = tokenHashBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
         let claimsAtHash = idClaims.at_hash.replace(/=/g, "");
 

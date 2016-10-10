@@ -1,5 +1,5 @@
 import { Directive, ElementRef, Input, Output, EventEmitter } from '@angular/core';
-import { SystemsService } from '../../services/systems-service';
+import { SystemsService } from '../services';
 
 @Directive({
     selector: '[binding]',

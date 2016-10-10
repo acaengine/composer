@@ -74,11 +74,10 @@ export class ACAHttp {
             }
         }
             // Store request info for retry if needed.
-        let req = {
+        let req: any = {
             type: 'get',
             body: body,
             url: url,
-            options : null
         };
         if(!req.options) req.options = { headers: headers};
         else if(!req.options.headers) req.options.headers = headers;
@@ -87,7 +86,7 @@ export class ACAHttp {
 
     get(url: string, options?: any) {
         let req = this.processOptions(url, null, options);
-        return new Observable(observer => {
+        return new Observable((observer: any) => {
             this.http.get(req.url, req.options)
             .map(res => res.json())
             .subscribe(
@@ -101,7 +100,7 @@ export class ACAHttp {
     post(url: string, body?: any, options?: any) {
         let req = this.processOptions(url, body, options);
         req.type = 'post';
-        return new Observable(observer => {
+        return new Observable((observer: any) => {
             this.http.post(req.url, req.body, req.options)
             .map(res => res.json())
             .subscribe(
@@ -115,7 +114,7 @@ export class ACAHttp {
     put(url: string, body?: any, options?: any){
         let req = this.processOptions(url, body, options);
         req.type = 'put';
-        return new Observable(observer => {
+        return new Observable((observer: any) => {
             this.http.put(req.url, req.body, req.options)
             .map(res => res.json())
             .subscribe(
@@ -129,7 +128,7 @@ export class ACAHttp {
     delete(url: string, options?: any){
         let req = this.processOptions(url, null, options);
         req.type = 'delete';
-        return new Observable(observer => {
+        return new Observable((observer: any) => {
             this.http.delete(req.url, req.options)
             .map(res => res.json())
             .subscribe(
@@ -211,7 +210,7 @@ export class ACAHttp {
         this.cleanUrl();
     }
 
-    processLoginError(err, reject) {
+    processLoginError(err: any, reject: any) {
         let oauth:any = this.oAuthService;
             // Clear storage
         if(err.status == 400 || err.status == 401 || (err.status == 0 && err.ok == false)){
@@ -228,7 +227,7 @@ export class ACAHttp {
         }
     }
 
-    checkAuth(cb_fn) {
+    checkAuth(cb_fn: any) {
         console.error('OAuth: Checking Auth.');
         if(this.loginPromise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
@@ -242,7 +241,7 @@ export class ACAHttp {
         }
     }
 
-    private updateToken(data, resolve){
+    private updateToken(data: any, resolve: any){
         let oauth:any = this.oAuthService;
         if(data.access_token) this.store.setItem(`${oauth.clientId}_access_token`, data.access_token);
         if(data.refresh_token) this.store.setItem(`${oauth.clientId}_refresh_token`, data.refresh_token);
@@ -284,14 +283,14 @@ export class ACAHttp {
                     this.refresh = false;
                     if(req.type == 'get' || req.type == 'delete'){
                         this[req.type](req.url, req.options).subscribe(
-                            data => obs.next(data),
-                            err => obs.error(err),
+                            (data: any) => obs.next(data),
+                            (err: any) => obs.error(err),
                             () => obs.complete()
                         );
                     } else {
                         this[req.type](req.url, req.body, req.options).subscribe(
-                            data => obs.next(data),
-                            err => obs.error(err),
+                            (data: any) => obs.next(data),
+                            (err: any) => obs.error(err),
                             () => obs.complete()
                         );
                     }

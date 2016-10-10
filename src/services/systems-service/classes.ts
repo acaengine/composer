@@ -34,7 +34,7 @@ export class StatusVariable {
     }
 
     get observe(){
-        return new Observable(observer => {
+        return new Observable((observer: any) => {
             let val = this.current;
             setInterval(() => {
                 if(this.bindings === 0) observer.complete();

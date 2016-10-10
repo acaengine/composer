@@ -1,7 +1,7 @@
 
 import { Injectable } from '@angular/core';
 import { Http } from '@angular/http';
-import { ACAHttp } from '../auth-services';
+import { ACAHttp } from './auth-services';
 import { Observable } from 'rxjs/Observable';
 
 let common_headers = {
@@ -79,12 +79,12 @@ export class Resource {
             // Re-add class related variables
         this.save = s; this.factory = f; this.url = url;
         return (new Promise((resolve, reject) => {
-            let result;
+            let result: any;
             let method = JSON.parse(JSON.stringify(common_crud.save));
             method.url = url;
             this.factory._put(common_crud.save, { id: this.id }, data).subscribe(
-                data => result = data,
-                err => reject(err),
+                (data: any) => result = data,
+                (err: any) => reject(err),
                 () => resolve(result)
             );
         })).then((res) => { return res; }, (err) => { return err; });
@@ -106,35 +106,35 @@ class ResourceFactory {
         this.params = params;
         let keys = Object.keys(methods);
         for(var i = 0; i < keys.length; i++){
-            let func;
+            let func: any;
             switch(this.methods[keys[i]].method) {
                 case GET:
-                    func = (key) => {
-                        this[key] = (params) => {
+                    func = (key: any) => {
+                        this[key] = (params: any) => {
                             return this._get(this.methods[key], params);
                         }
                     };
                     func(keys[i]);
                     break;
                 case POST:
-                    func = (key) => {
-                        this[key] = (params, data) => {
+                    func = (key: any) => {
+                        this[key] = (params: any, data: any) => {
                             return this._post(this.methods[key], params, data);
                         }
                     };
                     func(keys[i]);
                     break;
                 case PUT:
-                    func = (key) => {
-                        this[key] = (params, data) => {
+                    func = (key: any) => {
+                        this[key] = (params: any, data: any) => {
                             return this._put(this.methods[key], params, data);
                         }
                     };
                     func(keys[i]);
                     break;
                 case DELETE:
-                    func = (key) => {
-                        this[key] = (params) => {
+                    func = (key: any) => {
+                        this[key] = (params: any) => {
                             return this._delete(this.methods[key], params);
                         }
                     };
@@ -145,7 +145,7 @@ class ResourceFactory {
         //*/
     }
 
-    private createUrl(params, url?) {
+    private createUrl(params: any, url?: any) {
         let gkeys = Object.keys(this.params);
         if(params === undefined || params === null) params = {};
         let keys = Object.keys(params);
@@ -174,7 +174,7 @@ class ResourceFactory {
     }
 
     processData(data: any, url: string, isArray?: boolean){
-        let result, i, k;
+        let result: any, i: any, k: any;
         if(isArray === true){
             result = [];
             for(i = 0; i < data.length; i++){
@@ -186,10 +186,10 @@ class ResourceFactory {
         return result;
     }
 
-    _get(method, params) {
+    _get(method: any, params: any) {
         let url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
         return new Promise((resolve, reject) => {
-            let result;
+            let result: any;
             this.http.get(url, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
@@ -198,10 +198,10 @@ class ResourceFactory {
         });
     }
 
-    _post(method, params, data) {
+    _post(method: any, params: any, data: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
-            let result;
+            let result: any;
             this.http.post(url, data, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
@@ -211,10 +211,10 @@ class ResourceFactory {
 
     }
 
-    _put(method, params, data) {
+    _put(method: any, params: any, data: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
-            let result;
+            let result: any;
             this.http.put(url, data, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
@@ -223,10 +223,10 @@ class ResourceFactory {
         });
     }
 
-    _delete(method, params) {
+    _delete(method: any, params: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
-            let result;
+            let result: any;
             this.http.delete(url, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
@@ -257,7 +257,7 @@ export class Resources {
         let base_el = document.getElementsByTagName('base')[0];
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
-        this.get('Authority').get_authority().then((auth) => {
+        this.get('Authority').get_authority().then((auth: any) => {
         	let url = encodeURIComponent(document.location.href);
         	console.log(auth);
         	url = auth.login_url.replace('{{url}}', url);
@@ -272,7 +272,7 @@ export class Resources {
    		 	this.authLoaded = true;
         	this.http.tryLogin();
         	resolve();
-        }, (err) => {
+        }, (err: any) => {
         	console.error('ACA_COMPOSER_RESOURCE: Error getting authority.');
         	console.error(err);
 	        this.http.setupOAuth(
@@ -397,12 +397,12 @@ export class Resources {
 	        }, custom);
 
 	            // Resource for Authority
-	        let auth;
+	        let auth: any;
 	        auth = {};
 	        auth.get_authority = (auth_url?: string) => {
 	        	if(!auth_url) auth_url = this.url;
 	            return (new Promise((resolve, reject) => {
-	                let authority;
+	                let authority: any;
 	                let parts = auth_url.split('/');
 	                let url = parts.splice(0, 3).join('/');
 	                this.http_unauth.get(url + '/auth/authority').map(res => res.json()).subscribe(

@@ -2,10 +2,10 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpModule } from '@angular/http';
 
-import {ACA_COMPOSER_DIRECTIVES} from './directives';
-import {ACA_COMPOSER_PIPES} from './pipes';
-import {ACA_COMPOSER_PROVIDERS} from './services';
-import 'rxjs/Rx'; 
+import { DIRECTIVES } from './directives';
+import { PIPES } from './pipes';
+import { SERVICES } from './services';
+import 'rxjs/Rx';
 
 export * from './directives';
 export * from './pipes';
@@ -13,16 +13,16 @@ export * from './services';
 
 @NgModule({
   	declarations: [
-    	...ACA_COMPOSER_DIRECTIVES,
-    	...ACA_COMPOSER_PIPES
+    	...DIRECTIVES,
+    	...PIPES
   	],
   	imports: [ HttpModule, CommonModule ],
   	exports: [
-    	...ACA_COMPOSER_DIRECTIVES,
-    	...ACA_COMPOSER_PIPES
+    	...DIRECTIVES,
+    	...PIPES
   	],
   	providers: [
-  		...ACA_COMPOSER_PROVIDERS
+  		...SERVICES
   	]
 })
 export class ACA_COMPOSER_MODULE {
