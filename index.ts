@@ -1,1 +1,1 @@
-export { ACA_COMPOSER_MODULE } from './.build';
+export * from './.build';

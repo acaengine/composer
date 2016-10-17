@@ -26,5 +26,9 @@ export * from './services';
   	]
 })
 export class ACA_COMPOSER_MODULE {
-
+    constructor() {
+        if(!window['debug_module']) {
+            window['debug_module'] = [];
+        }
+    }
 }

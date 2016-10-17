@@ -15,9 +15,9 @@ export class SystemsService {
     //private r: any;
 
     constructor(private r: Resources) {
-    	/*
-        let auth = null
-        if(r) auth = r
+    	//*
+        let auth: any = null;
+        if(r) auth = r;
         this.io = new $WebSocket(this, auth);
         //*/
         //*
@@ -36,7 +36,7 @@ export class SystemsService {
     setSocket(ws: any) {
         this.io = ws;
         this.io.serv = this;
-        this.r.init(this.io.end_point.replace('ws', 'http') + '/control');
+        this.r.init(this.io.end_point.replace('ws', 'http') + '/control/');
     }
 
     newSocket(url: string, port: string = '3000'){
@@ -44,9 +44,15 @@ export class SystemsService {
     	if(this.io) {
 
     	}
-        this.r.init((port === '443' ? 'https' : 'http') + '://' + url + '/control').then(() => {
+        this.r.init((port === '443' ? 'https' : 'http') + '://' + url + '/control/').then(() => {
         	this.io = new $WebSocket(this, this.r, url, port);
         }, (err: any) => {});
+    }
+
+    setup(options: any) {
+        this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
+        this.r.setup(options);
+        return this.r.init().then(() => { return true; }, (err) => { return false; });
     }
 
     get(sys_id: string) {

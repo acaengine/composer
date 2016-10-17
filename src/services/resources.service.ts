@@ -166,7 +166,10 @@ class ResourceFactory {
         for(let j = 0; j < keys.length; j++){
             if(gkeys.indexOf(keys[j]) < 0){
                 if(!first) query += '&';
-                query += keys[j] + '=' + params[keys[j]];
+                if(keys[j] && params[keys[j]]) {
+                    query += keys[j] + '=' + params[keys[j]];
+                    first = false;
+                }
             }
         }
         if(query.length > 1) outUrl += query;
@@ -258,8 +261,13 @@ export class Resources {
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth: any) => {
+            if(typeof auth !== 'object') {
+                reject({
+                    message: 'Auth details no valid.'
+                })
+                return;
+            }
         	let url = encodeURIComponent(document.location.href);
-        	console.log(auth);
         	url = auth.login_url.replace('{{url}}', url);
 	        this.http.setupOAuth(
 	        	`${uri}/auth/oauth/authorize`,
@@ -273,7 +281,7 @@ export class Resources {
         	this.http.tryLogin();
         	resolve();
         }, (err: any) => {
-        	console.error('ACA_COMPOSER_RESOURCE: Error getting authority.');
+        	console.error('COMPOSER | Resrouces: Error getting authority.');
         	console.error(err);
 	        this.http.setupOAuth(
 	        	`${uri}/auth/oauth/authorize`,
@@ -286,23 +294,35 @@ export class Resources {
         })
     }
 
+    setup(options: any) {
+        this.http.setupOAuth(
+            options.oauth_server,
+            options.oauth_tokens,
+            options.redirect_uri,
+            this.http.hash(options.redirect_uri),
+            options.api_endpoint
+        )
+        this.url = options.api_endpoint;
+    }
+
     init(url_base?: string) {
     	return new Promise((resolve, reject) => {
-	        if(!url_base) this.url = window.location.origin + '/control';
-	        else this.url = url_base;
+	        if(!url_base && !this.url) this.url = window.location.origin + '/control/';
+	        else this.url = url_base ? url_base : this.url;
+            if(this.url[this.url.length-1] !== '/') this.url += '/';
 	        let custom: any;
 	            // Factory for API Modules
-	        this.new('Module', this.url + '/api/modules/:id/:task', {
+	        this.new('Module', this.url + 'api/modules/:id/:task', {
 	            id: '@id',
 	            task: '@_task'
 	        }, common_crud);
 	            // Factory for System Modules
-	        this.new('SystemModule', this.url + '/api/systems/:sys_id/modules/:mod_id', {
+	        this.new('SystemModule', this.url + 'api/systems/:sys_id/modules/:mod_id', {
 	            mod_id: '@module_id',
 	            sys_id: '@system_id'
 	        }, common_crud);
 	            // Factory for API Triggers
-	        this.new('Trigger', this.url + '/api/triggers/:id', {
+	        this.new('Trigger', this.url + 'api/triggers/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for system triggers
@@ -310,9 +330,9 @@ export class Resources {
 	        custom.query = {
 	            method: GET,
 	            headers: common_headers,
-	            url: this.url + '/api/system_triggers'
+	            url: this.url + 'api/system_triggers'
 	        }
-	        this.new('SystemTrigger', this.url + '/api/triggers/:id', {
+	        this.new('SystemTrigger', this.url + 'api/triggers/:id', {
 	            id: '@id'
 	        }, custom);
 	            // Factory for System
@@ -320,44 +340,44 @@ export class Resources {
 	        custom.funcs = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + '/api/systems/:id/funcs'
+	            url: this.url + 'api/systems/:id/funcs'
 	        }
 	        custom.exec = {
 	            method:'POST',
 	            headers: common_headers,
-	            url: this.url + '/api/systems/:id/exec',
-	            isArray: true
+	            url: this.url + 'api/systems/:id/exec',
+	            //isArray: true
 	        }
 	        custom.types = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + '/api/systems/:id/types',
-	            isArray: true
+	            url: this.url + 'api/systems/:id/types',
+	            //isArray: true
 	        }
 	        custom.count = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + '/api/systems/:id/count'
+	            url: this.url + 'api/systems/:id/count'
 	        }
-	        this.new('System', this.url + '/api/systems/:id/:task', {
+	        this.new('System', this.url + 'api/systems/:id/:task', {
 	            id: '@id',
 	            task: '@_task'
 	        }, custom);
 	            // Factory for Dependencies
-	        this.new('Dependency', this.url + '/api/dependencies/:id/:task', {
+	        this.new('Dependency', this.url + 'api/dependencies/:id/:task', {
 	            id: '@id',
 	            task: '@_task'
 	        }, common_crud);
 	            // Factory for Node
-	        this.new('Node', this.url + '/api/nodes/:id', {
+	        this.new('Node', this.url + 'api/nodes/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for Group
-	        this.new('Group', this.url + '/api/groups/:id', {
+	        this.new('Group', this.url + 'api/groups/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for Zone
-	        this.new('Zone', this.url + '/api/zones/:id', {
+	        this.new('Zone', this.url + 'api/zones/:id', {
 	            id: '@id'
 	        }, common_crud);
 	            // Factory for Discovery
@@ -365,9 +385,9 @@ export class Resources {
 	        custom.scan = {
 	            method: 'POST',
 	            headers: common_headers,
-	            url: this.url + '/api/discovery/scan'
+	            url: this.url + 'api/discovery/scan'
 	        }
-	        this.new('Discovery', this.url + '/api/discovery/:id', {
+	        this.new('Discovery', this.url + 'api/discovery/:id', {
 	            id: '@id'
 	        }, custom);
 	            // Factory for Logs
@@ -375,14 +395,14 @@ export class Resources {
 	        custom.missing_connections = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + '/api/logs/missing_connections'
+	            url: this.url + 'api/logs/missing_connections'
 	        },
 	        custom.system_logs = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + '/api/logs/system_logs'
+	            url: this.url + 'api/logs/system_logs'
 	        }
-	        this.new('Log', this.url + '/api/logs/:id', {
+	        this.new('Log', this.url + 'api/logs/:id', {
 	            id: '@id'
 	        }, custom);
 	            // Factory for User
@@ -390,9 +410,9 @@ export class Resources {
 	        custom.current = {
 	            method:'GET',
 	            headers: common_headers,
-	            url: this.url + '/api/users/current'
+	            url: this.url + 'api/users/current'
 	        }
-	        this.new('User', this.url + '/api/users/:id', {
+	        this.new('User', this.url + 'api/users/:id', {
 	            id: '@id'
 	        }, custom);
 
@@ -404,8 +424,11 @@ export class Resources {
 	            return (new Promise((resolve, reject) => {
 	                let authority: any;
 	                let parts = auth_url.split('/');
-	                let url = parts.splice(0, 3).join('/');
-	                this.http_unauth.get(url + '/auth/authority').map(res => res.json()).subscribe(
+	                let url = parts.splice(0, 3).join('/') + '/';
+	                this.http_unauth.get(url + 'auth/authority').map(res => {
+                        try { res.json(); }
+                        catch (e) { res.text(); }
+                    }).subscribe(
 	                    data => authority = data,
 	                    err => reject(err),
 	                    () => resolve(authority)
@@ -424,7 +447,7 @@ export class Resources {
 
     checkAuth(){
         this.http.checkAuth(() => {
-            console.log('Refreshed Auth');
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_RESOURCES') >= 0) console.debug('COMPOSER | Resources: Refreshed Auth');
         });
     }
 

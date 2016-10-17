@@ -26,11 +26,17 @@ export class WebSocketInterface {
     private auth: any;
     reconnected = false;
     connect_check: any = null;
+    connect_promise: any = null;
+    connecting: boolean = false;
 
     constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
+        this.serv = srv;
+        this.setup(auth, host, port);
+    }
+
+    setup(auth: any, host: string = location.hostname, port: string = '3000') {
         this.auth = auth;
         this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
-        this.serv = srv;
         this.uri = this.end_point + '/control/websocket';
         if(this.auth !== undefined && this.auth !== null){
             this.auth.getToken();
@@ -38,44 +44,60 @@ export class WebSocketInterface {
     }
 
     connect() {
-    	return new Promise((resolve, reject) => {
-	        if(this.auth !== undefined && this.auth !== null){
-	            this.auth.getToken().then((token: any) => {
-	                if(token){
-	                    let uri = this.uri;
-	                        //Setup URI
-	                    uri += '?bearer_token=' + token;
-	                    let search = window.location.search;
-	                    if(search.indexOf('fixed_device') >= 0){
-	                        uri += '&fixed_device=true';
-	                    }
-	                        //Create Web Socket
-	                    this.io = new WebSocket(uri);
-	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
-	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
-	                    this.io.onopen = (evt: any) => { this.onopen(evt); }
-	                    this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
-	                    resolve();
-	                } else {
-	                    setTimeout(() => { this.connect(); }, 100) ;
-	                    reject();
-	                }
-	            });
-	        } else {
-	                //Create WebSocket
-	            this.io = new WebSocket(this.uri);
-	            this.io.onmessage = (evt: any) => { this.onmessage(evt); }
-	            this.io.onclose = (evt: any) => { this.onclose(evt); }
-	            this.io.onopen = (evt: any) => { this.onopen(evt); }
-	            this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
-	            resolve();
-	        }
-	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
-    	})
+        if(!this.connect_promise) {
+            this.connect_promise = new Promise((resolve, reject) => {
+                if(this.connecting) {
+                    reject({message: 'Already attempting to connect to websocket.'});
+                    this.connect_promise = null;
+                    return;
+                }
+                this.connecting = true;
+    	        if(this.auth !== undefined && this.auth !== null){
+    	            this.auth.getToken().then((token: any) => {
+    	                if(token){
+    	                    let uri = this.uri;
+    	                        //Setup URI
+    	                    uri += '?bearer_token=' + token;
+    	                    let search = window.location.search;
+    	                    if(search.indexOf('fixed_device') >= 0){
+    	                        uri += '&fixed_device=true';
+    	                    }
+                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Building...');
+    	                        //Create Web Socket
+    	                    this.io = new WebSocket(uri);
+    	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
+    	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
+    	                    this.io.onopen = (evt: any) => { this.onopen(evt); }
+    	                    this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
+                            this.connect_promise = null;
+    	                    resolve();
+    	                } else {
+    	                    setTimeout(() => { this.connect(); }, 200) ;
+                            this.connect_promise = null;
+    	                    reject();
+    	                }
+    	            });
+    	        } else {
+    	                //Create WebSocket
+    	            this.io = new WebSocket(this.uri);
+    	            this.io.onmessage = (evt: any) => { this.onmessage(evt); }
+    	            this.io.onclose = (evt: any) => { this.onclose(evt); }
+    	            this.io.onopen = (evt: any) => { this.onopen(evt); }
+    	            this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
+                    this.connect_promise = null;
+    	            resolve();
+    	        }
+                    // Prevent another connection attempt for 100ms
+                setTimeout(() => { this.connecting = false; }, 100);
+    	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
+        	});
+        }
+        return this.connect_promise;
     }
 
     reconnect() {
         if (this.io == null || this.io.readyState === this.io.CLOSED){
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Reconnecting...');
             this.connect();
             this.reconnected = true;
         }
@@ -93,6 +115,7 @@ export class WebSocketInterface {
 
     onopen(evt: any) {
         this.connected = true;
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Connected');
         this.startKeepAlive();
             // Rebind the connected systems modules
         if(this.reconnected) this.serv.rebind();
@@ -101,6 +124,7 @@ export class WebSocketInterface {
 
     onclose(evt: any) {
         this.connected = false;
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Closed');
         this.io = null;
         this.stopKeepAlive();
     }
@@ -127,10 +151,12 @@ export class WebSocketInterface {
             if(msg.type === NOTIFY){
                 debugMsg = msg.meta.sys + ' -> ' + msg.meta.mod + ' ' + msg.meta.index + ': Status updated: ' + msg.meta.name + ' = ' + msg.value;
                 if(module.debugger && module.debugger.enabled) module.debugger.addMessage(debugMsg);
+                else if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', debugMsg);
                 //else console.debug(module.now + ' - ' + debugMsg);
             } else {
                 debugMsg = msg.type.toUpperCase() + ' ' + msg.id + ': ' + JSON.stringify(msg.meta)
                 if(module.debugger && module.debugger.enabled) module.debugger.addMessage(debugMsg);
+                else if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', debugMsg);
                 //else console.debug(module.now + ' - ' + debugMsg);
             }
             binding = module.get(meta.name);
@@ -146,6 +172,7 @@ export class WebSocketInterface {
         console.log(type);
         console.log(msg);
         //*/
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: ' + JSON.stringify(msg));
         return false;
     }
 
