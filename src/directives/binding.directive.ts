@@ -1,4 +1,4 @@
-import { Directive, ElementRef, Input, Output, EventEmitter } from '@angular/core';
+import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { SystemsService } from '../services';
 
 @Directive({
@@ -14,15 +14,42 @@ export class Binding {
     @Input() exec: any;
     @Input() params: any;
     @Input() index: number;
+
+    @Output() ontap = new EventEmitter();
+    @Output() onpress = new EventEmitter();
+    @Output() onrelease = new EventEmitter();
     system: any;
     module: any;
     binding: any;
     prev: any;
     prev_exec: any;
     unbind : Function;
-
     service: SystemsService;
     i: number = 0;
+
+    @HostListener('tap', ['$event'])
+    onClick(e: any) {
+        if(e) {
+            e.exec = (exec?: string) => { this.call_exec(exec); };
+        }
+        this.ontap.emit(e);
+    }
+
+    @HostListener('pressup', ['$event'])
+    onRelease(e: any) {
+        if(e) {
+            e.exec = (exec?: string) => { this.call_exec(exec); };
+        }
+        this.onrelease.emit(e);
+    }
+
+    @HostListener('press', ['$event'])
+    onPress(e: any) {
+        if(e) {
+            e.exec = (exec?: string) => { this.call_exec(exec); };
+        }
+        this.onpress.emit(e);
+    }
 
     constructor(private el: ElementRef, serv?: SystemsService){
         this.service = serv;
@@ -56,7 +83,7 @@ export class Binding {
 
     ngOnChanges(changes: any) {
             // Execute Function changes
-        if(this.prev_exec !== this.exec){
+        if(this.prev_exec !== this.exec && this.bind && this.bind !== ''){
             this.call_exec();
         }
             // System changes
@@ -72,6 +99,9 @@ export class Binding {
         }
             // Binding value changes
         if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
+                console.debug(`COMPOSER | Binding: Value changed calling exec. ${this.prev} => ${this.value}`);
+            }
             this.call_exec();
         }
         if(changes.value) this.valueChange.emit(changes.value.currentValue);
@@ -93,6 +123,7 @@ export class Binding {
     }
 
     private getBinding(){
+        if(!this.bind || this.bind === '') return;
         if(this.unbind !== undefined && this.unbind !== null) this.unbind();
         this.binding = this.module.get(this.bind);
         this.unbind = this.module.bind(this.bind, (curr: any, prev: any) => {
@@ -116,17 +147,17 @@ export class Binding {
         }
     }
 
-    private call_exec(){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
-            console.debug(`COMPOSER | Binding: Value changed calling exec. ${this.prev} => ${this.value}`);
-        }
-        if(!this || this.exec === undefined || !this.binding) return;
+    private call_exec(exec?: string){
+        if(!this || this.exec === undefined || (!this.binding && (!this.exec || this.exec === ''))) return;
         if(this.exec === null || this.exec === '') this.exec = this.binding.id;
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
+            console.debug(`COMPOSER | Binding: Executing function "${this.exec}".`);
+        }
             // Update binding
         this.prev_exec = this.exec;
         this.prev = this.value;
             // Update value to value set by user
-        this.module.exec(this.exec, this.binding.id, this.params ? this.params : this.value);
+        this.module.exec(this.exec, this.binding ? this.binding.id : '', this.params || (!this.bind || this.bind === '') ? this.params : this.value);
     }
 
 }

@@ -95,6 +95,7 @@ class ResourceFactory {
     type: string;
     private url: string;
     public params: any;
+    public service: Resources;
     methods: any;
     keys: any;
     resources: any;
@@ -189,53 +190,92 @@ class ResourceFactory {
         return result;
     }
 
-    _get(method: any, params: any) {
+    private _get(method: any, params: any) {
         let url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
         return new Promise((resolve, reject) => {
+            this.__get(url, method, resolve, reject);
+        });
+    }
+
+    private __get(url: any, method: any, resolve: any, reject: any) {
+        if(this.service.authLoaded) {
             let result: any;
             this.http.get(url, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
             );
+        } else {
+            setTimeout(() => {
+                this.__get(url, method, resolve, reject);
+            }, 100);
+        }
+    }
+
+    private _post(method: any, params: any, data: any) {
+        let url = this.createUrl(params);
+        return new Promise((resolve, reject) => {
+            this.__post(url, method, data, resolve, reject);
         });
     }
 
-    _post(method: any, params: any, data: any) {
-        let url = this.createUrl(params);
-        return new Promise((resolve, reject) => {
+    private __post(url: any, method: any, data: any, resolve: any, reject: any) {
+        if(this.service.authLoaded) {
             let result: any;
             this.http.post(url, data, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
             );
-        });
-
+        } else {
+            setTimeout(() => {
+                this.__post(url, method, data, resolve, reject);
+            }, 100);
+        }
     }
 
-    _put(method: any, params: any, data: any) {
+    private _put(method: any, params: any, data: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
+            this.__put(url, method, data, resolve, reject);
+        });
+    }
+
+    private __put(url: any, method: any, data: any, resolve: any, reject: any) {
+        if(this.service.authLoaded) {
             let result: any;
             this.http.put(url, data, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
             );
+        } else {
+            setTimeout(() => {
+                this.__put(url, method, data, resolve, reject);
+            }, 100);
+        }
+    }
+
+    private _delete(method: any, params: any) {
+        let url = this.createUrl(params);
+        return new Promise((resolve, reject) => {
+            this.__delete(url, method, resolve, reject);
         });
     }
 
-    _delete(method: any, params: any) {
-        let url = this.createUrl(params);
-        return new Promise((resolve, reject) => {
+    private __delete(url: any, method: any, resolve: any, reject: any) {
+        if(this.service.authLoaded) {
             let result: any;
             this.http.delete(url, method.headers).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
             );
-        });
+        } else {
+            setTimeout(() => {
+                this.__delete(url, method, resolve, reject);
+            }, 100);
+        }
     }
 
     auth(){
@@ -261,6 +301,7 @@ export class Resources {
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth: any) => {
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_RESOURCES') >= 0) console.debug(`COMPOSER | Resources: Authority loaded.`, auth);
             if(typeof auth !== 'object') {
                 reject({
                     message: 'Auth details no valid.'
@@ -281,7 +322,7 @@ export class Resources {
         	this.http.tryLogin();
         	resolve();
         }, (err: any) => {
-        	console.error('COMPOSER | Resrouces: Error getting authority.');
+        	console.error('COMPOSER | Resources: Error getting authority.');
         	console.error(err);
 	        this.http.setupOAuth(
 	        	`${uri}/auth/oauth/authorize`,
@@ -425,10 +466,7 @@ export class Resources {
 	                let authority: any;
 	                let parts = auth_url.split('/');
 	                let url = parts.splice(0, 3).join('/') + '/';
-	                this.http_unauth.get(url + 'auth/authority').map(res => {
-                        try { res.json(); }
-                        catch (e) { res.text(); }
-                    }).subscribe(
+	                this.http_unauth.get(url + 'auth/authority').map(res => res.json() ).subscribe(
 	                    data => authority = data,
 	                    err => reject(err),
 	                    () => resolve(authority)
@@ -453,6 +491,7 @@ export class Resources {
 
     new(name: string, url: string, params: any, methods: any){
         let factory = new ResourceFactory(url, params, methods, this.http);
+        factory.service = this;
         if(this.factories === undefined) this.factories = {};
         this.factories[name] = factory;
     }

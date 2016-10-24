@@ -123,21 +123,23 @@ export class OAuthService {
     }
 
     initImplicitFlow(additionalState = "") {
+        if(!this.clientId || this.clientId === '') return;
         this.createLoginUrl(additionalState).then((url) => {
-        	if(sessionStorage) {
+            let here = location.href;
+            this._storage.setItem('oauth_redirect', here);
+            if(sessionStorage) {
         		let logged = sessionStorage.getItem(`${this.clientId}_login`);
         		if(logged) {
 	        		sessionStorage.removeItem(`${this.clientId}_login`);
         			location.href = url;
 	        	} else {
 	        		sessionStorage.setItem(`${this.clientId}_login`, 'true');
-	        		let here = location.href;
 	        		location.href = this.loginRedirect + '?continue=' + here;
 	        	}
         	} else location.href = url;
         })
         .catch(function (error) {
-            console.error("Error in initImplicitFlow");
+            console.error("COMPOSER | OAuth: Error in initImplicitFlow");
             console.error(error);
         });
     };
@@ -156,91 +158,102 @@ export class OAuthService {
     }
 
     tryLogin(options?: any) {
-        options = options || { };
-
-
-        let parts = this.getFragment();
-
-        let accessToken = parts["access_token"];
-        let idToken = parts["id_token"];
-        let state = parts["state"];
-        let code = parts['code'];
-        let refreshToken = parts['refreshToken'];
-
-        let oidcSuccess = false;
-        let oauthSuccess = false;
-
-        if ( (!accessToken && !code && !refreshToken)  || !state ) return false;
-        if (this.oidc && !idToken) return false;
-
-        if(code) this.code = code;
-        if(refreshToken) this._storage.setItem(`${this.clientId}_refresh_token`, refreshToken);
-
-        let savedNonce = this._storage.getItem(`${this.clientId}_nonce`);
-
-        let stateParts = state.split(';');
-        let nonceInState = stateParts[0];
-        if (savedNonce === nonceInState) {
-
-            if(accessToken) this._storage.setItem(`${this.clientId}_access_token`, accessToken);
-
-            let expiresIn = parts["expires_in"];
-
-            if (expiresIn) {
-                let expiresInMilliSeconds = parseInt(expiresIn) * 1000;
-                let now = new Date();
-                let expiresAt = now.getTime() + expiresInMilliSeconds;
-                this._storage.setItem(`${this.clientId}_expires_at`, "" + expiresAt);
-            }
-            if (stateParts.length > 1) {
-                this.state = stateParts[1];
-            }
-
-            oauthSuccess = true;
-
-        }
-
-        if (!oauthSuccess) return false;
-
-        if (!this.oidc && options.onTokenReceived) {
-            options.onTokenReceived({ accessToken: accessToken});
-        }
-
-        if (this.oidc) {
-            oidcSuccess = this.processIdToken(idToken, accessToken);
-            if (!oidcSuccess) return false;
-        }
-
-
-
-        if (options.validationHandler) {
-
-            let validationParams = {accessToken: accessToken, idToken: idToken};
-
-            options
-                .validationHandler(validationParams)
-                .then(() => {
-                    this.callEventIfExists(options);
-                })
-                .catch(function(reason: any) {
-                    console.error('Error validating tokens');
-                    console.error(reason);
-                })
-        }
-        else {
-            this.callEventIfExists(options);
-        }
-
-        // NEXT VERSION: Notify parent-window (iframe-refresh)
-        /*
-        let win = window;
-        if (win.parent && win.parent.onOAuthCallback) {
-            win.parent.onOAuthCallback(this.state);
-        }
-        */
-        this.location.replaceState(this.location.path(), '');
-        return true;
+        return new Promise((resolve, reject) => {
+            this.attemptLogin(options, resolve, reject);
+        })
     };
+
+    attemptLogin(options: any, resolve: any, reject: any) {
+        if(this.clientId && this.clientId !== '') {
+            options = options || { };
+
+
+            let parts = this.getFragment();
+
+            let accessToken = parts["access_token"];
+            let idToken = parts["id_token"];
+            let state = parts["state"];
+            let code = parts['code'];
+            let refreshToken = parts['refreshToken'];
+
+            let oidcSuccess = false;
+            let oauthSuccess = false;
+
+            if ( (!accessToken && !code && !refreshToken)  || !state ) return resolve(false);
+            if (this.oidc && !idToken) return resolve(false);
+
+            if(code) this.code = code;
+            if(refreshToken) this._storage.setItem(`${this.clientId}_refresh_token`, refreshToken);
+
+            let savedNonce = this._storage.getItem(`${this.clientId}_nonce`);
+
+            let stateParts = state.split(';');
+            let nonceInState = stateParts[0];
+            if (savedNonce === nonceInState) {
+                if(accessToken) this._storage.setItem(`${this.clientId}_access_token`, accessToken);
+
+                let expiresIn = parts["expires_in"];
+
+                if (expiresIn) {
+                    let expiresInMilliSeconds = parseInt(expiresIn) * 1000;
+                    let now = new Date();
+                    let expiresAt = now.getTime() + expiresInMilliSeconds;
+                    this._storage.setItem(`${this.clientId}_expires_at`, "" + expiresAt);
+                }
+                if (stateParts.length > 1) {
+                    this.state = stateParts[1];
+                }
+
+                oauthSuccess = true;
+
+            }
+
+            if (!oauthSuccess) return resolve(false);
+
+            if (!this.oidc && options.onTokenReceived) {
+                options.onTokenReceived({ accessToken: accessToken});
+            }
+
+            if (this.oidc) {
+                oidcSuccess = this.processIdToken(idToken, accessToken);
+                if (!oidcSuccess) return resolve(false);
+            }
+
+
+
+            if (options.validationHandler) {
+
+                let validationParams = {accessToken: accessToken, idToken: idToken};
+
+                options
+                    .validationHandler(validationParams)
+                    .then(() => {
+                        this.callEventIfExists(options);
+                    })
+                    .catch(function(reason: any) {
+                        console.error('Error validating tokens');
+                        console.error(reason);
+                    })
+            }
+            else {
+                this.callEventIfExists(options);
+            }
+
+            // NEXT VERSION: Notify parent-window (iframe-refresh)
+            /*
+            let win = window;
+            if (win.parent && win.parent.onOAuthCallback) {
+                win.parent.onOAuthCallback(this.state);
+            }
+            */
+            this.location.replaceState(this.location.path(), '');
+            return resolve(true);
+        } else {
+            setTimeout(() => {
+                this.attemptLogin(options, resolve, reject);
+            }, 200);
+        }
+    }
 
     processIdToken(idToken: any, accessToken: any) {
             let tokenParts = idToken.split(".");

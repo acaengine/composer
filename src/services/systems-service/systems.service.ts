@@ -51,8 +51,8 @@ export class SystemsService {
 
     setup(options: any) {
         this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
-        this.r.setup(options);
-        return this.r.init().then(() => { return true; }, (err) => { return false; });
+        //this.r.setup(options);
+        return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
     }
 
     get(sys_id: string) {

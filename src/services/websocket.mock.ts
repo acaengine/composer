@@ -14,7 +14,7 @@ const SECONDS = 1000;
 const RECONNECT_TIMER_SECONDS  = 5 * SECONDS;
 const KEEP_ALIVE_TIMER_SECONDS = 60 * SECONDS;
 
-export class WebSocketInterface {
+export class MockWebSocketInterface {
     counters: number[];
     private io: any;
     end_point: string;
@@ -52,44 +52,12 @@ export class WebSocketInterface {
                     return;
                 }
                 this.connecting = true;
-    	        if(this.auth !== undefined && this.auth !== null){
-    	            this.auth.getToken().then((token: any) => {
-    	                if(token){
-    	                    let uri = this.uri;
-    	                        //Setup URI
-    	                    uri += '?bearer_token=' + token;
-    	                    let search = window.location.search;
-    	                    if(search.indexOf('fixed_device') >= 0){
-    	                        uri += '&fixed_device=true';
-    	                    }
-                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Building...');
-    	                        //Create Web Socket
-    	                    this.io = new WebSocket(uri);
-    	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
-    	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
-    	                    this.io.onopen = (evt: any) => { this.onopen(evt); }
-    	                    this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
-                            this.connect_promise = null;
-    	                    resolve();
-    	                } else {
-    	                    setTimeout(() => { this.connect(); }, 200) ;
-                            this.connect_promise = null;
-    	                    reject();
-    	                }
-    	            });
-    	        } else {
-    	                //Create WebSocket
-    	            this.io = new WebSocket(this.uri);
-    	            this.io.onmessage = (evt: any) => { this.onmessage(evt); }
-    	            this.io.onclose = (evt: any) => { this.onclose(evt); }
-    	            this.io.onopen = (evt: any) => { this.onopen(evt); }
-    	            this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
-                    this.connect_promise = null;
-    	            resolve();
-    	        }
-                    // Prevent another connection attempt for 100ms
-                setTimeout(() => { this.connecting = false; }, 100);
-    	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
+                setTimeout(() => {
+                    this.onopen();
+                        // Prevent another connection attempt for 100ms
+                    setTimeout(() => { this.connecting = false; }, 100);
+        	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
+                }, Math.floor(Math.random() * 4000) + 200);
         	});
         }
         return this.connect_promise;
@@ -97,7 +65,7 @@ export class WebSocketInterface {
 
     reconnect() {
         if (this.io == null || this.io.readyState === this.io.CLOSED){
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Reconnecting...');
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Reconnecting...');
             this.connect();
             this.reconnected = true;
         }
@@ -105,7 +73,9 @@ export class WebSocketInterface {
 
     startKeepAlive () {
         this.keepAliveInterval = window.setInterval(() => {
-            this.io.send('ping');
+            setTimeout(() => {
+                this.onmessage({ data: PONG });
+            }, Math.floor(Math.random() * 2000), 50);
         }, KEEP_ALIVE_TIMER_SECONDS);
     }
 
@@ -115,7 +85,7 @@ export class WebSocketInterface {
 
     onopen(evt: any) {
         this.connected = true;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Connected');
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Connected');
         this.startKeepAlive();
             // Rebind the connected systems modules
         if(this.reconnected) this.serv.rebind();
@@ -124,7 +94,7 @@ export class WebSocketInterface {
 
     onclose(evt: any) {
         this.connected = false;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Closed');
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Closed');
         this.io = null;
         this.stopKeepAlive();
     }
@@ -140,7 +110,7 @@ export class WebSocketInterface {
             msg = JSON.parse(evt.data);
         }
 
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', evt);
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Response ', evt);
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
             if (!meta) return this.fail(msg, 'meta');
@@ -152,12 +122,12 @@ export class WebSocketInterface {
             if(msg.type === NOTIFY){
                 debugMsg = msg.meta.sys + ' -> ' + msg.meta.mod + ' ' + msg.meta.index + ': Status updated: ' + msg.meta.name + ' = ' + msg.value;
                 if(module.debugger && module.debugger.enabled) module.debugger.addMessage(debugMsg);
-                else if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', debugMsg);
+                else if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M):', debugMsg);
                 //else console.debug(module.now + ' - ' + debugMsg);
             } else {
                 debugMsg = msg.type.toUpperCase() + ' ' + msg.id + ': ' + JSON.stringify(msg.meta)
                 if(module.debugger && module.debugger.enabled) module.debugger.addMessage(debugMsg);
-                else if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', debugMsg);
+                else if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M):', debugMsg);
                 //else console.debug(module.now + ' - ' + debugMsg);
             }
             binding = module.get(meta.name);
@@ -168,12 +138,7 @@ export class WebSocketInterface {
     }
 
     fail (msg: any, type: any){
-        /*
-        console.error('Unable to update system.');
-        console.log(type);
-        console.log(msg);
-        //*/
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: ' + JSON.stringify(msg));
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): ' + JSON.stringify(msg));
         return false;
     }
 
@@ -197,26 +162,67 @@ export class WebSocketInterface {
             name:   name,
             args:   args
         };
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket: Sent request', request);
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Sent request', request);
 
         if (args !== null) request.args = args;
-        this.io.send( JSON.stringify(request) );
+        this.respondTo(type, request);
 
         return this.req_id;
     };
 
+    respondTo(type: string, request: any) {
+        let evt: any = {};
+        switch(type) {
+            case BIND:
+                evt = { data: {
+                    id: request.id
+                    type: SUCCESS,
+                    value: request.args[0]
+                }}
+                break;
+            case UNBIND:
+                evt = { data: {
+                    id: request.id
+                    type: SUCCESS,
+                    value: request.args[0]
+                }}
+                break;
+            case EXEC:
+                evt = { data: {
+                    id: request.id
+                    type: SUCCESS,
+                    value: request.args[0]
+                }}
+                break;
+            case DEBUG:
+                evt = {
+                    data: {
+                        id: request.id
+                        type: SUCCESS,
+                        value: request.args[0]
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        setTimeout(() => {
+            this.onmessage(evt);
+        }, Math.floor(Math.random() * 5000) + 200);
+    }
+
     bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket: Requesting bind for ${sys_id} ${mod_id} ${i} ${name}`);
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Requesting bind for ${sys_id} ${mod_id} ${i} ${name}`);
         return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
     }
 
     unbind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket: Requesting unbind for ${sys_id} ${mod_id} ${i} ${name}`);
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Requesting unbind for ${sys_id} ${mod_id} ${i} ${name}`);
         return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
     }
 
     exec(sys_id: string, mod_id: string, i: number, fn: any, args: any){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket: Exec ${fn} on ${sys_id} ${mod_id} ${i}`);
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Exec ${fn} on ${sys_id} ${mod_id} ${i}`);
         return this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
     }
 
@@ -230,4 +236,4 @@ export class WebSocketInterface {
 
 }
 
-export let $WebSocket = WebSocketInterface;
+export let $WebSocket = MockWebSocketInterface;

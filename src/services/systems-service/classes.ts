@@ -143,9 +143,13 @@ export class Module {
             name: prop
         }
         let sv = this.get(prop);
-        if(sv.bindings <= 0) {
+        console.log(fn, prop, value);
+        if(sv.bindings <= 0 && prop && prop !== '') {
             console.error('Error: Variable "' + prop + '" not bound!')
             return 'Error: Variable not bound!';
+        } else if(!prop || prop === '') { // Call function not bound to variable
+            let id = this.service.io.exec(this.parent.id, this.id, this.index, fn, value);
+            return;
         }
 
         sv.execs.push({
