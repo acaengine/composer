@@ -51,7 +51,7 @@ export class Binding {
         this.onpress.emit(e);
     }
 
-    constructor(private el: ElementRef, serv?: SystemsService){
+    constructor(private el: ElementRef, private serv: SystemsService){
         this.service = serv;
         /*
         setInterval(() => {
@@ -87,13 +87,13 @@ export class Binding {
             this.call_exec();
         }
             // System changes
-        if(this.sys !== this.system && (typeof this.system !== 'object' || this.sys !== this.system.id)) {
+        if(this.sys && this.sys !== this.system && (typeof this.system !== 'object' || (this.sys !== this.system.id && this.sys !== ''))) {
             this.getSystem();
             this.getModule();
             this.getBinding();
         }
             // Module changes
-        if(this.mod !== this.module && (typeof this.module !== 'object' || this.mod !== this.module.id)) {
+        if(this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== ''))) {
             this.getModule();
             this.getBinding();
         }
@@ -108,6 +108,7 @@ export class Binding {
     }
 
     private getSystem(){
+        if(!this.service) return;
         if(typeof this.sys === 'string') this.system = this.service.get(this.sys);
         else this.system = this.sys;
         if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
@@ -116,6 +117,7 @@ export class Binding {
     }
 
     private getModule(){
+        if(!this.system) return;
         if(typeof this.mod === 'string') this.module = this.system.get(this.mod, this.index ? this.index : 1);
         else this.module = this.mod;
         this.binding = this.module.get(this.bind);
@@ -123,7 +125,7 @@ export class Binding {
     }
 
     private getBinding(){
-        if(!this.bind || this.bind === '') return;
+        if(!this.bind || this.bind === '' || !this.module) return;
         if(this.unbind !== undefined && this.unbind !== null) this.unbind();
         this.binding = this.module.get(this.bind);
         this.unbind = this.module.bind(this.bind, (curr: any, prev: any) => {

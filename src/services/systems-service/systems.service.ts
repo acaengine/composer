@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { System } from './classes'
 //import { Web_Socket } from '../websocket/websocket';
 import { $WebSocket } from '../websocket';
+import { $WebSocketMock } from '../websocket.mock';
 import { Resources } from '../resources.service';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class SystemsService {
     io: any;
     connected = false;
     request_id = 0;
+    mock: boolean = false;
     //private r: any;
 
     constructor(private r: Resources) {
@@ -49,21 +51,31 @@ export class SystemsService {
         }, (err: any) => {});
     }
 
-    setup(options: any) {
-        this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
+    setup(options: any): any {
+        this.mock = options.mock ? true : false;
+        if(options.mock){
+            if(this.io) delete this.io;
+            this.io = new $WebSocketMock(this, this.r);
+            this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
+            return true;
+        } else {
+            this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
+            return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
+        }
         //this.r.setup(options);
-        return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
     }
 
     get(sys_id: string) {
         let system = this.r.get('System');
-        system.get({id: sys_id}).then((sys: any) => {
-            let s = this.getSystem(sys_id);
-            s.exists = true;
-        }, (err: any) => {
-            let sys = this.getSystem(sys_id);
-            sys.exists = false;
-        });
+        if(!this.mock) {
+            system.get({id: sys_id}).then((sys: any) => {
+                let s = this.getSystem(sys_id);
+                s.exists = true;
+            }, (err: any) => {
+                let sys = this.getSystem(sys_id);
+                sys.exists = false;
+            });
+        }
             //Check that the system exists and update it's status then return it to be used.
         return this.getSystem(sys_id);
     }

@@ -21,13 +21,15 @@ export class MockWebSocketInterface {
     serv: any;
     req_id = 0;
     uri: string;
-    connected = false;
+    connected = true;
     private keepAliveInterval: any;
     private auth: any;
     reconnected = false;
     connect_check: any = null;
     connect_promise: any = null;
     connecting: boolean = false;
+
+    systems: any[] = [];
 
     constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
         this.serv = srv;
@@ -41,6 +43,18 @@ export class MockWebSocketInterface {
         if(this.auth !== undefined && this.auth !== null){
             this.auth.getToken();
         }
+        this.setupSystems();
+    }
+
+    setupSystems() {
+        if(window['systemData']) this.systems = window['systemData'];
+        else if(window['systemsData']) this.systems = window['systemsData'];
+        else if(window['control'] && window['control']['systems']) this.systems = window['control']['systems'];
+        else {
+            setTimeout(() => {
+                this.setupSystems();
+            }, 200);
+        }
     }
 
     connect() {
@@ -53,7 +67,7 @@ export class MockWebSocketInterface {
                 }
                 this.connecting = true;
                 setTimeout(() => {
-                    this.onopen();
+                    this.onopen({});
                         // Prevent another connection attempt for 100ms
                     setTimeout(() => { this.connecting = false; }, 100);
         	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
@@ -64,11 +78,14 @@ export class MockWebSocketInterface {
     }
 
     reconnect() {
+        return;
+        /*
         if (this.io == null || this.io.readyState === this.io.CLOSED){
             if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Reconnecting...');
             this.connect();
             this.reconnected = true;
         }
+        //*/
     };
 
     startKeepAlive () {
@@ -138,15 +155,16 @@ export class MockWebSocketInterface {
     }
 
     fail (msg: any, type: any){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): ' + JSON.stringify(msg));
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.error(`COMPOSER | Websocket(M): Failed(${type}) - ${JSON.stringify(msg)}`);
         return false;
     }
 
     sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Performing "${type}" request`);
         if (!this.connected) {
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Not connected to websocket. Attempting to connect to websocket');
         	return this.connect().then(() => {
                 setTimeout(() => {
-                    console.log('Completing request');
             		return this.sendRequest(type, system, mod, index, name, args);
                 }, 200);
         	}, () => { return -1; });
@@ -165,50 +183,72 @@ export class MockWebSocketInterface {
         if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Sent request', request);
 
         if (args !== null) request.args = args;
-        this.respondTo(type, request);
+        setTimeout(() => {
+            this.respondTo(type, request);
+        }, Math.floor(Math.random() * 2000) + 100);
 
         return this.req_id;
     };
 
-    respondTo(type: string, request: any) {
+    respondTo(type: string, r: any) {
         let evt: any = {};
+        let evt_ex: any = null;
         switch(type) {
             case BIND:
-                evt = { data: {
-                    id: request.id
-                    type: SUCCESS,
-                    value: request.args[0]
-                }}
+                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
+                    evt = { data: JSON.stringify({
+                        id: r.id,
+                        type: SUCCESS,
+                        meta: r,
+                        value: this.systems[r.sys][r.mod][r.index-1][r.name]
+                    })}
+                    evt_ex = { data: JSON.stringify({
+                        id: r.id,
+                        type: NOTIFY,
+                        meta: r,
+                        value: this.systems[r.sys][r.mod][r.index-1][r.name]
+                    })}
+                }
                 break;
             case UNBIND:
-                evt = { data: {
-                    id: request.id
-                    type: SUCCESS,
-                    value: request.args[0]
-                }}
+                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
+                    evt = { data: JSON.stringify({
+                        id: r.id,
+                        type: SUCCESS,
+                        meta: r,
+                        value: this.systems[r.sys][r.mod][r.index-1][r.name]
+                    })}
+                }
                 break;
             case EXEC:
-                evt = { data: {
-                    id: request.id
-                    type: SUCCESS,
-                    value: request.args[0]
-                }}
+                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
+                    evt = { data: JSON.stringify({
+                        id: r.id,
+                        type: SUCCESS,
+                        meta: r,
+                        value: this.systems[r.sys][r.mod][r.index-1][r.name](r.args)
+                    })}
+                }
                 break;
             case DEBUG:
                 evt = {
-                    data: {
-                        id: request.id
+                    data: JSON.stringify({
+                        id: r.id,
                         type: SUCCESS,
-                        value: request.args[0]
-                    }
+                        meta: r,
+                        value: r.args[0]
+                    })
                 }
                 break;
             default:
                 break;
         }
-        setTimeout(() => {
-            this.onmessage(evt);
-        }, Math.floor(Math.random() * 5000) + 200);
+        this.onmessage(evt);
+        if(evt_ex) {
+            setTimeout(() => {
+                this.onmessage(evt_ex);
+            }, Math.floor(Math.random() * 2000) + 100);
+        }
     }
 
     bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
@@ -236,4 +276,4 @@ export class MockWebSocketInterface {
 
 }
 
-export let $WebSocket = MockWebSocketInterface;
+export let $WebSocketMock = MockWebSocketInterface;
