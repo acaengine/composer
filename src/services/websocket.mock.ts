@@ -14,6 +14,61 @@ const SECONDS = 1000;
 const RECONNECT_TIMER_SECONDS  = 5 * SECONDS;
 const KEEP_ALIVE_TIMER_SECONDS = 60 * SECONDS;
 
+/*
+ * object.watch polyfill
+ *
+ * 2012-04-03
+ *
+ * By Eli Grey, http://eligrey.com
+ * Public Domain.
+ * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+ */
+
+// object.watch
+if (!Object.prototype['watch']) {
+	Object.defineProperty(Object.prototype, "watch", {
+		  enumerable: false
+		, configurable: true
+		, writable: false
+		, value: function (prop: any, handler: any) {
+			var
+			  oldval = this[prop]
+			, newval = oldval
+			, getter = function () {
+				return newval;
+			}
+			, setter = function (val: any) {
+				oldval = newval;
+				return newval = handler.call(this, prop, oldval, val);
+			}
+			;
+
+			if (delete this[prop]) { // can't watch constants
+				Object.defineProperty(this, prop, {
+					  get: getter
+					, set: setter
+					, enumerable: true
+					, configurable: true
+				});
+			}
+		}
+	});
+}
+
+// object.unwatch
+if (!Object.prototype['unwatch']) {
+	Object.defineProperty(Object.prototype, "unwatch", {
+		  enumerable: false
+		, configurable: true
+		, writable: false
+		, value: function (prop: any) {
+			var val = this[prop];
+			delete this[prop]; // remove accessors
+			this[prop] = val;
+		}
+	});
+}
+
 export class MockWebSocketInterface {
     counters: number[];
     private io: any;
@@ -190,6 +245,18 @@ export class MockWebSocketInterface {
         return this.req_id;
     };
 
+    notifyChange(r: any, value: any) {
+        let evt_ex = { data: JSON.stringify({
+            id: r.id,
+            type: NOTIFY,
+            meta: r,
+            value: value
+        })}
+        setTimeout(() => {
+            this.onmessage(evt_ex);
+        }, Math.floor(Math.random() * 2000) + 100);
+    }
+
     respondTo(type: string, r: any) {
         let evt: any = {};
         let evt_ex: any = null;
@@ -208,6 +275,13 @@ export class MockWebSocketInterface {
                         meta: r,
                         value: this.systems[r.sys][r.mod][r.index-1][r.name]
                     })}
+                    setTimeout(() => {
+                        this.systems[r.sys][r.mod][r.index-1].watch(r.name, (id: string, oldval: any, newval: any) => {
+                            console.log(id, oldval, newval);
+                            this.notifyChange(r, newval);
+                            return newval;
+                        });
+                    }, 100);
                 }
                 break;
             case UNBIND:
@@ -218,16 +292,27 @@ export class MockWebSocketInterface {
                         meta: r,
                         value: this.systems[r.sys][r.mod][r.index-1][r.name]
                     })}
+                    this.systems[r.sys][r.mod][r.index-1].unwatch(r.name);
                 }
                 break;
             case EXEC:
                 if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
-                    evt = { data: JSON.stringify({
-                        id: r.id,
-                        type: SUCCESS,
-                        meta: r,
-                        value: this.systems[r.sys][r.mod][r.index-1][r.name](r.args)
-                    })}
+					if(this.systems[r.sys][r.mod][r.index-1][r.name] instanceof Function){
+	                    evt = { data: JSON.stringify({
+	                        id: r.id,
+	                        type: SUCCESS,
+	                        meta: r,
+	                        value: this.systems[r.sys][r.mod][r.index-1][r.name](r.args)
+	                    })}
+					} else {
+						this.systems[r.sys][r.mod][r.index-1][r.name] = r.args[0];
+	                    evt = { data: JSON.stringify({
+	                        id: r.id,
+	                        type: SUCCESS,
+	                        meta: r,
+	                        value: this.systems[r.sys][r.mod][r.index-1][r.name]
+	                    })}
+					}
                 }
                 break;
             case DEBUG:

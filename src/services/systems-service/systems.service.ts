@@ -57,7 +57,9 @@ export class SystemsService {
             if(this.io) delete this.io;
             this.io = new $WebSocketMock(this, this.r);
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
-            return true;
+            if(options.http) {
+                return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
+            } else return true;
         } else {
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
             return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });

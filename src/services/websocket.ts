@@ -28,6 +28,7 @@ export class WebSocketInterface {
     connect_check: any = null;
     connect_promise: any = null;
     connecting: boolean = false;
+    requests: any = {};
 
     constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
         this.serv = srv;
@@ -67,10 +68,9 @@ export class WebSocketInterface {
     	                    this.io = new WebSocket(uri);
     	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
     	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
-    	                    this.io.onopen = (evt: any) => { this.onopen(evt); }
+    	                    this.io.onopen = (evt: any) => { this.onopen(evt); resolve(); }
     	                    this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); }
                             this.connect_promise = null;
-    	                    resolve();
     	                } else {
     	                    setTimeout(() => { this.connect(); }, 200) ;
                             this.connect_promise = null;
@@ -143,6 +143,12 @@ export class WebSocketInterface {
         if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', evt);
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
+            if(msg.type === SUCCESS) {
+                if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].resolve(msg.value);
+            } else if(msg.type === ERROR) {
+                if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].reject(msg.msg);
+            }
+            if(this.requests[msg.id]) delete this.requests[msg.id];
             if (!meta) return this.fail(msg, 'meta');
             system = this.serv.get(meta.sys);
             if(!system) return this.fail(msg, 'system');
@@ -216,8 +222,14 @@ export class WebSocketInterface {
     }
 
     exec(sys_id: string, mod_id: string, i: number, fn: any, args: any){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket: Exec ${fn} on ${sys_id} ${mod_id} ${i}`);
-        return this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
+        return new Promise((resolve, reject) => {
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket: Exec ${fn} on ${sys_id} ${mod_id} ${i}`);
+            let id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
+            this.requests[id] = {
+                resolve: resolve,
+                reject: reject
+            };
+        })
     }
 
     debug(sys_id: string, mod_id: string, i: number){

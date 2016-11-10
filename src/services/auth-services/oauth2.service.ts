@@ -246,12 +246,30 @@ export class OAuthService {
                 win.parent.onOAuthCallback(this.state);
             }
             */
-            this.location.replaceState(this.location.path(), '');
+            this.removeHash();
             return resolve(true);
         } else {
             setTimeout(() => {
                 this.attemptLogin(options, resolve, reject);
             }, 200);
+        }
+    }
+
+    removeHash() {
+        let scrollV: any, scrollH: any, loc = window.location;
+            console.log(loc);
+        if ("pushState" in history)
+            history.pushState("", document.title, loc.pathname + loc.search);
+        else {
+            // Prevent scrolling by storing the page's current scroll offset
+            scrollV = document.body.scrollTop;
+            scrollH = document.body.scrollLeft;
+
+            loc.hash = "";
+
+            // Restore the scroll offset, should be flicker free
+            document.body.scrollTop = scrollV;
+            document.body.scrollLeft = scrollH;
         }
     }
 

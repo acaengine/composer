@@ -148,8 +148,7 @@ export class Module {
             console.error('Error: Variable "' + prop + '" not bound!')
             return 'Error: Variable not bound!';
         } else if(!prop || prop === '') { // Call function not bound to variable
-            let id = this.service.io.exec(this.parent.id, this.id, this.index, fn, value);
-            return;
+            return this.service.io.exec(this.parent.id, this.id, this.index, fn, value);
         }
 
         sv.execs.push({

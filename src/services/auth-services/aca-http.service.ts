@@ -63,7 +63,8 @@ export class ACAHttp {
         	if(location.pathname.indexOf(base) === 0) {
         		loc = location.pathname.replace(base, '');
         	}
-	        this.location.replaceState(loc, '');
+            loc = this.location.path().split('?')[0].split('#')[0];
+	        this.location.go(loc);
             setTimeout(() => {
 	            this.store.removeItem('oauth_redirect');
             }, 5000);
@@ -74,10 +75,17 @@ export class ACAHttp {
         let auth_header = this.oAuthService ? this.oAuthService.authorizationHeader() : '';
         let headers = new Headers({ "Authorization": auth_header });
         if(options && options.headers){
-        	let h = options.headers.values();
-        	let k = options.headers.keys();
-            for(var i in h) {
-            	if(k[i].toLowerCase() !== 'authorization') headers.append(k[i], h[i][0]);
+            if(options.headers.values){
+            	let h = options.headers.values();
+            	let k = options.headers.keys();
+                for(var i in h) {
+                	if(k[i].toLowerCase() !== 'authorization') headers.append(k[i], h[i][0]);
+                }
+            } else {
+                let keys = Object.keys(options.headers);
+                for(let j = 0; j < keys.length; j++) {
+                    if(keys[j].toLowerCase() !== 'authorization') headers.append(keys[j], options.headers[keys[j]]);
+                }
             }
         }
             // Store request info for retry if needed.

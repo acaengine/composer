@@ -200,7 +200,7 @@ class ResourceFactory {
     private __get(url: any, method: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
-            this.http.get(url, method.headers).subscribe(
+            this.http.get(url, method).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
@@ -222,7 +222,7 @@ class ResourceFactory {
     private __post(url: any, method: any, data: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
-            this.http.post(url, data, method.headers).subscribe(
+            this.http.post(url, data, method).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
@@ -244,7 +244,7 @@ class ResourceFactory {
     private __put(url: any, method: any, data: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
-            this.http.put(url, data, method.headers).subscribe(
+            this.http.put(url, data, method).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
@@ -266,7 +266,7 @@ class ResourceFactory {
     private __delete(url: any, method: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
-            this.http.delete(url, method.headers).subscribe(
+            this.http.delete(url, method).subscribe(
                 data => result = this.processData(data, url, method.isArray),
                 err => reject(err),
                 () => resolve(result)
