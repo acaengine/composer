@@ -14,6 +14,7 @@ export class ACAHttp {
     private store: any = localStorage;
     private refresh = false;
     private loginPromise: Promise<any> = null;
+    private retry: any = {};
 
     constructor(private location: Location, private route: ActivatedRoute, private router: Router, private http: Http, private oAuthService: OAuthService){
         //*
@@ -330,36 +331,40 @@ export class ACAHttp {
     }
 
     private error(err: any, req: any, obs:any) {
-        if(err.status == 401 || err.status == 0) {
+        let hash = this.hash(req.url+req.body);
+        if((err.status == 401 || err.status == 0) && this.retry[hash] < 10) {
             // Re-authenticate if authentication error.
             this.login()
                 .then((res) => {
+                    this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
                     setTimeout(() => {
                         this.refresh = false;
                         if(req.type == 'get' || req.type == 'delete'){
                             this[req.type](req.url, req.options).subscribe(
                                 (data: any) => obs.next(data),
                                 (err: any) => obs.error(err),
-                                () => obs.complete()
+                                () => { obs.complete(); this.retry[hash] = 0; }
                             );
                         } else {
                             this[req.type](req.url, req.body, req.options).subscribe(
                                 (data: any) => obs.next(data),
                                 (err: any) => obs.error(err),
-                                () => obs.complete()
+                                () => { obs.complete(); this.retry[hash] = 0; }
                             );
                         }
-                    }, 500);
+                    }, 500 * this.retry[hash]);
                 }, (err) => {
                 	console.error('COMPOSER | HTTP: Error logging in.');
                     this.clearStore();
                     location.reload();
                 	console.error(err);
+                    this.retry[hash] = 0;
                 });
         } else { // Return error
         	console.error('COMPOSER | HTTP: Error processing request.');
         	console.error(err);
             obs.error(err);
+            this.retry[hash] = 0;
         }
     }
 }
