@@ -26,8 +26,8 @@ export * from './services';
   	]
 })
 export class ACA_COMPOSER_MODULE {
-    version: string = '0.3.4';
-    build: string = '2016-12-02 v1';
+    version: string = '0.3.5';
+    build: string = '2016-12-09.v1';
     constructor() {
         console.debug(`ACA Angular 2 Composer Library - Version: ${this.version} | Build: ${this.build}`);
         if(!window['debug_module']) {

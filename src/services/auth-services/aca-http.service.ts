@@ -332,7 +332,8 @@ export class ACAHttp {
 
     private error(err: any, req: any, obs:any) {
         let hash = this.hash(req.url+req.body);
-        if((err.status == 401 || err.status == 0) && this.retry[hash] < 10) {
+        if(!this.retry[hash]) this.retry[hash] = 0;
+        if((err.status === 401 || err.status === 0) && this.retry[hash] < 10) {
             // Re-authenticate if authentication error.
             this.login()
                 .then((res) => {
