@@ -1,3 +1,11 @@
+/**
+* @Author: Alex Sorafumo
+* @Date:   20/10/2016 2:32 PM
+* @Email:  alex@yuion.net
+* @Filename: websocket.mock.ts
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 15/12/2016 11:41 AM
+*/
 
 const BIND   = 'bind';
 const UNBIND = 'unbind';

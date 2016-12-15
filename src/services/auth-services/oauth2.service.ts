@@ -1,3 +1,11 @@
+/**
+* @Author: Alex Sorafumo
+* @Date:   19/10/2016 10:47 AM
+* @Email:  alex@yuion.net
+* @Filename: oauth2.service.ts
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 15/12/2016 11:41 AM
+*/
 
 import { Injectable } from '@angular/core';
 import { Location } from '@angular/common';
@@ -85,17 +93,14 @@ export class OAuthService {
                         + encodeURIComponent(this.clientId)
                         + "&redirect_uri="
                         + encodeURIComponent(this.redirectUri)
-
-            if(this._storage.getItem(`${this.clientId}_refresh_token`)){
-                url += "&refresh_token="
-                    +  encodeURIComponent(this._storage.getItem(`${this.clientId}_refresh_token`))
-                    +  "&grant_type="
-                    +  encodeURIComponent('refresh_token');
+            let refresh_token = this._storage.getItem(`${this.clientId}_refresh_token`);
+            if(!refresh_token) {
+                refresh_token = this._storage.getItem(`refreshToken`);
+            }
+            if(refresh_token){
+                url += `&refresh_token=${encodeURIComponent(refresh_token)}&grant_type=${encodeURIComponent('refresh_token')}`;
             } else {
-                url += "&code="
-                    +  encodeURIComponent(this.code)
-                    +  "&grant_type="
-                    +  encodeURIComponent('authorization_code');
+                url += `&code=${encodeURIComponent(this.code)}&grant_type=${encodeURIComponent('authorization_code')}`;
             }
 
             return url;
@@ -355,13 +360,16 @@ export class OAuthService {
     };
 
     getAccessToken() {
-        return this._storage.getItem(`${this.clientId}_access_token`);
+        let token = this._storage.getItem(`${this.clientId}_access_token`);
+        if(!token) token = this._storage.getItem(`accessToken`)
+        return token;
     };
 
     hasValidAccessToken() {
         if (this.getAccessToken()) {
 
             let expiresAt = this._storage.getItem(`${this.clientId}_expires_at`);
+            if(!expiresAt) expiresAt = this._storage.getItem(`accessExpiry`);
             let now = new Date();
             if (expiresAt && parseInt(expiresAt) < now.getTime()) {
                 return false;
@@ -395,6 +403,7 @@ export class OAuthService {
     logOut() {
         let id_token = this.getIdToken();
         this._storage.removeItem(`${this.clientId}_access_token`);
+        this._storage.removeItem(`${this.clientId}_refresh_token`);
         this._storage.removeItem(`${this.clientId}_id_token`);
         this._storage.removeItem(`${this.clientId}_nonce`);
         this._storage.removeItem(`${this.clientId}_expires_at`);

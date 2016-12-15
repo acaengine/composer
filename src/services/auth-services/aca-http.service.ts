@@ -1,3 +1,12 @@
+/**
+* @Author: Alex Sorafumo
+* @Date:   19/10/2016 10:47 AM
+* @Email:  alex@yuion.net
+* @Filename: aca-http.service.ts
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 15/12/2016 11:41 AM
+*/
+
 import { Injectable, Inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { Http, Headers } from '@angular/http';
@@ -180,7 +189,9 @@ export class ACAHttp {
                 oauth.tryLogin().then((status: any) => {
                     if(this.trust){ // Location is trusted
                         oauth.response_type = 'code';
-                        if(this.store.getItem(`${oauth.clientId}_refresh_token`) || oauth.code){ // Refresh token exists
+                        let refresh_token = this.store.getItem(`${oauth.clientId}_refresh_token`);
+                        if(!refresh_token) refresh_token = this.store.getItem(`refreshToken`);
+                        if(refresh_token || oauth.code){ // Refresh token exists
                             if(!this.tokenValid()){
                                 if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: No valid access token. Refreshing...');
                                     //Perform refresh
@@ -196,7 +207,9 @@ export class ACAHttp {
                                     }
                             } else { // Token is still valid.
                                 if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Valid Access Token availiable.');
-                                resolve(this.store.getItem(`${oauth.clientId}_access_token`));
+                                let token = this.store.getItem(`${oauth.clientId}_access_token`);
+                                if(!token) token = this.store.getItem(`accessToken`)
+                                resolve(token);
                                 setTimeout(() => { this.loginDone(); }, 100);
                             }
                         } else { // No refresh token
@@ -214,7 +227,9 @@ export class ACAHttp {
                             setTimeout(() => { this.loginDone(); }, 100);
                         } else {
                             if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Valid Access Token availiable.');
-                            resolve(this.store.getItem(`${oauth.clientId}_access_token`));
+                            let token = this.store.getItem(`${oauth.clientId}_access_token`);
+                            if(!token) token = this.store.getItem(`accessToken`)
+                            resolve(token);
                             setTimeout(() => { this.loginDone(); }, 100);
                         }
                     }
@@ -233,8 +248,17 @@ export class ACAHttp {
                 .map(res => res.json())
                 .subscribe(
                     data => tokens = data,
-                    err => this.processLoginError(err, reject),
-                    () => {
+                    err => {
+                        if(err && (err.status === 500 || err.status === 404) && url !== location.origin + '/oauth-resp.html') {
+                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
+                            oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
+                            setTimeout(() => {
+                                this.refreshToken(resolve, reject);
+                            }, 200);
+                        } else {
+                            this.processLoginError(err, reject);
+                        }
+                    }, () => {
                         if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: ', tokens);
                         this.updateToken(tokens, resolve);
                         setTimeout(() => { this.loginDone(); }, 100);

@@ -1,3 +1,11 @@
+/**
+* @Author: Alex Sorafumo
+* @Date:   19/10/2016 10:47 AM
+* @Email:  alex@yuion.net
+* @Filename: websocket.ts
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 15/12/2016 11:41 AM
+*/
 
 const BIND   = 'bind';
 const UNBIND = 'unbind';
@@ -29,6 +37,7 @@ export class WebSocketInterface {
     connect_promise: any = null;
     connecting: boolean = false;
     requests: any = {};
+    static retries: number = 0;
 
     constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
         this.serv = srv;
@@ -190,7 +199,15 @@ export class WebSocketInterface {
                     console.log('Completing request');
             		return this.sendRequest(type, system, mod, index, name, args);
                 }, 200);
-        	}, () => { return -1; });
+                WebSocketInterface.retries = 0;
+        	}, () => {
+                console.log('Failed to connect');
+                WebSocketInterface.retries++;
+                if(WebSocketInterface.retries > 10) return -1;
+                setTimeout(() => {
+                    return this.sendRequest(type, system, mod, index, name, args);
+                }, 500 * WebSocketInterface.retries);
+            });
 	    }
         this.req_id += 1;
         if(!(args instanceof Array)) args = [args];

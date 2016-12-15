@@ -1,3 +1,12 @@
+/**
+* @Author: Alex Sorafumo
+* @Date:   09/12/2016 9:39 AM
+* @Email:  alex@yuion.net
+* @Filename: index.ts
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 15/12/2016 11:41 AM
+*/
+
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpModule } from '@angular/http';
@@ -27,7 +36,7 @@ export * from './services';
 })
 export class ACA_COMPOSER_MODULE {
     version: string = '0.3.5';
-    build: string = '2016-12-09.v1';
+    build: string = '2016-12-14.v1';
     constructor() {
         console.debug(`ACA Angular 2 Composer Library - Version: ${this.version} | Build: ${this.build}`);
         if(!window['debug_module']) {
