@@ -143,7 +143,7 @@ export class WebSocketInterface {
 
         // message data will either be the string 'PONG', or json
         // data with an associated type
-        if (evt.data === PONG) {
+        if (evt.data === PONG || !evt.data) {
             return;
         } else {
             msg = JSON.parse(evt.data);

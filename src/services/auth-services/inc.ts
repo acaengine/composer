@@ -7,9 +7,9 @@
 * @Last modified time: 15/12/2016 11:41 AM
 */
 
-import { ACAHttp } from './aca-http.service';
+import { CommsService } from './comms.service';
 import { OAuthService } from './oauth2.service';
 
 export let ACA_AUTH_PROVIDERS = [
-    ACAHttp, OAuthService
+    CommsService, OAuthService
 ];

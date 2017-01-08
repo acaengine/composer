@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: aca-http.service.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 07/01/2017 8:42 PM
 */
 
 import { Injectable, Inject } from '@angular/core';
@@ -17,7 +17,7 @@ import { OAuthService } from './oauth2.service';
 import { Md5 } from 'ts-md5/dist/md5'
 
 @Injectable()
-export class ACAHttp {
+export class CommsService {
     private trust: boolean = false;
     private sub: any;
     private store: any = localStorage;
@@ -26,11 +26,18 @@ export class ACAHttp {
     private retry: any = {};
 
     constructor(private location: Location, private route: ActivatedRoute, private router: Router, private http: Http, private oAuthService: OAuthService){
+        if(sessionStorage) {
+            this.trust = (sessionStorage.getItem(`trust`) === 'true');
+        }
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.trust = params['trust'] === 'true' ? params['trust'] === 'true' : this.trust;
             if(sessionStorage) {
                 sessionStorage.setItem(`trust`, this.trust ? 'true': 'false');
+            }
+            console.log(params, (params['logout'] && params['logout']==='true'));
+            if(params['logout'] && params['logout']==='true'){
+                this.oAuthService.logOut();
             }
         });
         //*/
@@ -46,10 +53,7 @@ export class ACAHttp {
         oauth.issuer = issuer ? issuer : (oauth.issuer ? oauth.issuer : '');
         oauth.scope = scope ? scope : (oauth.scope ? oauth.scope : '');
         oauth.oidc = oidc ? oidc : (oauth.oidc ? oauth.oidc : false);
-        oauth.logoutUrl = logout ? logout : (oauth.logoutUrl ? oauth.logoutUrl : '/logout');
-        if(sessionStorage) {
-            this.trust = (sessionStorage.getItem(`trust`) === 'true');
-        }
+        oauth.logoutUrl = logout ? logout : (oauth.logoutUrl ? oauth.logoutUrl : 'logout');
         this.login().then(() => {
 
         }, () => {
@@ -58,9 +62,9 @@ export class ACAHttp {
     }
 
     tryLogin() {
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Trying Login');
+        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Trying Login');
         if(this.oAuthService.code) this.login().then(() => {
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Got Access Token.');
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Got Access Token.');
         });
     }
 
@@ -183,17 +187,18 @@ export class ACAHttp {
 
     login(){
         if (this.loginPromise === null) {
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Attempting login.');
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Attempting login.');
             this.loginPromise = new Promise((resolve, reject) => {
                 let oauth:any = this.oAuthService;
                 oauth.tryLogin().then((status: any) => {
+                    if(window['debug']) console.log(`[COMPOSER] [COMMS] Device trusted: ${this.trust}`);
                     if(this.trust){ // Location is trusted
                         oauth.response_type = 'code';
                         let refresh_token = this.store.getItem(`${oauth.clientId}_refresh_token`);
                         if(!refresh_token) refresh_token = this.store.getItem(`refreshToken`);
                         if(refresh_token || oauth.code){ // Refresh token exists
                             if(!this.tokenValid()){
-                                if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: No valid access token. Refreshing...');
+                                if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] No valid access token. Refreshing...');
                                     //Perform refresh
                                     if(oauth.clientId === '') {
                                         resolve({ message : 'OAuth not setup, retrying after 100ms'});
@@ -206,14 +211,14 @@ export class ACAHttp {
                                         this.refreshToken(resolve, reject);
                                     }
                             } else { // Token is still valid.
-                                if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Valid Access Token availiable.');
+                                if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Valid Access Token availiable.');
                                 let token = this.store.getItem(`${oauth.clientId}_access_token`);
                                 if(!token) token = this.store.getItem(`accessToken`)
                                 resolve(token);
                                 setTimeout(() => { this.loginDone(); }, 100);
                             }
                         } else { // No refresh token
-                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: No Refresh Token or Code');
+                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] No Refresh Token or Code');
                             this.store.setItem(`oauth_redirect`, window.location.href);
                             oauth.initImplicitFlow();
                             setTimeout(() => { this.loginDone(); }, 100);
@@ -221,12 +226,12 @@ export class ACAHttp {
                     } else { // Location not trusted
                         if(!this.tokenValid()){
                             oauth.response_type = 'token';
-                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Location not trusted.');
+                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Location not trusted.');
                             this.store.setItem(`oauth_redirect`, window.location.href);
                             oauth.initImplicitFlow();
                             setTimeout(() => { this.loginDone(); }, 100);
                         } else {
-                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Valid Access Token availiable.');
+                            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Valid Access Token availiable.');
                             let token = this.store.getItem(`${oauth.clientId}_access_token`);
                             if(!token) token = this.store.getItem(`accessToken`)
                             resolve(token);
@@ -243,6 +248,7 @@ export class ACAHttp {
         let oauth:any = this.oAuthService;
         this.refresh = true;
         oauth.refresh_url.then((url: any) => {
+            console.log(url);
             let tokens:any;
             this.http.post(url, '')
                 .map(res => res.json())
@@ -259,7 +265,7 @@ export class ACAHttp {
                             this.processLoginError(err, reject);
                         }
                     }, () => {
-                        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: ', tokens);
+                        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] ', tokens);
                         this.updateToken(tokens, resolve);
                         setTimeout(() => { this.loginDone(); }, 100);
                     }
@@ -293,7 +299,7 @@ export class ACAHttp {
         let oauth:any = this.oAuthService;
             // Clear storage
         if(err.status == 400 || err.status == 401 || (err.status == 0 && err.ok == false)){
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('COMPOSER | HTTP: Error with credentials. Getting new credentials...');
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_HTTP') >= 0) console.debug('[COMPOSER] [COMMS] Error with credentials. Getting new credentials...');
             this.clearStore();
             this.oAuthService.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
@@ -307,7 +313,7 @@ export class ACAHttp {
     }
 
     checkAuth(cb_fn: any) {
-        console.error('COMPOSER | HTTP: Checking Auth.');
+        console.error('[COMPOSER] [COMMS] Checking Auth.');
         if(this.loginPromise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
             let uri:any = parts.splice(0, 3).join('/');
@@ -379,14 +385,14 @@ export class ACAHttp {
                         }
                     }, 500 * this.retry[hash]);
                 }, (err) => {
-                	console.error('COMPOSER | HTTP: Error logging in.');
+                	console.error('[COMPOSER] [COMMS] Error logging in.');
                     this.clearStore();
                     location.reload();
                 	console.error(err);
                     this.retry[hash] = 0;
                 });
         } else { // Return error
-        	console.error('COMPOSER | HTTP: Error processing request.');
+        	console.error('[COMPOSER] [COMMS] Error processing request.');
         	console.error(err);
             obs.error(err);
             this.retry[hash] = 0;

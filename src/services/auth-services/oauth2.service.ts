@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: oauth2.service.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 08/01/2017 4:50 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -120,11 +120,7 @@ export class OAuthService {
     get refresh_url() {
         return this.createRefreshUrl('').then((url) => {
             return url;
-        })
-        .catch(function (error) {
-            console.error("Error in initImplicitFlow");
-            console.error(error);
-        });
+        }, (err) => {});
     }
 
     initImplicitFlow(additionalState = "") {
@@ -135,18 +131,16 @@ export class OAuthService {
             if(sessionStorage) {
         		let logged = sessionStorage.getItem(`${this.clientId}_login`);
         		if(logged) {
+                    if(window['debug']) console.log('[COMPOSER] [OAUTH] Logged in. Authorizing...');
 	        		sessionStorage.removeItem(`${this.clientId}_login`);
         			location.href = url;
 	        	} else {
+                    if(window['debug']) console.log('[COMPOSER] [OAUTH] Not logged in redirecting to provider...');
 	        		sessionStorage.setItem(`${this.clientId}_login`, 'true');
 	        		location.href = this.loginRedirect + '?continue=' + here;
 	        	}
         	} else location.href = url;
-        })
-        .catch(function (error) {
-            console.error("COMPOSER | OAuth: Error in initImplicitFlow");
-            console.error(error);
-        });
+        }, (err) => {});
     };
 
     callEventIfExists(options: any) {
@@ -401,18 +395,32 @@ export class OAuthService {
     }
 
     logOut() {
+        if(window['debug']) console.log('[COMPOSER] [OAUTH] Logging out. Clear access tokens...')
         let id_token = this.getIdToken();
-        this._storage.removeItem(`${this.clientId}_access_token`);
-        this._storage.removeItem(`${this.clientId}_refresh_token`);
-        this._storage.removeItem(`${this.clientId}_id_token`);
-        this._storage.removeItem(`${this.clientId}_nonce`);
-        this._storage.removeItem(`${this.clientId}_expires_at`);
-        this._storage.removeItem(`${this.clientId}_id_token_claims_obj`);
-        this._storage.removeItem(`${this.clientId}_id_token_expires_at`);
+        let items = ['access_token', 'refresh_token', 'accesstoken', 'refreshtoken', 'id_token', 'idtoken', 'nonce', 'expires', 'login', 'oauth'];
+        for (let i = 0; i < this._storage.length; i++){
+            let key = this._storage.key(i);
+            let lkey = key.toLowerCase();
+            console.log('[COMPOSER] [OAUTH] Comparing key:', key, lkey);
+            for(let k = 0; k < items.length; k++){
+                if(lkey.indexOf(items[k]) >= 0){
+                    console.log('[COMPOSER] [OAUTH] Remove key:', key);
+                    this._storage.removeItem(key);
+                    i--;
+                    break;
+                }
+            }
+        }
 
-        if (!this.logoutUrl) return;
+        if (!this.logoutUrl) {
+            setTimeout(() => {
+                this.location.replaceState(this.location.path(), '');
+            }, 100);
+            return;
+        }
 
         let logoutUrl = this.logoutUrl.replace(/\{\{id_token\}\}/, id_token);
+        if(window['debug']) console.log('[COMPOSER] [OAUTH] Redirecting to logout URL...')
         location.href = logoutUrl;
     };
 
@@ -420,7 +428,7 @@ export class OAuthService {
         return this.createNonce().then((nonce: any) => {
             this._storage.setItem(`${this.clientId}_nonce`, nonce);
             return nonce;
-        })
+        }, (err) => {});
 
     };
 

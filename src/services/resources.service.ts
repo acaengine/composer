@@ -3,13 +3,13 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: resources.service.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 08/01/2017 1:42 PM
 */
 
 import { Injectable } from '@angular/core';
 import { Http } from '@angular/http';
-import { ACAHttp } from './auth-services';
+import { CommsService } from './auth-services';
 import { Observable } from 'rxjs/Observable';
 
 let common_headers = {
@@ -108,7 +108,7 @@ class ResourceFactory {
     keys: any;
     resources: any;
 
-    constructor(url: string, params: any, methods: any, private http: ACAHttp) {
+    constructor(url: string, params: any, methods: any, private http: CommsService) {
         //*
         this.url = url;
         this.methods = methods;
@@ -298,7 +298,7 @@ export class Resources {
     factories: any;
     url: string;
     authLoaded: boolean = false;
-    constructor(public http: ACAHttp, private http_unauth: Http) {
+    constructor(public http: CommsService, private http_unauth: Http) {
 
     }
 
@@ -327,8 +327,10 @@ export class Resources {
 	        );
 	        if(auth.session) this.http.setLoginStatus(auth.session);
    		 	this.authLoaded = true;
-        	this.http.tryLogin();
-        	resolve();
+            setTimeout(() => {
+            	this.http.tryLogin();
+            	resolve();
+            }, 200);
         }, (err: any) => {
         	console.error('COMPOSER | Resources: Error getting authority.');
         	console.error(err);
