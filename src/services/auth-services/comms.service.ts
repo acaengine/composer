@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: aca-http.service.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 07/01/2017 8:42 PM
+* @Last modified time: 12/01/2017 3:45 PM
 */
 
 import { Injectable, Inject } from '@angular/core';
@@ -35,7 +35,6 @@ export class CommsService {
             if(sessionStorage) {
                 sessionStorage.setItem(`trust`, this.trust ? 'true': 'false');
             }
-            console.log(params, (params['logout'] && params['logout']==='true'));
             if(params['logout'] && params['logout']==='true'){
                 this.oAuthService.logOut();
             }
@@ -191,7 +190,7 @@ export class CommsService {
             this.loginPromise = new Promise((resolve, reject) => {
                 let oauth:any = this.oAuthService;
                 oauth.tryLogin().then((status: any) => {
-                    if(window['debug']) console.log(`[COMPOSER] [COMMS] Device trusted: ${this.trust}`);
+                    if(window['debug']) console.debug(`[COMPOSER] [COMMS] Device trusted: ${this.trust}`);
                     if(this.trust){ // Location is trusted
                         oauth.response_type = 'code';
                         let refresh_token = this.store.getItem(`${oauth.clientId}_refresh_token`);
@@ -248,7 +247,6 @@ export class CommsService {
         let oauth:any = this.oAuthService;
         this.refresh = true;
         oauth.refresh_url.then((url: any) => {
-            console.log(url);
             let tokens:any;
             this.http.post(url, '')
                 .map(res => res.json())

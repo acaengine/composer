@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: binding.directive.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:42 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 12/01/2017 3:20 PM
 */
 
 import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
@@ -91,6 +91,12 @@ export class Binding {
     }
 
     ngOnChanges(changes: any) {
+        if(!this.serv.is_setup) {
+            setTimeout(() => {
+                this.ngOnChanges(changes);
+            }, 500);
+            return;
+        }
             // Execute Function changes
         if(this.prev_exec !== this.exec && this.bind && this.bind !== ''){
             this.call_exec();

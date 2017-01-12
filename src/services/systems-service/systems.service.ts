@@ -3,11 +3,12 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: systems.service.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 12/01/2017 3:21 PM
 */
 
 import { Injectable } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { System } from './classes'
 //import { Web_Socket } from '../websocket/websocket';
 import { $WebSocket } from '../websocket';
@@ -22,13 +23,26 @@ export class SystemsService {
     connected = false;
     request_id = 0;
     mock: boolean = false;
+    fixed_device: boolean = false;
+    sub: any = null;
+    is_setup: boolean = false;
     //private r: any;
 
-    constructor(private r: Resources) {
+    constructor(private r: Resources, private route: ActivatedRoute) {
+        if(sessionStorage) {
+            this.fixed_device = (sessionStorage.getItem(`fixed_device`) === 'true');
+        }
+        //*
+        this.sub = this.route.queryParams.subscribe( (params: any) => {
+            this.fixed_device = params['fixed_device'] === 'true' ? params['fixed_device'] === 'true' : this.fixed_device;
+            if(sessionStorage) {
+                sessionStorage.setItem(`fixed_device`, this.fixed_device ? 'true': 'false');
+            }
+        });
     	//*
         let auth: any = null;
         if(r) auth = r;
-        this.io = new $WebSocket(this, auth);
+        this.io = new $WebSocket(this, auth, this.fixed_device);
         //*/
         //*
         setInterval(() => {
@@ -55,15 +69,17 @@ export class SystemsService {
 
     	}
         this.r.init((port === '443' ? 'https' : 'http') + '://' + url + '/control/').then(() => {
-        	this.io = new $WebSocket(this, this.r, url, port);
+        	this.io = new $WebSocket(this, this.r, this.fixed_device, url, port);
         }, (err: any) => {});
     }
 
     setup(options: any): any {
         this.mock = options.mock ? true : false;
+        this.is_setup = true;
         if(options.mock){
+            if(window['debug']) console.debug('[COMPOSER][Systems] Settings up mock websocket.');
             if(this.io) delete this.io;
-            this.io = new $WebSocketMock(this, this.r);
+            this.io = new $WebSocketMock(this, this.r, this.fixed_device);
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
             if(options.http) {
                 return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
@@ -90,16 +106,26 @@ export class SystemsService {
         return this.getSystem(sys_id);
     }
 
-    private updateSystems(){
+    private updateSystems(): any{
     	if(this.r && this.io) {
 	        for(let i = 0; this.systems && i < this.systems.length; i++) {
 	            let system = this.systems[i];
 	            if(!system.exists){
 	                let sys = this.r.get('System');
-	                return sys.get({id: system.id}).then((sys: any) => {
-	                    system.exists = true;
-	                }, (err: any) => {});
-	            }
+                    if(sys){
+                        let mod = sys.get({id: system.id});
+                        console.log(mod);
+                        if(mod) {
+                            return mod.then((sys: any) => {
+                                system.exists = true;
+                            }, (err: any) => {});
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
 	        }
 	    }
     }

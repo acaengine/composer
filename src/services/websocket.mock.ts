@@ -3,8 +3,8 @@
 * @Date:   20/10/2016 2:32 PM
 * @Email:  alex@yuion.net
 * @Filename: websocket.mock.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 12/01/2017 1:44 PM
 */
 
 const BIND   = 'bind';
@@ -93,10 +93,12 @@ export class MockWebSocketInterface {
     connecting: boolean = false;
     requests: any = {};
     static retries: number = 0;
+    fixed: boolean = false;
 
-    systems: any[] = [];
+	systems: any[] = [];
 
-    constructor(srv: any, auth: any, host: string = location.hostname, port: string = '3000'){
+    constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
+        this.fixed = fixed;
         this.serv = srv;
         this.setup(auth, host, port);
     }
@@ -146,7 +148,7 @@ export class MockWebSocketInterface {
         return;
         /*
         if (this.io == null || this.io.readyState === this.io.CLOSED){
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Reconnecting...');
+            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('[COMPOSER][Websocket(M)] Reconnecting...');
             this.connect();
             this.reconnected = true;
         }
@@ -167,7 +169,7 @@ export class MockWebSocketInterface {
 
     onopen(evt: any) {
         this.connected = true;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Connected');
+        if(window['debug']) console.debug('[COMPOSER][Websocket(M)] Connected');
         this.startKeepAlive();
             // Rebind the connected systems modules
         if(this.reconnected) this.serv.rebind();
@@ -176,7 +178,7 @@ export class MockWebSocketInterface {
 
     onclose(evt: any) {
         this.connected = false;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Closed');
+        if(window['debug']) console.debug('[COMPOSER][Websocket(M)] Closed');
         this.io = null;
         this.stopKeepAlive();
     }
@@ -192,7 +194,7 @@ export class MockWebSocketInterface {
             msg = JSON.parse(evt.data);
         }
 
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket:', evt);
+        if(window['debug']) console.debug('[COMPOSER][Websocket(M)] ', evt);
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
             if(msg.type === SUCCESS) {
@@ -226,14 +228,14 @@ export class MockWebSocketInterface {
     }
 
     fail (msg: any, type: any){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.error(`COMPOSER | Websocket(M): Failed(${type}) - ${JSON.stringify(msg)}`);
+        if(window['debug']) console.error(`[COMPOSER][Websocket(M)] Failed(${type}) - ${JSON.stringify(msg)}`);
         return false;
     }
 
     sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Performing "${type}" request`);
+        if(window['debug']) console.debug(`[COMPOSER][Websocket(M)] Performing "${type}" request`);
         if (!this.connected) {
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Not connected to websocket. Attempting to connect to websocket');
+            if(window['debug']) console.debug('[COMPOSER][Websocket(M)] Not connected to websocket. Attempting to connect to websocket');
         	return this.connect().then(() => {
                 setTimeout(() => {
             		return this.sendRequest(type, system, mod, index, name, args);
@@ -251,12 +253,12 @@ export class MockWebSocketInterface {
             name:   name,
             args:   args
         };
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug('COMPOSER | Websocket(M): Sent request', request);
+        if(window['debug']) console.debug('[COMPOSER][Websocket(M)] Sent request', request);
 
         if (args !== null) request.args = args;
         setTimeout(() => {
             this.respondTo(type, request);
-        }, Math.floor(Math.random() * 2000) + 100);
+        }, 200);
 
         return this.req_id;
     };
@@ -313,12 +315,16 @@ export class MockWebSocketInterface {
                 break;
             case EXEC:
                 if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
-					if(this.systems[r.sys][r.mod][r.index-1][r.name] instanceof Function){
+					if(this.systems[r.sys][r.mod][r.index-1].$system === undefined) {
+						this.systems[r.sys][r.mod][r.index-1].$system = this.systems[r.sys];
+					}
+					let fn = this.systems[r.sys][r.mod][r.index-1][r.name];
+					if(fn instanceof Function){
 	                    evt = { data: JSON.stringify({
 	                        id: r.id,
 	                        type: SUCCESS,
 	                        meta: r,
-	                        value: this.systems[r.sys][r.mod][r.index-1][r.name](r.args)
+	                        value: (<any>this.systems[r.sys][r.mod][r.index-1][r.name])(...r.args)
 	                    })}
 					} else {
 						this.systems[r.sys][r.mod][r.index-1][r.name] = r.args[0];
@@ -353,18 +359,18 @@ export class MockWebSocketInterface {
     }
 
     bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Requesting bind for ${sys_id} ${mod_id} ${i} ${name}`);
+        if(window['debug']) console.debug(`[COMPOSER][Websocket(M)] Requesting bind for ${sys_id} ${mod_id} ${i} ${name}`);
         return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
     }
 
     unbind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket(M): Requesting unbind for ${sys_id} ${mod_id} ${i} ${name}`);
+        if(window['debug']) console.debug(`[COMPOSER][Websocket(M)] Requesting unbind for ${sys_id} ${mod_id} ${i} ${name}`);
         return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
     }
 
     exec(sys_id: string, mod_id: string, i: number, fn: any, args: any){
         return new Promise((resolve, reject) => {
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_WS') >= 0) console.debug(`COMPOSER | Websocket: Exec ${fn} on ${sys_id} ${mod_id} ${i}`);
+            if(window['debug']) console.debug(`COMPOSER | Websocket: Exec ${fn} on ${sys_id} ${mod_id} ${i}`);
             let id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
             this.requests[id] = {
                 resolve: resolve,
