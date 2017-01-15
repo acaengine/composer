@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: resources.service.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 08/01/2017 1:42 PM
+* @Last modified time: 15/01/2017 7:50 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -216,7 +216,7 @@ class ResourceFactory {
         } else {
             setTimeout(() => {
                 this.__get(url, method, resolve, reject);
-            }, 100);
+            }, 500);
         }
     }
 
@@ -238,7 +238,7 @@ class ResourceFactory {
         } else {
             setTimeout(() => {
                 this.__post(url, method, data, resolve, reject);
-            }, 100);
+            }, 500);
         }
     }
 
@@ -260,7 +260,7 @@ class ResourceFactory {
         } else {
             setTimeout(() => {
                 this.__put(url, method, data, resolve, reject);
-            }, 100);
+            }, 500);
         }
     }
 
@@ -282,7 +282,7 @@ class ResourceFactory {
         } else {
             setTimeout(() => {
                 this.__delete(url, method, resolve, reject);
-            }, 100);
+            }, 500);
         }
     }
 
@@ -298,25 +298,28 @@ export class Resources {
     factories: any;
     url: string;
     authLoaded: boolean = false;
+    auth_promise: any = null;
+
     constructor(public http: CommsService, private http_unauth: Http) {
 
     }
 
     initAuth(resolve: any, reject: any) {
+        if(window['debug']) console.debug(`[COMPOSER][Resources] Loading Authority...`);
         let parts = this.url.split('/');
         let uri = parts.splice(0, 3).join('/');
         let base_el = document.getElementsByTagName('base')[0];
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth: any) => {
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_RESOURCES') >= 0) console.debug(`COMPOSER | Resources: Authority loaded.`, auth);
+            if(window['debug']) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`, JSON.stringify(auth));
             if(typeof auth !== 'object') {
                 reject({
                     message: 'Auth details no valid.'
                 })
                 return;
             }
-        	let url = encodeURIComponent(document.location.href);
+        	let url = encodeURIComponent(location.href);
         	url = auth.login_url.replace('{{url}}', url);
 	        this.http.setupOAuth(
 	        	`${uri}/auth/oauth/authorize`,
@@ -325,22 +328,24 @@ export class Resources {
 	        	this.http.hash(`${redirect}oauth-resp.html`),
 	        	(url[0] === '/' ? (uri + url) : url)
 	        );
-	        if(auth.session) this.http.setLoginStatus(auth.session);
+	        this.http.setLoginStatus(auth.session);
    		 	this.authLoaded = true;
             setTimeout(() => {
             	this.http.tryLogin();
             	resolve();
             }, 200);
         }, (err: any) => {
-        	console.error('COMPOSER | Resources: Error getting authority.');
+        	console.error('[COMPOSER][Resources] Error getting authority.');
         	console.error(err);
-	        this.http.setupOAuth(
-	        	`${uri}/auth/oauth/authorize`,
-	        	`${uri}/auth/token`,
-	        	`${redirect}oauth-resp.html`,
-	        	this.http.hash(`${redirect}oauth-resp.html`),
-	        	`${uri}/auth/login`);
-        	this.http.tryLogin();
+            setTimeout(() => {
+    	        this.http.setupOAuth(
+    	        	`${uri}/auth/oauth/authorize`,
+    	        	`${uri}/auth/token`,
+    	        	`${redirect}oauth-resp.html`,
+    	        	this.http.hash(`${redirect}oauth-resp.html`),
+    	        	`${uri}/auth/login`);
+            	this.http.tryLogin();
+            }, 500);
         	reject(err);
         })
     }
@@ -495,7 +500,7 @@ export class Resources {
 
     checkAuth(){
         this.http.checkAuth(() => {
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_RESOURCES') >= 0) console.debug('COMPOSER | Resources: Refreshed Auth');
+            if(window['debug']) console.debug('[COMPOSER][Resources] Refreshed Auth');
         });
     }
 

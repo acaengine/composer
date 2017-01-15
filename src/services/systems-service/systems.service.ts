@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: systems.service.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 12/01/2017 3:21 PM
+* @Last modified time: 15/01/2017 7:23 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -85,6 +85,7 @@ export class SystemsService {
                 return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
             } else return true;
         } else {
+            if(window['debug']) console.debug('[COMPOSER][Systems] Settings up websocket.');
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
             return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
         }

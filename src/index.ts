@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: index.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 07/01/2017 8:29 PM
+* @Last modified time: 15/01/2017 5:59 PM
 */
 
 import { NgModule } from '@angular/core';
@@ -36,7 +36,7 @@ export * from './services';
 })
 export class ACA_COMPOSER_MODULE {
     version: string = '0.3.5';
-    build: string = '2017-01-7.v2';
+    build: string = '2017-01-16.v1';
     constructor() {
         console.debug(`ACA Angular 2 Composer Library - Version: ${this.version} | Build: ${this.build}`);
         if(!window['debug_module']) {

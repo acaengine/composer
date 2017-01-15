@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: oauth2.service.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 08/01/2017 4:50 PM
+* @Last modified time: 15/01/2017 7:51 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -123,21 +123,29 @@ export class OAuthService {
         }, (err) => {});
     }
 
-    initImplicitFlow(additionalState = "") {
-        if(!this.clientId || this.clientId === '') return;
+    run_flow: boolean = false;
+
+    initImplicitFlow(additionalState: string = "") {
+        if(!this.clientId || this.clientId === '' || this.run_flow) return;
         this.createLoginUrl(additionalState).then((url) => {
             let here = location.href;
             this._storage.setItem('oauth_redirect', here);
+            this.run_flow = true;
             if(sessionStorage) {
         		let logged = sessionStorage.getItem(`${this.clientId}_login`);
-        		if(logged) {
-                    if(window['debug']) console.log('[COMPOSER] [OAUTH] Logged in. Authorizing...');
+        		if(logged === 'true') {
+                    if(window['debug']) console.debug('[COMPOSER][OAUTH] Logged in. Authorizing...');
 	        		sessionStorage.removeItem(`${this.clientId}_login`);
         			location.href = url;
 	        	} else {
-                    if(window['debug']) console.log('[COMPOSER] [OAUTH] Not logged in redirecting to provider...');
+                    if(window['debug']) console.debug('[COMPOSER][OAUTH] Not logged in redirecting to provider...');
 	        		sessionStorage.setItem(`${this.clientId}_login`, 'true');
-	        		location.href = this.loginRedirect + '?continue=' + here;
+                    if(!this.loginRedirect || this.loginRedirect === '') {
+                        this.loginRedirect === location.origin + '/auth/login'
+                    }
+                    let url = this.loginRedirect + '?continue=' + here;
+                    if(window['debug']) console.debug(`[COMPOSER][OAUTH] Login: ${url}`);
+	        		location.href = url;
 	        	}
         	} else location.href = url;
         }, (err) => {});
@@ -174,12 +182,18 @@ export class OAuthService {
             let state = parts["state"];
             let code = parts['code'];
             let refreshToken = parts['refreshToken'];
+            if(window['debug']) console.debug(`[COMPOSER][OAUTH] State: ${state}`);
+            if(window['debug']) console.debug(`[COMPOSER][OAUTH] Access: ${accessToken} | Refresh: ${accessToken}`);
 
             let oidcSuccess = false;
             let oauthSuccess = false;
 
-            if ( (!accessToken && !code && !refreshToken)  || !state ) return resolve(false);
-            if (this.oidc && !idToken) return resolve(false);
+            if ( (!accessToken && !code && !refreshToken)  || !state ) {
+                return resolve(false);
+            }
+            if (this.oidc && !idToken) {
+                return resolve(false);
+            }
 
             if(code) this.code = code;
             if(refreshToken) this._storage.setItem(`${this.clientId}_refresh_token`, refreshToken);
@@ -256,10 +270,9 @@ export class OAuthService {
 
     removeHash() {
         let scrollV: any, scrollH: any, loc = window.location;
-            console.log(loc);
-        if ("pushState" in history)
+        if ("pushState" in history) {
             history.pushState("", document.title, loc.pathname + loc.search);
-        else {
+        } else {
             // Prevent scrolling by storing the page's current scroll offset
             scrollV = document.body.scrollTop;
             scrollH = document.body.scrollLeft;
@@ -395,16 +408,14 @@ export class OAuthService {
     }
 
     logOut() {
-        if(window['debug']) console.log('[COMPOSER] [OAUTH] Logging out. Clear access tokens...')
+        if(window['debug']) console.debug('[COMPOSER][OAUTH] Logging out. Clear access tokens...')
         let id_token = this.getIdToken();
         let items = ['access_token', 'refresh_token', 'accesstoken', 'refreshtoken', 'id_token', 'idtoken', 'nonce', 'expires', 'login', 'oauth'];
         for (let i = 0; i < this._storage.length; i++){
             let key = this._storage.key(i);
             let lkey = key.toLowerCase();
-            console.log('[COMPOSER] [OAUTH] Comparing key:', key, lkey);
             for(let k = 0; k < items.length; k++){
                 if(lkey.indexOf(items[k]) >= 0){
-                    console.log('[COMPOSER] [OAUTH] Remove key:', key);
                     this._storage.removeItem(key);
                     i--;
                     break;
@@ -420,7 +431,7 @@ export class OAuthService {
         }
 
         let logoutUrl = this.logoutUrl.replace(/\{\{id_token\}\}/, id_token);
-        if(window['debug']) console.log('[COMPOSER] [OAUTH] Redirecting to logout URL...')
+        if(window['debug']) console.debug('[COMPOSER][OAUTH] Redirecting to logout URL...')
         location.href = logoutUrl;
     };
 

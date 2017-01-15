@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: classes.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
+* @Last modified by:   alex.sorafumo
+* @Last modified time: 13/01/2017 11:28 AM
 */
 
 import { Observable } from 'rxjs/Observable';
@@ -93,9 +93,6 @@ export class StatusVariable {
             let e = this.execs[this.execs.length-1];
             if(this.current !== e.value) {
                 let id = this.service.io.exec(mod.parent.id, mod.id, mod.index, e.fn, e.value);
-                if(this.parent.debugger && this.parent.debugger.enabled) {
-                    this.parent.debugger.addMessage('Exec request: ' + id + ' | fn: ' + e.fn + ', params: ' + e.value);
-                } //else console.debug(this.parent.now + ' - Exec request: ' + id + ' | fn: ' + e.fn + ', params: ' + e.value);
             }
             this.execs = [];
         }
@@ -131,8 +128,6 @@ export class Module {
 
     bind(prop: string, cb_fn?: Function) {
         let success = this.service.io.bind(this.parent.id, this.id, this.index, prop);
-        if(this.debugger && this.debugger.enabled) this.debugger.addMessage('Bind request: ' + success);
-        //else console.debug(this.now + ' - Bind request: ' + success);
         if(success){
             let val = this.get(prop);
             val.bindings++;
@@ -152,9 +147,8 @@ export class Module {
             name: prop
         }
         let sv = this.get(prop);
-        console.log(fn, prop, value);
         if(sv.bindings <= 0 && prop && prop !== '') {
-            console.error('Error: Variable "' + prop + '" not bound!')
+            if(window['debug']) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
             return 'Error: Variable not bound!';
         } else if(!prop || prop === '') { // Call function not bound to variable
             return this.service.io.exec(this.parent.id, this.id, this.index, fn, value);
@@ -171,20 +165,14 @@ export class Module {
         let val = this.get(prop);
         val.bindings = 0;
         let id = this.service.io.unbind(this.parent.id, this.id, this.index, prop);
-        if(this.debugger && this.debugger.enabled) this.debugger.addMessage('Unbind request: ' + id);
-        else console.debug(this.now + ' - Unbind request: ' + id);
     }
 
     debug(){
         let id = this.service.io.debug(this.parent.id, this.id, this.index);
-        if(this.debugger && this.debugger.enabled) this.debugger.addMessage('Debug request: ' + id);
-        else console.debug(this.now + ' - Debug request: ' + id);
     }
 
     ignore(){
         let id = this.service.io.ignore(this.parent.id, this.id, this);
-        if(this.debugger && this.debugger.enabled) this.debugger.addMessage('Ignore request: ' + id);
-        else console.debug(this.now + ' - Ignore request: ' + id);
     }
 
     get(prop: string) {
@@ -240,7 +228,7 @@ export class System {
         let module: any = null;
         // Check if system already exists
         for(let i = 0; i < this.modules.length; i++) {
-            if(this.modules[i].id == mod_id) {
+            if(this.modules[i].id == mod_id && this.modules[i].index === index) {
                 module = this.modules[i];
             }
         }

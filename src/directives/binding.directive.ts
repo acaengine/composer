@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: binding.directive.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 12/01/2017 3:20 PM
+* @Last modified time: 14/01/2017 9:25 AM
 */
 
 import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
@@ -108,14 +108,19 @@ export class Binding {
             this.getBinding();
         }
             // Module changes
-        if(this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== ''))) {
+        if((this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== '')))) {
+            this.getModule();
+            this.getBinding();
+        }
+            //Index changed
+        if(changes.index) {
             this.getModule();
             this.getBinding();
         }
             // Binding value changes
         if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
-            if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
-                console.debug(`COMPOSER | Binding: Value changed calling exec. ${this.prev} => ${this.value}`);
+            if(window['debug']) {
+                console.debug(`[COMPOSER][Binding] Value changed calling exec. ${this.prev} => ${this.value}`);
             }
             this.call_exec();
         }
@@ -126,17 +131,13 @@ export class Binding {
         if(!this.service) return;
         if(typeof this.sys === 'string') this.system = this.service.get(this.sys);
         else this.system = this.sys;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
-            console.debug('COMPOSER | Binding: Change system to ' + this.system.id);
-        }
     }
 
     private getModule(){
         if(!this.system) return;
-        if(typeof this.mod === 'string') this.module = this.system.get(this.mod, this.index ? this.index : 1);
+        if(typeof this.mod === 'string') this.module = this.system.get(this.mod, !this.index && this.index !== 0 ? 1 : +this.index);
         else this.module = this.mod;
         this.binding = this.module.get(this.bind);
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) console.debug('COMPOSER | Binding: Change system to ' + this.module.id);
     }
 
     private getBinding(){
@@ -149,7 +150,7 @@ export class Binding {
         });
         this.value = this.binding.current;
         this.prev = this.value;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) console.debug('COMPOSER | Binding: Bound to variable ' + this.binding.id);
+        if(window['debug']) console.debug(`[COMPOSER][Binding] Bound to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
         if(this.unbind === null) {
             setTimeout(() => {
                 this.getBinding();
@@ -167,9 +168,6 @@ export class Binding {
     private call_exec(exec?: string){
         if(!this || this.exec === undefined || (!this.binding && (!this.exec || this.exec === ''))) return;
         if(this.exec === null || this.exec === '') this.exec = this.binding.id;
-        if(window['debug'] && window['debug_module'].indexOf('COMPOSER_BINDING') >= 0) {
-            console.debug(`COMPOSER | Binding: Executing function "${this.exec}".`);
-        }
             // Update binding
         this.prev_exec = this.exec;
         this.prev = this.value;
