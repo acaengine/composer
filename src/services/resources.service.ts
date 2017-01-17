@@ -328,7 +328,7 @@ export class Resources {
 	        	this.http.hash(`${redirect}oauth-resp.html`),
 	        	(url[0] === '/' ? (uri + url) : url)
 	        );
-	        this.http.setLoginStatus(auth.session);
+	        if(auth.session) this.http.setLoginStatus(auth.session);
    		 	this.authLoaded = true;
             setTimeout(() => {
             	this.http.tryLogin();
@@ -337,15 +337,13 @@ export class Resources {
         }, (err: any) => {
         	console.error('[COMPOSER][Resources] Error getting authority.');
         	console.error(err);
-            setTimeout(() => {
-    	        this.http.setupOAuth(
-    	        	`${uri}/auth/oauth/authorize`,
-    	        	`${uri}/auth/token`,
-    	        	`${redirect}oauth-resp.html`,
-    	        	this.http.hash(`${redirect}oauth-resp.html`),
-    	        	`${uri}/auth/login`);
-            	this.http.tryLogin();
-            }, 500);
+	        this.http.setupOAuth(
+	        	`${uri}/auth/oauth/authorize`,
+	        	`${uri}/auth/token`,
+	        	`${redirect}oauth-resp.html`,
+	        	this.http.hash(`${redirect}oauth-resp.html`),
+	        	`${uri}/auth/login`);
+        	this.http.tryLogin();
         	reject(err);
         })
     }
