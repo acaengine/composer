@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: systems.service.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 15/01/2017 7:23 PM
+* @Last modified time: 17/01/2017 2:47 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -77,7 +77,7 @@ export class SystemsService {
         this.mock = options.mock ? true : false;
         this.is_setup = true;
         if(options.mock){
-            if(window['debug']) console.debug('[COMPOSER][Systems] Settings up mock websocket.');
+            if(window['debug']) console.debug('[COMPOSER][Systems] Setting up mock websocket.');
             if(this.io) delete this.io;
             this.io = new $WebSocketMock(this, this.r, this.fixed_device);
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
@@ -85,7 +85,7 @@ export class SystemsService {
                 return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
             } else return true;
         } else {
-            if(window['debug']) console.debug('[COMPOSER][Systems] Settings up websocket.');
+            if(window['debug']) console.debug('[COMPOSER][Systems] Setting up websocket.');
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
             return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
         }

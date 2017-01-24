@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: binding.directive.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 14/01/2017 9:25 AM
+* @Last modified time: 24/01/2017 3:32 PM
 */
 
 import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
@@ -117,6 +117,10 @@ export class Binding {
             this.getModule();
             this.getBinding();
         }
+            // Variable to bind changes
+        if(changes.bind) {
+            this.getBinding();
+        }
             // Binding value changes
         if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
             if(window['debug']) {
@@ -150,7 +154,7 @@ export class Binding {
         });
         this.value = this.binding.current;
         this.prev = this.value;
-        if(window['debug']) console.debug(`[COMPOSER][Binding] Bound to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
+        if(window['debug']) console.debug(`[COMPOSER][Binding] Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
         if(this.unbind === null) {
             setTimeout(() => {
                 this.getBinding();
@@ -166,7 +170,7 @@ export class Binding {
     }
 
     private call_exec(exec?: string){
-        if(!this || this.exec === undefined || (!this.binding && (!this.exec || this.exec === ''))) return;
+        if(!this || !this.module || this.exec === undefined || (!this.binding && (!this.exec || this.exec === ''))) return;
         if(this.exec === null || this.exec === '') this.exec = this.binding.id;
             // Update binding
         this.prev_exec = this.exec;

@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: websocket.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 17/01/2017 10:59 AM
+* @Last modified time: 20/01/2017 9:24 AM
 */
 
 const BIND   = 'bind';
@@ -19,12 +19,12 @@ const NOTIFY  = 'notify';
 
 // timers
 const SECONDS = 1000;
-const RECONNECT_TIMER_SECONDS  = 5 * SECONDS;
-const KEEP_ALIVE_TIMER_SECONDS = 60 * SECONDS;
+const RECONNECT_TIMER  = 5 * SECONDS;
+const KEEP_ALIVE_TIMER = 60 * SECONDS;
 
 export class WebSocketInterface {
     counters: number[];
-    private io: any;
+    private io: any = null;
     end_point: string;
     serv: any;
     req_id = 0;
@@ -35,7 +35,6 @@ export class WebSocketInterface {
     reconnected = false;
     connect_check: any = null;
     connect_promise: any = null;
-    connecting: boolean = false;
     requests: any = {};
     static retries: number = 0;
     fixed: boolean = false;
@@ -58,63 +57,80 @@ export class WebSocketInterface {
     connect() {
         if(!this.connect_promise) {
             this.connect_promise = new Promise((resolve, reject) => {
-                if(this.connecting) {
-                    reject({message: 'Already attempting to connect to websocket.'});
-                    this.connect_promise = null;
-                    return;
-                }
-                this.connecting = true;
-    	        if(this.auth !== undefined && this.auth !== null){
-    	            this.auth.getToken().then((token: any) => {
-    	                if(token){
-    	                    let uri = this.uri;
-    	                        //Setup URI
-    	                    uri += '?bearer_token=' + token;
-                            if(this.fixed) {
-                                uri += '&fixed_device=true';
-                            }
-    	                    let search = window.location.search;
-    	                    if(search.indexOf('fixed_device') >= 0){
-    	                        uri += '&fixed_device=true';
-    	                    }
-                            if(window['debug']) console.debug('[COMPOSER][WS] Building websocket...');
-    	                        //Create Web Socket
-    	                    this.io = new WebSocket(uri);
-    	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
-    	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
-    	                    this.io.onopen = (evt: any) => {
-                                this.onopen(evt);
-                                setTimeout(() => {
-                                    this.connected = true;
-                                    resolve();
-                                }, 100);
-                            }
-    	                    this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); reject(); }
-                            this.connect_promise = null;
-    	                } else {
-    	                    setTimeout(() => { this.connect(); }, 200) ;
-                            this.connect_promise = null;
-    	                    reject();
-    	                }
-    	            });
-    	        } else {
-    	                //Create WebSocket
-    	            this.io = new WebSocket(this.uri);
-    	            this.io.onmessage = (evt: any) => { this.onmessage(evt); }
-    	            this.io.onclose = (evt: any) => { this.onclose(evt); }
-    	            this.io.onopen = (evt: any) => {
-                        this.onopen(evt);
-                        setTimeout(() => {
-                            this.connected = true;
-                            resolve();
-                        }, 100);
+                if(this.io && this.io.readyState !== this.io.CLOSED) {
+                    if(this.io.readyState === this.io.CONNECTING) {
+                        reject({message: 'Already attempting to connect to websocket.'});
+                        this.connect_promise = null;
+                        return;
+                    } else if(this.io.readyState === this.io.OPEN){
+                        this.connected = true;
+                        this.connect_promise = null;
+                        resolve();
+                        return;
+                    } else if(this.io.readyState === this.io.CLOSING){
+                        this.connect_promise = null;
+                        reject({message: 'Websocket is closing'});
+                        return;
                     }
-    	            this.io.onerror = (evt: any) => { this.serv.r.checkAuth(); reject(); }
-                    this.connect_promise = null;
-    	        }
-                    // Prevent another connection attempt for 100ms
-                setTimeout(() => { this.connecting = false; }, 100);
-    	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
+                } else {
+                    if(this.auth) {
+        	            this.auth.getToken().then((token: any) => {
+        	                if(token){
+        	                    let uri = this.uri;
+        	                        //Setup URI
+        	                    uri += '?bearer_token=' + token;
+                                if(this.fixed) {
+                                    uri += '&fixed_device=true';
+                                }
+        	                    let search = window.location.search;
+        	                    if(search.indexOf('fixed_device') >= 0){
+        	                        uri += '&fixed_device=true';
+        	                    }
+                                if(window['debug']) console.debug('[COMPOSER][WS] Building websocket...');
+        	                        //Create Web Socket
+        	                    this.io = new WebSocket(uri);
+        	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
+        	                    this.io.onclose = (evt: any) => { this.onclose(evt); }
+        	                    this.io.onopen = (evt: any) => {
+                                    this.onopen(evt);
+                                    setTimeout(() => {
+                                        this.connected = true;
+                                        resolve();
+                                    }, 100);
+                                }
+        	                    this.io.onerror = (evt: any) => {
+                                    this.serv.r.checkAuth();
+                                    this.io = null;
+                                    reject();
+                                }
+                                this.connect_promise = null;
+        	                } else {
+        	                    setTimeout(() => { this.connect(); }, 200) ;
+                                this.connect_promise = null;
+        	                    reject();
+        	                }
+        	            });
+                    } else {
+        	                //Create WebSocket
+        	            this.io = new WebSocket(this.uri);
+        	            this.io.onmessage = (evt: any) => { this.onmessage(evt); }
+        	            this.io.onclose = (evt: any) => { this.onclose(evt); }
+        	            this.io.onopen = (evt: any) => {
+                            this.onopen(evt);
+                            setTimeout(() => {
+                                this.connected = true;
+                                resolve();
+                            }, 100);
+                        }
+        	            this.io.onerror = (evt: any) => {
+                            this.serv.r.checkAuth();
+                            this.io = null;
+                            reject();
+                        }
+                        this.connect_promise = null;
+                    }
+                }
+    	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, RECONNECT_TIMER);
         	});
         }
         return this.connect_promise;
@@ -133,7 +149,7 @@ export class WebSocketInterface {
             if(this.io) {
                 this.io.send('ping');
             }
-        }, KEEP_ALIVE_TIMER_SECONDS);
+        }, KEEP_ALIVE_TIMER);
     }
 
     stopKeepAlive (){
@@ -190,19 +206,19 @@ export class WebSocketInterface {
     }
 
     fail (msg: any, type: any){
-        if(window['debug'] && type !== 'meta') console.debug(`[COMPOSER][WS] Failed ${type}. ${JSON.stringify(msg)}`);
+        if(window['debug'] && type !== 'meta') console.error(`[COMPOSER][WS] Failed ${type}. ${JSON.stringify(msg)}`);
         return false;
     }
 
     sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
-        if (!this.connected) {
+        if (!this.io || this.io.readyState !== this.io.OPEN) {
         	return this.connect().then(() => {
                 setTimeout(() => {
             		return this.sendRequest(type, system, mod, index, name, args);
                 }, 200);
                 WebSocketInterface.retries = 0;
         	}, () => {
-                if(window['debug']) console.debug(`[COMPOSER][WS] Failed to connect(${type}, ${name})`);
+                if(window['debug']) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name})`);
                 WebSocketInterface.retries++;
                 if(WebSocketInterface.retries > 10) return -1;
                 setTimeout(() => {
