@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: oauth2.service.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 15/01/2017 7:51 PM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 25/01/2017 3:01 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -38,13 +38,21 @@ export class OAuthService {
 
     }
 
-
+    /**
+     * Set the type of storage to use for OAuth
+     * @param  {Storage} storage Storage to use LocalStorage/SessionStorage
+     * @return {void}
+     */
     public setStorage(storage: Storage) {
         this._storage = storage;
     }
 
     private _storage: Storage = localStorage;
-
+    /**
+     * Generates a login URL with the set parameters
+     * @param  {any}    state OAuth State
+     * @return {string} Returns a generated login URL
+     */
     createLoginUrl(state: any) {
         let that = this;
 
@@ -83,7 +91,11 @@ export class OAuthService {
             return url;
         });
     };
-
+    /**
+     * Generates a refresh URL with the set parameters
+     * @param  {any}    state OAuth State
+     * @return {string} Returns a generated refresh URL
+     */
     createRefreshUrl(state: any) {
         if (typeof state === "undefined") { state = ""; }
 
@@ -107,16 +119,20 @@ export class OAuthService {
         });
     };
 
+    /**
+     * Get generated a login URL with the set parameters
+     * @return {string} Returns the generated login URL
+     */
     get login_url() {
         return this.createLoginUrl("").then((url) => {
             return url;
         })
-        .catch(function (error) {
-            console.error("Error in initImplicitFlow");
-            console.error(error);
-        });
     }
 
+    /**
+     * Get generated a refresh URL with the set parameters
+     * @return {string} Returns the generated refresh URL
+     */
     get refresh_url() {
         return this.createRefreshUrl('').then((url) => {
             return url;
@@ -125,6 +141,11 @@ export class OAuthService {
 
     run_flow: boolean = false;
 
+    /**
+     * Starts process to login and get OAuth tokens
+     * @param  {string} additionalState OAuth State
+     * @return {void}
+     */
     initImplicitFlow(additionalState: string = "") {
         if(!this.clientId || this.clientId === '' || this.run_flow) return;
         this.createLoginUrl(additionalState).then((url) => {
@@ -163,13 +184,23 @@ export class OAuthService {
             options.onTokenReceived(tokenParams);
         }
     }
-
+    /**
+     * Try to process login
+     * @param  {any}    options Login processing options
+     * @return {Promise<boolean>} Returns Promise which resolves success of login
+     */
     tryLogin(options?: any) {
         return new Promise((resolve, reject) => {
             this.attemptLogin(options, resolve, reject);
         })
     };
-
+    /**
+     * Attempts to process login information
+     * @param  {any}    options Login processing options
+     * @param  {any}    resolve Promise resolve
+     * @param  {any}    reject  Promise reject
+     * @return {void}
+     */
     attemptLogin(options: any, resolve: any, reject: any) {
         if(this.clientId && this.clientId !== '') {
             options = options || { };
@@ -268,6 +299,10 @@ export class OAuthService {
         }
     }
 
+    /**
+     * Removes OAuth details from the URL Hash
+     * @return {void}
+     */
     removeHash() {
         let scrollV: any, scrollH: any, loc = window.location;
         if ("pushState" in history) {
@@ -284,7 +319,12 @@ export class OAuthService {
             document.body.scrollLeft = scrollH;
         }
     }
-
+    /**
+     * Process tokens
+     * @param  {any}    idToken     ID Token
+     * @param  {any}    accessToken Access Token
+     * @return {boolean} Returns success of processing id token
+     */
     processIdToken(idToken: any, accessToken: any) {
             let tokenParts = idToken.split(".");
             let claimsBase64 = this.padBase64(tokenParts[1]);
@@ -341,12 +381,19 @@ export class OAuthService {
             return true;
     }
 
+    /**
+     * Get the identity claims from storage
+     * @return {string} Returns the identity claims
+     */
     getIdentityClaims() {
         let claims = this._storage.getItem(`${this.clientId}_id_token_claims_obj`);
         if (!claims) return null;
         return JSON.parse(claims);
     }
-
+    /**
+     * Get the id token from storage
+     * @return {string} Returns the id token
+     */
     getIdToken() {
         return this._storage.getItem(`${this.clientId}_id_token`);
     }
@@ -365,13 +412,19 @@ export class OAuthService {
     tryRefresh(timeoutInMsec: any) {
         throw new Error("tryRefresh has not been implemented so far");
     };
-
+    /**
+     * Get the access token from storage
+     * @return {string} Returns the access token
+     */
     getAccessToken() {
         let token = this._storage.getItem(`${this.clientId}_access_token`);
         if(!token) token = this._storage.getItem(`accessToken`)
         return token;
     };
-
+    /**
+     * Checks to see if access token is still valid
+     * @return {boolean} Returns the expiry state of the access token
+     */
     hasValidAccessToken() {
         if (this.getAccessToken()) {
 
@@ -403,10 +456,18 @@ export class OAuthService {
         return false;
     };
 
+    /**
+     * Get the authorisation header to add to requests
+     * @return {string} Returns authorisation header
+     */
     authorizationHeader() {
         return "Bearer " + this.getAccessToken();
     }
 
+    /**
+     * Clears storage and redirects to logout URL
+     * @return {void}
+     */
     logOut() {
         if(window['debug']) console.debug('[COMPOSER][OAUTH] Logging out. Clear access tokens...')
         let id_token = this.getIdToken();
@@ -434,7 +495,10 @@ export class OAuthService {
         if(window['debug']) console.debug('[COMPOSER][OAUTH] Redirecting to logout URL...')
         location.href = logoutUrl;
     };
-
+    /**
+     * Creates a nonce and stores it in storage
+     * @return {string} Returns the created nonce
+     */
     createAndSaveNonce() {
         return this.createNonce().then((nonce: any) => {
             this._storage.setItem(`${this.clientId}_nonce`, nonce);
@@ -443,6 +507,10 @@ export class OAuthService {
 
     };
 
+    /**
+     * Generates a nonce
+     * @return {Promise<string>} Returns a promise that resolve a nonce
+     */
     createNonce() {
 
         return new Promise((resolve, reject) => {
@@ -462,7 +530,10 @@ export class OAuthService {
 
         });
     };
-
+    /**
+     * Breaks up URL hash/query into a key, value map
+     * @return {any} Returns a map of key, value pairs from the URL hash/query
+     */
     getFragment() {
         if (window.location.hash.indexOf("#") === 0) {
             return this.parseQueryString(window.location.hash.substr(1));
@@ -473,7 +544,12 @@ export class OAuthService {
         }
     };
 
-    parseQueryString(queryString: any) {
+    /**
+     * Parses query string and generates a map of the parameters
+     * @param  {string}    queryString Query or hash string
+     * @return {any} Returns a map of key, value pairs from the query string
+     */
+    parseQueryString(queryString: string) {
         let data = {}, pairs: any, pair: any, separatorIndex: any, escapedKey: any, escapedValue: any, key: any, value: any;
 
         if (queryString === null) {
@@ -506,6 +582,12 @@ export class OAuthService {
         return data;
     };
 
+    /**
+     * Checks if claims and tokens correctly in hash
+     * @param  {any}    accessToken Access Token
+     * @param  {any}    idClaims    ID Claims
+     * @return {boolean} Returns claims and tokens correctly in hash
+     */
     checkAtHash(accessToken: any, idClaims: any) {
         if (!accessToken || !idClaims || !idClaims.at_hash ) return true;
         let tokenHash: Array<any> = toByteArrayFunc(sha256.hash(accessToken));

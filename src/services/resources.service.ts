@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: resources.service.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 15/01/2017 7:50 PM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 25/01/2017 1:06 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -61,9 +61,10 @@ let common_crud = {
     };
 
 export class Resource {
-    factory: any;
-    url: any;
-    id: any;
+    factory: any;   // Parent Factory for resource
+    url: any;       // Resource URL
+    id: any;        // Resource Identifier
+
     constructor(factory: any, data: any, url: any){
         this.factory = factory;
         this.url = url;
@@ -74,7 +75,10 @@ export class Resource {
             }
         }
     }
-
+    /**
+     * Posts changes made to the resource to the server
+     * @return {any} Returns the responce from the server
+     */
     save(){
         if(!this.url || this.id === undefined) {
             return {};
@@ -100,13 +104,10 @@ export class Resource {
 }
 
 class ResourceFactory {
-    type: string;
-    private url: string;
-    public params: any;
-    public service: Resources;
-    methods: any;
-    keys: any;
-    resources: any;
+    private url: string;    // Factory Resource API URL
+    public params: any;     // API URL Parameters
+    public service: Resources; // Parent service
+    methods: any;           // Methods available to Factory
 
     constructor(url: string, params: any, methods: any, private http: CommsService) {
         //*
@@ -153,7 +154,12 @@ class ResourceFactory {
         }
         //*/
     }
-
+    /**
+     * Builds a url to use by the factory
+     * @param  {any}    params Parameters to be injected into the url
+     * @param  {any}    url    (Optional) URL for the parameters to be injected into, defaults to factory URL
+     * @return {string}        Returns a URL with the params injected into the appropriate places
+     */
     private createUrl(params: any, url?: any) {
         let gkeys = Object.keys(this.params);
         if(params === undefined || params === null) params = {};
@@ -184,7 +190,13 @@ class ResourceFactory {
         if(query.length > 1) outUrl += query;
         return outUrl;
     }
-
+    /**
+     * Creates a new resource object with the provided data
+     * @param  {any}     data    Resource data
+     * @param  {string}  url     URL that the resource was retrieved from
+     * @param  {boolean} isArray Does the data contain multiple resources
+     * @return {Array|Resource}  Returns the resources from the parsed data
+     */
     processData(data: any, url: string, isArray?: boolean){
         let result: any, i: any, k: any;
         if(isArray === true){
@@ -197,14 +209,26 @@ class ResourceFactory {
         }
         return result;
     }
-
+    /**
+     * Wrapper for a GET request
+     * @param  {any}    method Object describing the handling of the method
+     * @param  {any}    params URL parameters(Route/Query)
+     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     */
     private _get(method: any, params: any) {
         let url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
         return new Promise((resolve, reject) => {
             this.__get(url, method, resolve, reject);
         });
     }
-
+    /**
+     * Wrapper for a GET request
+     * @param  {any}    url     Request URL
+     * @param  {any}    method  Object describing the handling of the method
+     * @param  {any}    resolve Promise resolve function
+     * @param  {any}    reject  Promise reject function
+     * @return {void}
+     */
     private __get(url: any, method: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
@@ -220,6 +244,13 @@ class ResourceFactory {
         }
     }
 
+    /**
+     * Wrapper for a POST request
+     * @param  {any} method Object describing the handling of the method
+     * @param  {any} params URL parameters(Route/Query)
+     * @param  {any} data   POST data
+     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     */
     private _post(method: any, params: any, data: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
@@ -227,6 +258,15 @@ class ResourceFactory {
         });
     }
 
+    /**
+     * Wrapper for a POST request
+     * @param  {any} url     Request URL
+     * @param  {any} method  Object describing the handling of the method
+     * @param  {any} data    POST data
+     * @param  {any} resolve Promise resolve function
+     * @param  {any} reject  Promise reject function
+     * @return {void}
+     */
     private __post(url: any, method: any, data: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
@@ -242,6 +282,13 @@ class ResourceFactory {
         }
     }
 
+    /**
+     * Wrapper for a PUT request
+     * @param  {any} method Object describing the handling of the method
+     * @param  {any} params URL parameters(Route/Query)
+     * @param  {any} data   PUT data
+     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     */
     private _put(method: any, params: any, data: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
@@ -249,6 +296,15 @@ class ResourceFactory {
         });
     }
 
+    /**
+     * Wrapper for a PUT request
+     * @param  {any} url     Request URL
+     * @param  {any} method  Object describing the handling of the method
+     * @param  {any} data    PUT data
+     * @param  {any} resolve Promise resolve function
+     * @param  {any} reject  Promise reject function
+     * @return {void}
+     */
     private __put(url: any, method: any, data: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
@@ -264,6 +320,12 @@ class ResourceFactory {
         }
     }
 
+    /**
+     * Wrapper for a DELETE request
+     * @param  {any} method Object describing the handling of the method
+     * @param  {any} params URL parameters(Route/Query)
+     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     */
     private _delete(method: any, params: any) {
         let url = this.createUrl(params);
         return new Promise((resolve, reject) => {
@@ -271,6 +333,14 @@ class ResourceFactory {
         });
     }
 
+    /**
+     * Wrapper for a DELETE request
+     * @param  {any}    url     Request URL
+     * @param  {any}    method  Object describing the handling of the method
+     * @param  {any}    resolve Promise resolve function
+     * @param  {any}    reject  Promise reject function
+     * @return {void}
+     */
     private __delete(url: any, method: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
             let result: any;
@@ -286,6 +356,10 @@ class ResourceFactory {
         }
     }
 
+    /**
+     * Checks to see if user is authorised
+     * @return {boolean} Returns whether or not the user is logged in
+     */
     auth(){
         return this.http.isLoggedIn();
     }
@@ -295,7 +369,7 @@ class ResourceFactory {
 
 @Injectable()
 export class Resources {
-    factories: any;
+    factories: any; // key, value map of factories
     url: string;
     authLoaded: boolean = false;
     auth_promise: any = null;
@@ -304,6 +378,12 @@ export class Resources {
 
     }
 
+    /**
+     * Initialises authentication details and sets up OAuth
+     * @param  {any}    resolve Promise resolve function
+     * @param  {any}    reject  Promise reject function
+     * @return {void}
+     */
     initAuth(resolve: any, reject: any) {
         if(window['debug']) console.debug(`[COMPOSER][Resources] Loading Authority...`);
         let parts = this.url.split('/');
@@ -347,7 +427,11 @@ export class Resources {
         	reject(err);
         })
     }
-
+    /**
+     * Sets up OAuth with the given options
+     * @param  {any}    options OAuth details
+     * @return {void}
+     */
     setup(options: any) {
         this.http.setupOAuth(
             options.oauth_server,
@@ -359,6 +443,11 @@ export class Resources {
         this.url = options.api_endpoint;
     }
 
+    /**
+     * Initialises all the resource factories for each route
+     * @param  {string} url_base Base resource URL, defaults to origin + '/control/'
+     * @return {Promise<any>}    Returns a promise when resolves the state of the auth.
+     */
     init(url_base?: string) {
     	return new Promise((resolve, reject) => {
 	        if(!url_base && !this.url) this.url = window.location.origin + '/control/';
@@ -491,17 +580,30 @@ export class Resources {
 	        this.initAuth(resolve, reject);
     	});
     }
-
+    /**
+     * Function to get the user access token for the API
+     * @return {string} Returns an OAuth access token
+     */
     getToken(){
         return this.http.token;
     }
-
+    /**
+     * Function checks if the the user is current authorised.
+     * @return {void}
+     */
     checkAuth(){
         this.http.checkAuth(() => {
             if(window['debug']) console.debug('[COMPOSER][Resources] Refreshed Auth');
         });
     }
-
+    /**
+     * Creates a new resource factory with the given parameters.
+     * @param  {string} name    Name of the resource factory
+     * @param  {string} url     Base API URL of the resources
+     * @param  {any}    params  Route paramters available on the API URL
+     * @param  {any}    methods Request methods that are avaiable on this resource
+     * @return {void}
+     */
     new(name: string, url: string, params: any, methods: any){
         let factory = new ResourceFactory(url, params, methods, this.http);
         factory.service = this;
@@ -509,6 +611,11 @@ export class Resources {
         this.factories[name] = factory;
     }
 
+    /**
+     * Function to get a resource factory with the given name
+     * @param  {string} name Name of the resource factory to get
+     * @return {ResourceFactory} Returns a resource factory, null if not found
+     */
     get(name: string){
         return this.factories && this.factories[name] ? this.factories[name] : null;
     }

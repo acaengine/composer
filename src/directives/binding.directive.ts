@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: binding.directive.ts
 * @Last modified by:   alex.sorafumo
-* @Last modified time: 24/01/2017 3:32 PM
+* @Last modified time: 25/01/2017 8:46 AM
 */
 
 import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
@@ -15,18 +15,20 @@ import { SystemsService } from '../services';
     providers: [ ]
 })
 export class Binding {
-    @Input() bind: any;
-    @Input() sys: any;
-    @Input() mod: any;
-    @Input() value: any;
-    @Output() valueChange = new EventEmitter(); // an event emitter
-    @Input() exec: any;
-    @Input() params: any;
-    @Input() index: number;
+        // Bindables
+    @Input() bind: any; // Name of the status variable to bind to
+    @Input() sys: any; // Name of the system to connect to
+    @Input() mod: any; // Name of the module to connect to
+    @Input() index: number; // Index of the named module in the system
+    @Input() value: any; // Value of the status variable bound to
+    @Output() valueChange = new EventEmitter(); // Emits changes to the value variable
+    @Input() exec: any; // Name of the function to execute on the module when value changes
+    @Input() params: any; // Parameters to pass to the called function on module
 
     @Output() ontap = new EventEmitter();
     @Output() onpress = new EventEmitter();
     @Output() onrelease = new EventEmitter();
+        // Local Variables
     system: any;
     module: any;
     binding: any;
@@ -36,6 +38,12 @@ export class Binding {
     service: SystemsService;
     i: number = 0;
 
+    /**
+     * Function call when the element that this is attached to is tapped
+     * emits a ontap event
+     * @param  {any}    e Hammer Tap event returned by Angular 2
+     * @return {void}
+     */
     @HostListener('tap', ['$event'])
     onClick(e: any) {
         if(e) {
@@ -44,6 +52,12 @@ export class Binding {
         this.ontap.emit(e);
     }
 
+    /**
+     * Function call when the element that this is attached emits a mouseup/touchend
+     * emits an onrelease event
+     * @param  {any}    e Hammer PressUp event returned by Angular 2
+     * @return {void}
+     */
     @HostListener('pressup', ['$event'])
     onRelease(e: any) {
         if(e) {
@@ -52,6 +66,12 @@ export class Binding {
         this.onrelease.emit(e);
     }
 
+    /**
+     * Function call when the element that this is attached to is tapped
+     * emits a onpress event
+     * @param  {any}    e Hammer Press event returned by Angular 2
+     * @return {void}
+     */
     @HostListener('press', ['$event'])
     onPress(e: any) {
         if(e) {
@@ -68,7 +88,11 @@ export class Binding {
         }, 50);
         //*/
     }
-    //*
+    /**
+     * Checks if the element is exists on the page and binds/unbinds from the
+     * status variable if neccessary
+     * @return {void}
+     */
     checkVisibility() {
         if(!this.checkElement()){
             if(this.unbind) {
@@ -79,8 +103,11 @@ export class Binding {
             if(!this.unbind) this.getBinding();
         }
     }
-    //*/
 
+    /**
+     * Checks if the element attached to the directive is part of the DOM
+     * @return {void}
+     */
     checkElement() {
         let el = this.el.nativeElement;
         while(el !== null){
@@ -91,7 +118,7 @@ export class Binding {
     }
 
     ngOnChanges(changes: any) {
-        if(!this.serv.is_setup) {
+        if(!this.serv.is_setup) { // Do not update bindings until systems service is ready
             setTimeout(() => {
                 this.ngOnChanges(changes);
             }, 500);
@@ -131,19 +158,30 @@ export class Binding {
         if(changes.value) this.valueChange.emit(changes.value.currentValue);
     }
 
+    /**
+     * Gets the system from the Systems Service
+     * @return {void}
+     */
     private getSystem(){
         if(!this.service) return;
         if(typeof this.sys === 'string') this.system = this.service.get(this.sys);
         else this.system = this.sys;
     }
 
+    /**
+     * Gets the module from the system
+     * @return {void}
+     */
     private getModule(){
         if(!this.system) return;
         if(typeof this.mod === 'string') this.module = this.system.get(this.mod, !this.index && this.index !== 0 ? 1 : +this.index);
         else this.module = this.mod;
         this.binding = this.module.get(this.bind);
     }
-
+    /**
+     * Gets the status variable from the module and binds to it.
+     * @return {void}
+     */
     private getBinding(){
         if(!this.bind || this.bind === '' || !this.module) return;
         if(this.unbind !== undefined && this.unbind !== null) this.unbind();
@@ -169,6 +207,11 @@ export class Binding {
         }
     }
 
+    /**
+     * Executes a function on the module
+     * @param  {string} exec (Optional) Name of the function to call on the module, defaults to the binding name if not set
+     * @return {void}
+     */
     private call_exec(exec?: string){
         if(!this || !this.module || this.exec === undefined || (!this.binding && (!this.exec || this.exec === ''))) return;
         if(this.exec === null || this.exec === '') this.exec = this.binding.id;

@@ -3,8 +3,8 @@
 * @Date:   20/10/2016 2:32 PM
 * @Email:  alex@yuion.net
 * @Filename: websocket.mock.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 14/01/2017 9:29 AM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 25/01/2017 1:36 PM
 */
 
 const BIND   = 'bind';
@@ -102,7 +102,13 @@ export class MockWebSocketInterface {
         this.serv = srv;
         this.setup(auth, host, port);
     }
-
+	/**
+	 * Initialises websocket
+	 * @param  {any}       auth
+	 * @param  {string =    location.hostname} host Hostname for the websocket to connect to
+	 * @param  {string =    '3000'}            port Port that the websocket is listening on
+	 * @return {void}
+	 */
     setup(auth: any, host: string = location.hostname, port: string = '3000') {
         this.auth = auth;
         this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
@@ -112,8 +118,11 @@ export class MockWebSocketInterface {
         }
         this.setupSystems();
     }
-
-    setupSystems() {
+	/**
+	 * Loads mock systems into variable
+	 * @return {void}
+	 */
+    private setupSystems() {
         if(window['systemData']) this.systems = window['systemData'];
         else if(window['systemsData']) this.systems = window['systemsData'];
         else if(window['control'] && window['control']['systems']) this.systems = window['control']['systems'];
@@ -123,8 +132,11 @@ export class MockWebSocketInterface {
             }, 200);
         }
     }
-
-    connect() {
+	/**
+	 * Imitates the connecting of a real websocket
+	 * @return {void}
+	 */
+    private connect() {
         if(!this.connect_promise) {
             this.connect_promise = new Promise((resolve, reject) => {
                 if(this.connecting) {
@@ -143,8 +155,11 @@ export class MockWebSocketInterface {
         }
         return this.connect_promise;
     }
-
-    reconnect() {
+	/**
+	 * Imitation of reconnect in real websocket
+	 * @return {[type]} [description]
+	 */
+    private reconnect() {
         return;
         /*
         if (this.io == null || this.io.readyState === this.io.CLOSED){
@@ -155,7 +170,7 @@ export class MockWebSocketInterface {
         //*/
     };
 
-    startKeepAlive () {
+    private startKeepAlive () {
         this.keepAliveInterval = window.setInterval(() => {
             setTimeout(() => {
                 this.onmessage({ data: PONG });
@@ -163,10 +178,14 @@ export class MockWebSocketInterface {
         }, KEEP_ALIVE_TIMER_SECONDS);
     }
 
-    stopKeepAlive (){
+    private stopKeepAlive (){
         window.clearInterval(this.keepAliveInterval);
     }
-
+	/**
+	 * Called when the websocket is connected
+	 * @param  {any}    evt Event returned by the websocket
+	 * @return {void}
+	 */
     onopen(evt: any) {
         this.connected = true;
         if(window['debug']) console.debug('[COMPOSER][WS(M)] Connected');
@@ -176,6 +195,11 @@ export class MockWebSocketInterface {
         this.reconnected = false;
     }
 
+	/**
+	 * Function that is called when the websocket is disconnected
+	 * @param  {any}    evt Event returned by the websocket
+	 * @return {void}
+	 */
     onclose(evt: any) {
         this.connected = false;
         if(window['debug']) console.debug('[COMPOSER][WS(M)] Closed');
@@ -183,7 +207,12 @@ export class MockWebSocketInterface {
         this.stopKeepAlive();
     }
 
-    onmessage(evt: any) {
+	/**
+	 * Function that is called when the websocket is receives a message
+	 * @param  {any}    evt Event returned by the websocket
+	 * @return {void}
+	 */
+    private onmessage(evt: any) {
         let msg: any, meta: any, system: any, module: any, binding: any;
 
         // message data will either be the string 'PONG', or json
@@ -193,7 +222,7 @@ export class MockWebSocketInterface {
         } else {
             msg = JSON.parse(evt.data);
         }
-
+		// Process message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
 			if(window['debug']) console.debug(`[COMPOSER][WS(M)] Recieved ${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`, msg.value);
@@ -215,13 +244,27 @@ export class MockWebSocketInterface {
         } else if (msg.type === 'debug') { }
         return true;
     }
-
-    fail (msg: any, type: any){
+	/**
+	 * Called when processing a message failed
+	 * @param  {any}    msg  Failure message to display
+	 * @param  {any}    type Type of message
+	 * @return {void}
+	 */
+    private fail (msg: any, type: any){
         if(window['debug']) console.error(`[COMPOSER][WS(M)] Failed(${type}):`, msg);
         return false;
     }
-
-    sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
+	/**
+	 * Sends a message through the websocket
+	 * @param  {any}    type   Message type
+	 * @param  {any}    system System for message to be sent to
+	 * @param  {any}    mod    Module for message to be sent to
+	 * @param  {any}    index  Index of module in system
+	 * @param  {any}    name   Name of status variable or function on the module
+	 * @param  {any[] = []} args Arguments to pass to the function on the module
+	 * @return {any} Returns the id of the request made through the websocket.
+	 */
+    private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any[] = []) :any {
         if (!this.connected) {
             if(window['debug']) console.debug('[COMPOSER][WS(M)] Not connected to websocket. Attempting to connect to websocket');
         	return this.connect().then(() => {
@@ -250,8 +293,13 @@ export class MockWebSocketInterface {
 
         return this.req_id;
     };
-
-    notifyChange(r: any, value: any) {
+	/**
+	 * Imitates a status variable change on the server
+	 * @param  {any}    r     Request made to the server
+	 * @param  {any}    value New value of status variable
+	 * @return {void}
+	 */
+    private notifyChange(r: any, value: any) {
         let evt_ex = { data: JSON.stringify({
             id: r.id,
             type: NOTIFY,
@@ -262,8 +310,13 @@ export class MockWebSocketInterface {
             this.onmessage(evt_ex);
         }, Math.floor(Math.random() * 2000) + 100);
     }
-
-    respondTo(type: string, r: any) {
+	/**
+	 * Imitates a response from the server to any request made
+	 * @param  {string} type Request type
+	 * @param  {any}    r    Request body
+	 * @return {void}
+	 */
+    private respondTo(type: string, r: any) {
         let evt: any = {};
         let evt_ex: any = null;
         switch(type) {
@@ -283,7 +336,6 @@ export class MockWebSocketInterface {
                     })}
                     setTimeout(() => {
                         this.systems[r.sys][r.mod][r.index-1].watch(r.name, (id: string, oldval: any, newval: any) => {
-                            console.log(id, oldval, newval);
                             this.notifyChange(r, newval);
                             return newval;
                         });
@@ -345,15 +397,41 @@ export class MockWebSocketInterface {
             }, Math.floor(Math.random() * 2000) + 100);
         }
     }
-
+	/**
+	 * Requests a binding to a status variable on the server
+	 * @param  {string}   sys_id   System to bind to
+	 * @param  {string}   mod_id   Module to bind to
+	 * @param  {number}   i        Index of module in the system
+	 * @param  {string}   name     Name of status variable to bind to
+	 * @param  {Function} callback Function to call when the binding is successful
+	 * @return {number}   Returns the id of the request
+	 */
     bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
         return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
     }
 
+	/**
+	 * Requests to unbind to a bound status variable on the server
+	 * @param  {string}   sys_id   System ID
+	 * @param  {string}   mod_id   Module name
+	 * @param  {number}   i        Index of module in the system
+	 * @param  {string}   name     Name of status variable to unbind
+	 * @param  {Function} callback Function to call when the unbind is successful
+	 * @return {number}   Returns the id of the request
+	 */
     unbind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
         return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
     }
 
+	/**
+	 * Requests to execute a function on the server
+	 * @param  {string}   sys_id   System ID
+	 * @param  {string}   mod_id   Module name
+	 * @param  {number}   i        Index of module in the system
+	 * @param  {any}      fn       Name of the function to call on the module
+	 * @param  {any}      args     Arguments to pass to the function being called
+	 * @return {Promise<any>}   Returns a promise which resolves the result of the call or rejects with an error message
+	 */
     exec(sys_id: string, mod_id: string, i: number, fn: any, args: any){
         return new Promise((resolve, reject) => {
             let id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
@@ -363,11 +441,24 @@ export class MockWebSocketInterface {
             };
         })
     }
-
+	/**
+	 * Enables debugging on the selected system and module
+	 * @param  {string} sys_id System ID
+	 * @param  {string} mod_id Module name
+	 * @param  {number} i      Index of the module in the system
+	 * @return {number}        Returns the id of the request made
+	 */
     debug(sys_id: string, mod_id: string, i: number){
         return this.sendRequest(DEBUG, sys_id, mod_id, i, DEBUG);
     }
-
+	
+	/**
+	 * Sends ignore to the selected system and module
+	 * @param  {string} sys_id System ID
+	 * @param  {string} mod_id Module name
+	 * @param  {number} i      Index of the module in the system
+	 * @return {number}        Returns the id of the request made
+	 */
     ignore(sys_id: string, mod_id: string, inst: any){
         return this.sendRequest(IGNORE, sys_id, mod_id, null, IGNORE);
     }

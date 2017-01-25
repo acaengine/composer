@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: aca-http.service.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 15/01/2017 7:02 PM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 25/01/2017 4:47 PM
 */
 
 import { Injectable, Inject } from '@angular/core';
@@ -41,7 +41,19 @@ export class CommsService {
         });
         //*/
     }
-
+    /**
+     * Initialises OAuth
+     * @param  {string}  url      Login URL
+     * @param  {string}  refresh  Refresh tokens URL
+     * @param  {string}  redirect Redirect URI
+     * @param  {string}  c_id     OAuth Client ID
+     * @param  {string}  login    Login URL
+     * @param  {string}  issuer   OAuth Issuer
+     * @param  {string}  scope    OAuth Scope
+     * @param  {boolean} oidc     Use Open ID
+     * @param  {string}  logout   Logout URL
+     * @return {void}
+     */
     setupOAuth(url: string, refresh: string, redirect: string, c_id: string, login:string, issuer?: string, scope?: string, oidc?: boolean, logout?: string) {
         let oauth = this.oAuthService;
         oauth.loginUrl = url;
@@ -61,14 +73,20 @@ export class CommsService {
         });
         */
     }
-
+    /**
+     * Attempt to login to the system
+     * @return {void}
+     */
     tryLogin() {
         if(window['debug']) console.debug('[COMPOSER][COMMS] Trying Login');
         if(this.oAuthService.code) this.login().then(() => {
             if(window['debug']) console.debug('[COMPOSER][COMMS] Got Access Token.');
         });
     }
-
+    /**
+     * Clean up URL after logging in so that the ugly hash/query is not displayed
+     * @return {void}
+     */
     private cleanUrl() {
         let redirect: any = this.store.getItem('oauth_redirect');
         let loc = '/';
@@ -86,6 +104,13 @@ export class CommsService {
         }
     }
 
+    /**
+     * Process HTTP options
+     * @param  {string} url     Request URL
+     * @param  {any}    body    Request Body
+     * @param  {any}    options Request Options
+     * @return {any} Returns the details for the request
+     */
     processOptions(url: string, body?: any, options?: any) {
         let auth_header = this.oAuthService ? this.oAuthService.authorizationHeader() : '';
         let headers = new Headers({ "Authorization": auth_header });
@@ -115,6 +140,12 @@ export class CommsService {
         return req;
     }
 
+    /**
+     * Wrapper for Angular 2 HTTP GET with auth
+     * @param  {string} url     Request URL
+     * @param  {any}    options Request Options
+     * @return {Observable} Returns an observable which acts like the Http observable
+     */
     get(url: string, options?: any) {
         let req = this.processOptions(url, null, options);
         return new Observable((observer: any) => {
@@ -132,6 +163,13 @@ export class CommsService {
       });
     }
 
+    /**
+     * Wrapper for Angular 2 HTTP POST with auth
+     * @param  {string} url     Request URL
+     * @param  {any}    body    (Optional)Request Body
+     * @param  {any}    options (Optional)Request Options
+     * @return {Observable} Returns an observable which acts like the Http observable
+     */
     post(url: string, body?: any, options?: any) {
         let req = this.processOptions(url, body, options);
         req.type = 'post';
@@ -150,6 +188,13 @@ export class CommsService {
       });
     }
 
+    /**
+     * Wrapper for Angular 2 HTTP PUT with auth
+     * @param  {string} url     Request URL
+     * @param  {any}    body    (Optional)Request Body
+     * @param  {any}    options (Optional)Request Options
+     * @return {Observable} Returns an observable which acts like the Http observable
+     */
     put(url: string, body?: any, options?: any){
         let req = this.processOptions(url, body, options);
         req.type = 'put';
@@ -168,6 +213,12 @@ export class CommsService {
       });
     }
 
+    /**
+     * Wrapper for Angular 2 HTTP DELETE with auth
+     * @param  {string} url     Request URL
+     * @param  {any}    options (Optional)Request Options
+     * @return {Observable} Returns an observable which acts like the Http observable
+     */
     delete(url: string, options?: any){
         let req = this.processOptions(url, null, options);
         req.type = 'delete';
@@ -181,11 +232,19 @@ export class CommsService {
             );
       });
     }
-
+    /**
+     * Creates a MD5 hash of the given string
+     * @param  {string} str String to hash
+     * @return {string}     Returns a hash of the given string
+     */
     hash(str: string){
         return <string>Md5.hashStr(str, false);
     }
 
+    /**
+     * Login to the system with the set details
+     * @return {Promise<any>} Returns a promise which resolves with an access token
+     */
     login(){
         if (this.loginPromise === null) {
             if(window['debug']) console.debug('[COMPOSER][COMMS] Attempting login.');
@@ -245,6 +304,12 @@ export class CommsService {
         return this.loginPromise;
     }
 
+    /**
+     * Refreshs access token
+     * @param  {any}    resolve Login promise resolve
+     * @param  {any}    reject  Login promise reject
+     * @return {void}
+     */
     refreshToken(resolve: any, reject: any) {
         let oauth:any = this.oAuthService;
         this.refresh = true;
@@ -273,6 +338,11 @@ export class CommsService {
         });
     }
 
+    /**
+     * Sets whether the user has logged in or not
+     * @param  {boolean} status Logged in status
+     * @return {void}
+     */
     setLoginStatus(status: boolean) {
     	if(sessionStorage) {
         	let oauth:any = this.oAuthService;
@@ -280,7 +350,10 @@ export class CommsService {
 	    	else sessionStorage.removeItem(`${oauth.clientId}_login`);
 	    }
     }
-
+    /**
+     * Removes all authentication related keys from storage
+     * @return {void}
+     */
     clearStore() {
         let oauth:any = this.oAuthService;
         this.store.removeItem(`${oauth.clientId}_access_token`);
@@ -290,11 +363,21 @@ export class CommsService {
         this.store.removeItem(`${oauth.clientId}_login`);
     }
 
+    /**
+     * Called when login is completed
+     * @return {void}
+     */
     loginDone() {
         this.loginPromise = null;
         this.cleanUrl();
     }
 
+    /**
+     * Handles errors when attempting to login
+     * @param  {any}    err    Error response from login attempt
+     * @param  {any}    reject Login Promise reject function
+     * @return {void}
+     */
     processLoginError(err: any, reject: any) {
         let oauth:any = this.oAuthService;
             // Clear storage
@@ -311,7 +394,11 @@ export class CommsService {
             setTimeout(() => { this.loginDone(); }, 100);
         }
     }
-
+    /**
+     * Checks if user is authorised
+     * @param  {any}    cb_fn Callback function which is passed the response
+     * @return {void}
+     */
     checkAuth(cb_fn: any) {
         console.error('[COMPOSER][COMMS] Checking Auth.');
         if(this.loginPromise === null) {
@@ -326,6 +413,12 @@ export class CommsService {
         }
     }
 
+    /**
+     * Replaces old tokens with new
+     * @param  {any}    data    Object contain new tokens and expiry
+     * @param  {any}    resolve Login resolve function
+     * @return {void}
+     */
     private updateToken(data: any, resolve: any){
         let oauth:any = this.oAuthService;
         if(data.access_token) this.store.setItem(`${oauth.clientId}_access_token`, data.access_token);
@@ -337,7 +430,10 @@ export class CommsService {
         resolve();
         setTimeout(() => { this.loginDone(); }, 100);
     }
-
+    /**
+     * Checks whether current access token is valid or not
+     * @return {boolean} Returns validity of access token
+     */
     tokenValid(){
         let valid:any = true;
         let oauth:any = this.oAuthService;
@@ -351,15 +447,29 @@ export class CommsService {
     logout(){
 
     }
-
+    /**
+     * Get access token
+     * @return {string} Returns access token
+     */
     get token() {
         return this.login();
     }
 
+    /**
+     * Check whether or not the user is logged in
+     * @return {[type]} [description]
+     */
     isLoggedIn() {
         return this.token ? true : (this.refresh ? null : false);
     }
 
+    /**
+     * Handler for HTTP request errors
+     * @param  {any}    err Request error
+     * @param  {any}    req Request details
+     * @param  {any}    obs Request observable
+     * @return {void}
+     */
     private error(err: any, req: any, obs:any) {
         let hash = this.hash(req.url+req.body);
         if(!this.retry[hash]) this.retry[hash] = 0;

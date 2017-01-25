@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: websocket.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 20/01/2017 9:24 AM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 25/01/2017 1:37 PM
 */
 
 const BIND   = 'bind';
@@ -24,12 +24,12 @@ const KEEP_ALIVE_TIMER = 60 * SECONDS;
 
 export class WebSocketInterface {
     counters: number[];
-    private io: any = null;
-    end_point: string;
-    serv: any;
+    private io: any = null; // Websocker
+    end_point: string; //
+    serv: any; // Parent service
     req_id = 0;
     uri: string;
-    connected = false;
+    connected = false; // Is Websocker connected
     private keepAliveInterval: any;
     private auth: any;
     reconnected = false;
@@ -45,6 +45,13 @@ export class WebSocketInterface {
         this.setup(auth, host, port);
     }
 
+    /**
+     * Initialises websocket
+     * @param  {any}       auth
+     * @param  {string =    location.hostname} host Hostname for the websocket to connect to
+     * @param  {string =    '3000'}            port Port that the websocket is listening on
+     * @return {void}
+     */
     setup(auth: any, host: string = location.hostname, port: string = '3000') {
         this.auth = auth;
         this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
@@ -54,7 +61,11 @@ export class WebSocketInterface {
         }
     }
 
-    connect() {
+    /**
+     * Connects to the websocket on the given host and port
+     * @return {void}
+     */
+    private connect() {
         if(!this.connect_promise) {
             this.connect_promise = new Promise((resolve, reject) => {
                 if(this.io && this.io.readyState !== this.io.CLOSED) {
@@ -136,26 +147,41 @@ export class WebSocketInterface {
         return this.connect_promise;
     }
 
-    reconnect() {
+    /**
+     * Reconnects the websocket is it closes or does not exist
+     * @return {void}
+     */
+    private reconnect() {
         if (this.io == null || this.io.readyState === this.io.CLOSED){
             if(window['debug']) console.debug('[COMPOSER][WS] Reconnecting websocket...');
             this.connect();
             this.reconnected = true;
         }
     };
-
-    startKeepAlive () {
+    /**
+     * Starts pings to the server every so often to keep the connection alive
+     * @return {void}
+     */
+    private startKeepAlive () {
         this.keepAliveInterval = window.setInterval(() => {
             if(this.io) {
                 this.io.send('ping');
             }
         }, KEEP_ALIVE_TIMER);
     }
-
-    stopKeepAlive (){
+    /**
+     * Stops pings to the server
+     * @return {void}
+     */
+    private stopKeepAlive (){
         window.clearInterval(this.keepAliveInterval);
     }
 
+    /**
+     * Called when the websocket is connected
+     * @param  {any}    evt Event returned by the websocket
+     * @return {void}
+     */
     onopen(evt: any) {
         if(window['debug']) console.debug('[COMPOSER][WS] Websocket connected');
         this.startKeepAlive();
@@ -164,6 +190,11 @@ export class WebSocketInterface {
         this.reconnected = false;
     }
 
+    /**
+    * Function that is called when the websocket is disconnected
+    * @param  {any}    evt Event returned by the websocket
+    * @return {void}
+    */
     onclose(evt: any) {
         this.connected = false;
         if(window['debug']) console.debug('[COMPOSER][WS] Websocket closed');
@@ -171,6 +202,11 @@ export class WebSocketInterface {
         this.stopKeepAlive();
     }
 
+    /**
+    * Function that is called when the websocket is receives a message
+    * @param  {any}    evt Event returned by the websocket
+    * @return {void}
+    */
     onmessage(evt: any) {
         let msg: any, meta: any, system: any, module: any, binding: any;
 
@@ -181,7 +217,7 @@ export class WebSocketInterface {
         } else {
             msg = JSON.parse(evt.data);
         }
-
+        //Process responce message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
             if(window['debug'] && msg.type === ERROR) console.debug(`[COMPOSER][WS] Received Error(${msg.id}). ${msg.msg}`);
@@ -205,12 +241,28 @@ export class WebSocketInterface {
         return true;
     }
 
-    fail (msg: any, type: any){
+    /**
+     * Called when processing a message failed
+     * @param  {any}    msg  Failure message to display
+     * @param  {any}    type Type of message
+     * @return {void}
+     */
+    private fail (msg: any, type: any){
         if(window['debug'] && type !== 'meta') console.error(`[COMPOSER][WS] Failed ${type}. ${JSON.stringify(msg)}`);
         return false;
     }
 
-    sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
+    /**
+     * Sends a message through the websocket
+     * @param  {any}    type   Message type
+     * @param  {any}    system System for message to be sent to
+     * @param  {any}    mod    Module for message to be sent to
+     * @param  {any}    index  Index of module in system
+     * @param  {any}    name   Name of status variable or function on the module
+     * @param  {any[] = []} args Arguments to pass to the function on the module
+     * @return {any} Returns the id of the request made through the websocket.
+     */
+    private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
         if (!this.io || this.io.readyState !== this.io.OPEN) {
         	return this.connect().then(() => {
                 setTimeout(() => {
@@ -245,14 +297,41 @@ export class WebSocketInterface {
         return this.req_id;
     };
 
+    /**
+     * Requests a binding to a status variable on the server
+     * @param  {string}   sys_id   System to bind to
+     * @param  {string}   mod_id   Module to bind to
+     * @param  {number}   i        Index of module in the system
+     * @param  {string}   name     Name of status variable to bind to
+     * @param  {Function} callback Function to call when the binding is successful
+     * @return {number}   Returns the id of the request
+     */
     bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
         return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
     }
 
+    /**
+     * Requests to unbind to a bound status variable on the server
+     * @param  {string}   sys_id   System ID
+     * @param  {string}   mod_id   Module name
+     * @param  {number}   i        Index of module in the system
+     * @param  {string}   name     Name of status variable to unbind
+     * @param  {Function} callback Function to call when the unbind is successful
+     * @return {number}   Returns the id of the request
+     */
     unbind(sys_id: string, mod_id: string, i: number, name: string, callback: Function){
         return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
     }
 
+    /**
+     * Requests to execute a function on the server
+     * @param  {string}   sys_id   System ID
+     * @param  {string}   mod_id   Module name
+     * @param  {number}   i        Index of module in the system
+     * @param  {any}      fn       Name of the function to call on the module
+     * @param  {any}      args     Arguments to pass to the function being called
+     * @return {Promise<any>}   Returns a promise which resolves the result of the call or rejects with an error message
+     */
     exec(sys_id: string, mod_id: string, i: number, fn: any, args: any){
         return new Promise((resolve, reject) => {
             let id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
@@ -263,10 +342,24 @@ export class WebSocketInterface {
         })
     }
 
+    /**
+     * Enables debugging on the selected system and module
+     * @param  {string} sys_id System ID
+     * @param  {string} mod_id Module name
+     * @param  {number} i      Index of the module in the system
+     * @return {number}        Returns the id of the request made
+     */
     debug(sys_id: string, mod_id: string, i: number){
         return this.sendRequest(DEBUG, sys_id, mod_id, i, DEBUG);
     }
 
+    /**
+     * Sends ignore to the selected system and module
+     * @param  {string} sys_id System ID
+     * @param  {string} mod_id Module name
+     * @param  {number} i      Index of the module in the system
+     * @return {number}        Returns the id of the request made
+     */
     ignore(sys_id: string, mod_id: string, inst: any){
         return this.sendRequest(IGNORE, sys_id, mod_id, null, IGNORE);
     }

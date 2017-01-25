@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: systems.service.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 17/01/2017 2:47 PM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 25/01/2017 1:50 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -53,26 +53,19 @@ export class SystemsService {
         //*/
     }
 
+    /**
+     * Get the resources service
+     * @return {Resources} Returns the resources service
+     */
     get resources() {
     	return this.r;
     }
 
-    setSocket(ws: any) {
-        this.io = ws;
-        this.io.serv = this;
-        this.r.init(this.io.end_point.replace('ws', 'http') + '/control/');
-    }
-
-    newSocket(url: string, port: string = '3000'){
-    		//Clean old websockets
-    	if(this.io) {
-
-    	}
-        this.r.init((port === '443' ? 'https' : 'http') + '://' + url + '/control/').then(() => {
-        	this.io = new $WebSocket(this, this.r, this.fixed_device, url, port);
-        }, (err: any) => {});
-    }
-
+    /**
+     * Sets up the websocket and resources service with the given options
+     * @param  {any} options Options to pass to websocket and resources service
+     * @return {boolean} Returns the success of the initialisation of the resouces service
+     */
     setup(options: any): any {
         this.mock = options.mock ? true : false;
         this.is_setup = true;
@@ -91,7 +84,11 @@ export class SystemsService {
         }
         //this.r.setup(options);
     }
-
+    /**
+     * Get a system with the given id, creates a new system if it doesn't exist
+     * @param  {string} sys_id System ID
+     * @return {any} Returns the system with the given id
+     */
     get(sys_id: string) {
         let system = this.r.get('System');
         if(!this.mock) {
@@ -107,6 +104,10 @@ export class SystemsService {
         return this.getSystem(sys_id);
     }
 
+    /**
+     * Checks if each system stored exists on the server
+     * @return {void}
+     */
     private updateSystems(): any{
     	if(this.r && this.io) {
 	        for(let i = 0; this.systems && i < this.systems.length; i++) {
@@ -115,22 +116,22 @@ export class SystemsService {
 	                let sys = this.r.get('System');
                     if(sys){
                         let mod = sys.get({id: system.id});
-                        console.log(mod);
                         if(mod) {
-                            return mod.then((sys: any) => {
+                            mod.then((sys: any) => {
                                 system.exists = true;
                             }, (err: any) => {});
-                        } else {
-                            return false;
                         }
-                    } else {
-                        return false;
                     }
                 }
 	        }
 	    }
     }
 
+    /**
+     * Get a system with the given id, creates a new system if it doesn't exist
+     * @param  {string} sys_id System ID
+     * @return {any} Returns the system with the given id
+     */
     private getSystem(sys_id: string){
         let system: any = null;
         // Check if system already exists
@@ -146,17 +147,31 @@ export class SystemsService {
         }
         return system;
     }
-
-    getModule(sys_id:string, id: string) {
+    /**
+     * Gets a module from the
+     * @param  {string} sys_id System ID
+     * @param  {string} id     Module name
+     * @param  {number = 1} i      Index of module in system
+     * @return {any}    Returns module if found
+     */
+    getModule(sys_id:string, id: string, i:number = 1) {
         let system = this.get(sys_id);
-        let module = system.get(id);
+        let module = system.get(id, i);
         return module;
     }
 
+    /**
+     * Check the state of the websocket
+     * @return {[type]} [description]
+     */
     isConnected() {
         return this.io ? this.io.connected : false;
     }
 
+    /**
+     * Rebinds all the bindings in each system
+     * @return {void}
+     */
     rebind(){
         for(let i = 0; this.systems && i < this.systems.length; i++) {
             this.systems[i].rebind();
