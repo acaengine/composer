@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: systems.service.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 25/01/2017 1:50 PM
+* @Last modified time: 30/01/2017 1:14 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -26,6 +26,7 @@ export class SystemsService {
     fixed_device: boolean = false;
     sub: any = null;
     is_setup: boolean = false;
+    system_promises: any = {};
     //private r: any;
 
     constructor(private r: Resources, private route: ActivatedRoute) {
@@ -92,13 +93,21 @@ export class SystemsService {
     get(sys_id: string) {
         let system = this.r.get('System');
         if(!this.mock) {
-            system.get({id: sys_id}).then((sys: any) => {
-                let s = this.getSystem(sys_id);
-                s.exists = true;
-            }, (err: any) => {
-                let sys = this.getSystem(sys_id);
-                sys.exists = false;
-            });
+            if(!this.system_promises[sys_id]) {
+                this.system_promises[sys_id] = new Promise((resolve, reject) => {
+                    system.get({id: sys_id}).then((sys: any) => {
+                        let s = this.getSystem(sys_id);
+                        s.exists = true;
+                        this.system_promises[sys_id] = null;
+                        resolve();
+                    }, (err: any) => {
+                        let sys = this.getSystem(sys_id);
+                        sys.exists = false;
+                        this.system_promises[sys_id] = null
+                        reject();
+                    });
+                });
+            }
         }
             //Check that the system exists and update it's status then return it to be used.
         return this.getSystem(sys_id);
