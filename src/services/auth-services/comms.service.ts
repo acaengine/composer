@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: aca-http.service.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 25/01/2017 4:47 PM
+* @Last modified time: 01/02/2017 8:40 AM
 */
 
 import { Injectable, Inject } from '@angular/core';
@@ -320,7 +320,8 @@ export class CommsService {
                 .subscribe(
                     data => tokens = data,
                     err => {
-                        if(err && (err.status === 500 || err.status === 404) && url !== location.origin + '/oauth-resp.html') {
+                            // Try refresh with root client ID
+                        if(err /* && (err.status === 500 || err.status === 404) */ && url !== location.origin + '/oauth-resp.html') {
                             oauth.redirectUri = `${location.origin}/oauth-resp.html`;
                             oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
                             setTimeout(() => {

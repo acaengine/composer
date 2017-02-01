@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: websocket.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 25/01/2017 1:37 PM
+* @Last modified time: 31/01/2017 4:19 PM
 */
 
 const BIND   = 'bind';
@@ -36,7 +36,7 @@ export class WebSocketInterface {
     connect_check: any = null;
     connect_promise: any = null;
     requests: any = {};
-    static retries: number = 0;
+    static retries: any = {};
     fixed: boolean = false;
 
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
@@ -220,9 +220,15 @@ export class WebSocketInterface {
         //Process responce message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
-            if(window['debug'] && msg.type === ERROR) console.debug(`[COMPOSER][WS] Received Error(${msg.id}). ${msg.msg}`);
-            else if(window['debug'] && msg.type === NOTIFY) console.debug(`[COMPOSER][WS] Received Notify(${msg.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`, msg.value);
-            else if(window['debug']) console.debug(`[COMPOSER][WS] Received Success(${msg.id}). Value: ${msg.value}`);
+            if(window['debug'] && msg.type === ERROR) console.debug(`[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
+            else if(window['debug'] && msg.type === NOTIFY) console.debug(`[COMPOSER][WS] Received notify. ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name} →`, msg.value);
+            else if(window['debug']) {
+                if(meta) {
+                    console.debug(`[COMPOSER][WS] Received success(${msg.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`);
+                } else {
+                    console.debug(`[COMPOSER][WS] Received success(${msg.id}). Value: ${msg.value}`);
+                }
+            }
             if(msg.type === SUCCESS) {
                 if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].resolve(msg.value);
             } else if(msg.type === ERROR) {
@@ -264,18 +270,21 @@ export class WebSocketInterface {
      */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []) :any {
         if (!this.io || this.io.readyState !== this.io.OPEN) {
+            if(!WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]) {
+                WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
+            }
         	return this.connect().then(() => {
                 setTimeout(() => {
             		return this.sendRequest(type, system, mod, index, name, args);
                 }, 200);
-                WebSocketInterface.retries = 0;
-        	}, () => {
-                if(window['debug']) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name})`);
-                WebSocketInterface.retries++;
-                if(WebSocketInterface.retries > 10) return -1;
+                WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
+        	}, (err: any) => {
+                if(window['debug']) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name}). ${err.message}`);
+                WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]++;
+                if(WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] > 10) return -1;
                 setTimeout(() => {
                     return this.sendRequest(type, system, mod, index, name, args);
-                }, 500 * WebSocketInterface.retries);
+                }, 500 * WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]);
             });
 	    }
         this.req_id += 1;

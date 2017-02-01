@@ -3,8 +3,8 @@
 * @Date:   19/10/2016 10:47 AM
 * @Email:  alex@yuion.net
 * @Filename: binding.directive.ts
-* @Last modified by:   alex.sorafumo
-* @Last modified time: 25/01/2017 8:46 AM
+* @Last modified by:   Alex Sorafumo
+* @Last modified time: 31/01/2017 3:27 PM
 */
 
 import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
@@ -29,6 +29,7 @@ export class Binding {
     @Output() onpress = new EventEmitter();
     @Output() onrelease = new EventEmitter();
         // Local Variables
+    started: boolean = false;
     system: any;
     module: any;
     binding: any;
@@ -129,23 +130,17 @@ export class Binding {
             this.call_exec();
         }
             // System changes
-        if(this.sys && this.sys !== this.system && (typeof this.system !== 'object' || (this.sys !== this.system.id && this.sys !== ''))) {
+        if(this.hasChanged('system')) {
             this.getSystem();
             this.getModule();
             this.getBinding();
-        }
-            // Module changes
-        if((this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== '')))) {
+        } else if(this.hasChanged('module')) {  // Module changes
             this.getModule();
             this.getBinding();
-        }
-            //Index changed
-        if(changes.index) {
+        } else if(changes.index) {              //Index changed
             this.getModule();
             this.getBinding();
-        }
-            // Variable to bind changes
-        if(changes.bind) {
+        } else if(changes.bind) {               // Variable to bind changes
             this.getBinding();
         }
             // Binding value changes
@@ -156,6 +151,20 @@ export class Binding {
             this.call_exec();
         }
         if(changes.value) this.valueChange.emit(changes.value.currentValue);
+    }
+    /**
+     * Checks if the give type's value has changed
+     * @param  {string} type Type to check
+     * @return {boolean} Returns whether or not the given type's value has changed
+     */
+    hasChanged(type: string) {
+        if(type === 'system') {
+            return (this.sys && this.sys !== this.system && (typeof this.system !== 'object' || (this.sys !== this.system.id && this.sys !== '')));
+        } else if(type === 'module') {
+            return (this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== '')));
+        } else {
+            return true;
+        }
     }
 
     /**

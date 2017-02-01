@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: resources.service.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 25/01/2017 1:06 PM
+* @Last modified time: 31/01/2017 3:06 PM
 */
 
 import { Injectable } from '@angular/core';
@@ -392,7 +392,7 @@ export class Resources {
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth: any) => {
-            if(window['debug']) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`, JSON.stringify(auth));
+            if(window['debug']) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`);
             if(typeof auth !== 'object') {
                 reject({
                     message: 'Auth details no valid.'
