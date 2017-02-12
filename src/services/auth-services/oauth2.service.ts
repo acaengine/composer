@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: oauth2.service.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 25/01/2017 3:01 PM
+* @Last modified time: 06/02/2017 11:21 AM
 */
 
 import { Injectable } from '@angular/core';
@@ -471,6 +471,23 @@ export class OAuthService {
     logOut() {
         if(window['debug']) console.debug('[COMPOSER][OAUTH] Logging out. Clear access tokens...')
         let id_token = this.getIdToken();
+        this.clearAuth();
+        if (!this.logoutUrl) {
+            setTimeout(() => {
+                this.location.replaceState(this.location.path(), '');
+            }, 100);
+            return;
+        }
+
+        let logoutUrl = this.logoutUrl.replace(/\{\{id_token\}\}/, id_token);
+        if(window['debug']) console.debug('[COMPOSER][OAUTH] Redirecting to logout URL...')
+        location.href = logoutUrl;
+    };
+    /**
+     * Removes any auth related details from storage
+     * @return {void}
+     */
+    clearAuth() {
         let items = ['access_token', 'refresh_token', 'accesstoken', 'refreshtoken', 'id_token', 'idtoken', 'nonce', 'expires', 'login', 'oauth'];
         for (let i = 0; i < this._storage.length; i++){
             let key = this._storage.key(i);
@@ -483,18 +500,7 @@ export class OAuthService {
                 }
             }
         }
-
-        if (!this.logoutUrl) {
-            setTimeout(() => {
-                this.location.replaceState(this.location.path(), '');
-            }, 100);
-            return;
-        }
-
-        let logoutUrl = this.logoutUrl.replace(/\{\{id_token\}\}/, id_token);
-        if(window['debug']) console.debug('[COMPOSER][OAUTH] Redirecting to logout URL...')
-        location.href = logoutUrl;
-    };
+    }
     /**
      * Creates a nonce and stores it in storage
      * @return {string} Returns the created nonce

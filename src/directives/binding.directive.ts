@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: binding.directive.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 31/01/2017 3:27 PM
+* @Last modified time: 03/02/2017 1:08 PM
 */
 
 import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
@@ -185,7 +185,9 @@ export class Binding {
         if(!this.system) return;
         if(typeof this.mod === 'string') this.module = this.system.get(this.mod, !this.index && this.index !== 0 ? 1 : +this.index);
         else this.module = this.mod;
-        this.binding = this.module.get(this.bind);
+        if(this.module){
+            this.binding = this.module.get(this.bind);
+        }
     }
     /**
      * Gets the status variable from the module and binds to it.

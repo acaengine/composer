@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: websocket.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 31/01/2017 4:19 PM
+* @Last modified time: 06/02/2017 11:31 AM
 */
 
 const BIND   = 'bind';
@@ -279,7 +279,7 @@ export class WebSocketInterface {
                 }, 200);
                 WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
         	}, (err: any) => {
-                if(window['debug']) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name}). ${err.message}`);
+                if(window['debug']) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name}). ${err ? err.message : 'No error message'}`);
                 WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]++;
                 if(WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] > 10) return -1;
                 setTimeout(() => {
@@ -298,7 +298,7 @@ export class WebSocketInterface {
             name:   name,
             args:   args
         };
-        if(window['debug']) console.debug(`[COMPOSER][WS] Sent ${type} request. ${system}, ${mod}, ${index}, ${name}`, args);
+        if(window['debug']) console.debug(`[COMPOSER][WS] Sent ${type} request(${request.id}). ${system}, ${mod}, ${index}, ${name}`, args);
 
         if (args !== null) request.args = args;
         this.io.send( JSON.stringify(request) );

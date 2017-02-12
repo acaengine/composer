@@ -4,7 +4,7 @@
 * @Email:  alex@yuion.net
 * @Filename: aca-http.service.ts
 * @Last modified by:   Alex Sorafumo
-* @Last modified time: 01/02/2017 8:40 AM
+* @Last modified time: 06/02/2017 12:47 PM
 */
 
 import { Injectable, Inject } from '@angular/core';
@@ -308,9 +308,10 @@ export class CommsService {
      * Refreshs access token
      * @param  {any}    resolve Login promise resolve
      * @param  {any}    reject  Login promise reject
+     * @param  {number}
      * @return {void}
      */
-    refreshToken(resolve: any, reject: any) {
+    refreshToken(resolve: any, reject: any, retries: number = 1) {
         let oauth:any = this.oAuthService;
         this.refresh = true;
         oauth.refresh_url.then((url: any) => {
@@ -321,12 +322,18 @@ export class CommsService {
                     data => tokens = data,
                     err => {
                             // Try refresh with root client ID
-                        if(err /* && (err.status === 500 || err.status === 404) */ && url !== location.origin + '/oauth-resp.html') {
+                        if(err && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
+                            if(window['debug']) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
+                            let rt = this.store.getItem(`${oauth.clientId}_refresh_token`);
                             oauth.redirectUri = `${location.origin}/oauth-resp.html`;
                             oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
+                            let rt_root = this.store.getItem(`${oauth.clientId}_refresh_token`);
+                            if(rt && !rt_root) {
+                                this.store.setItem(`${oauth.clientId}_refresh_token`, rt);
+                            }
                             setTimeout(() => {
-                                this.refreshToken(resolve, reject);
-                            }, 200);
+                                this.refreshToken(resolve, reject, retries+1);
+                            }, 500 * retries);
                         } else {
                             this.processLoginError(err, reject);
                         }
@@ -357,11 +364,7 @@ export class CommsService {
      */
     clearStore() {
         let oauth:any = this.oAuthService;
-        this.store.removeItem(`${oauth.clientId}_access_token`);
-        this.store.removeItem(`${oauth.clientId}_refresh_token`);
-        this.store.removeItem(`${oauth.clientId}_expires_at`);
-        this.store.removeItem(`${oauth.clientId}_nonce`);
-        this.store.removeItem(`${oauth.clientId}_login`);
+        oauth.clearAuth();
     }
 
     /**
