@@ -16,13 +16,15 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { OAuthService } from './oauth2.service';
 import { Md5 } from 'ts-md5/dist/md5'
 
+const MAX_ERROR_COUNT = 5;
+
 @Injectable()
 export class CommsService {
     private trust: boolean = false;
     private sub: any;
     private store: any = localStorage;
     private refresh = false;
-    private loginPromise: Promise<any> = null;
+    private login_promise: Promise<any> = null;
     private retry: any = {};
 
     constructor(private location: Location, private route: ActivatedRoute, private router: Router, private http: Http, private oAuthService: OAuthService){
@@ -246,9 +248,9 @@ export class CommsService {
      * @return {Promise<any>} Returns a promise which resolves with an access token
      */
     login(){
-        if (this.loginPromise === null) {
+        if (this.login_promise === null) {
             if(window['debug']) console.debug('[COMPOSER][COMMS] Attempting login.');
-            this.loginPromise = new Promise((resolve, reject) => {
+            this.login_promise = new Promise((resolve, reject) => {
                 let oauth:any = this.oAuthService;
                 oauth.tryLogin().then((status: any) => {
                     if(window['debug']) console.debug(`[COMPOSER][COMMS] Device trusted: ${this.trust}`);
@@ -301,7 +303,7 @@ export class CommsService {
                 }, (err: any) => {});
             });
         }
-        return this.loginPromise;
+        return this.login_promise;
     }
 
     /**
@@ -321,8 +323,9 @@ export class CommsService {
                 .subscribe(
                     data => tokens = data,
                     err => {
+                        let err_codes = [0, 400, 401, 403]
                             // Try refresh with root client ID
-                        if(err && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
+                        if(err && (err_codes.indexOf(err.status) || (err.status == 0 && err.ok == false)) && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
                             if(window['debug']) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
                             let rt = this.store.getItem(`${oauth.clientId}_refresh_token`);
                             oauth.redirectUri = `${location.origin}/oauth-resp.html`;
@@ -372,7 +375,7 @@ export class CommsService {
      * @return {void}
      */
     loginDone() {
-        this.loginPromise = null;
+        this.login_promise = null;
         this.cleanUrl();
     }
 
@@ -384,17 +387,18 @@ export class CommsService {
      */
     processLoginError(err: any, reject: any) {
         let oauth:any = this.oAuthService;
+        this.storeError('login', err);
             // Clear storage
-        if(err.status == 400 || err.status == 401 || (err.status == 0 && err.ok == false)){
+        if(err.status == 400 || err.status == 401){
             if(window['debug']) console.debug('[COMPOSER][COMMS] Error with credentials. Getting new credentials...');
             this.clearStore();
             this.oAuthService.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
             this.login().then(() => {}, (err) => { reject(err); });
-        } else if(!err){
+        } else {
             console.error(err);
             //reject(err);
-            setTimeout(() => { window.location.reload(); }, 2000);
+            setTimeout(() => { window.location.reload(); }, 5000);
             setTimeout(() => { this.loginDone(); }, 100);
         }
     }
@@ -405,7 +409,7 @@ export class CommsService {
      */
     checkAuth(cb_fn: any) {
         console.error('[COMPOSER][COMMS] Checking Auth.');
-        if(this.loginPromise === null) {
+        if(this.login_promise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
             let uri:any = parts.splice(0, 3).join('/');
         	let headers = new Headers({ "Authorization": this.oAuthService ? this.oAuthService.authorizationHeader() : '' });
@@ -417,6 +421,42 @@ export class CommsService {
         }
     }
 
+    /**
+     * Stores last couple errors in localStorage for debugging purposes
+     * @param  {string}  type  Type of error
+     * @param  {any}     error Error to store 
+     * @return {void}
+     */
+     private storeError(type: string, error: any) {
+        if(localStorage){
+            let days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            let months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'NOV', 'DEC'];
+            let date = new Date();
+            let hour: any = date.getHours();
+            hour = hour < 10 ? '0' + hour : hour;
+            let min: any = date.getMinutes();
+            min = min < 10 ? '0' + min : min;
+            let sec: any = date.getSeconds();
+            sec = sec < 10 ? '0' + sec : sec;
+            let now = `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${hour}:${min}:${sec}`;
+            now = now.toLowerCase();
+            localStorage.setItem((`${type}_error: ${now}`), JSON.stringify(error));
+            let error_list: any = localStorage.getItem(`${type}_error`);
+            if(error_list) {
+                error_list = JSON.parse(error_list);
+                error_list.push(now);
+                if(error_list.length >= MAX_ERROR_COUNT){
+                    for(let i = 0; i < error_list.length - MAX_ERROR_COUNT; i++) {
+                        localStorage.removeItem(`${type}_error: ${error_list[i]}`);
+                    }
+                    error_list.splice(0, error_list.length - MAX_ERROR_COUNT);
+                }
+            } else {
+                error_list = [now];
+            }
+            localStorage.setItem(`${type}_error`, JSON.stringify(error_list));
+        }
+     }
     /**
      * Replaces old tokens with new
      * @param  {any}    data    Object contain new tokens and expiry
@@ -477,7 +517,7 @@ export class CommsService {
     private error(err: any, req: any, obs:any) {
         let hash = this.hash(req.url+req.body);
         if(!this.retry[hash]) this.retry[hash] = 0;
-        if((err.status === 401 || err.status === 0) && this.retry[hash] < 10) {
+        if((err.status === 401 || (err.status === 0 && err.ok == false)) && this.retry[hash] < 10) {
             // Re-authenticate if authentication error.
             this.login()
                 .then((res) => {
