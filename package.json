@@ -1,6 +1,6 @@
 {
   "name": "@aca-1/a2-composer",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "description": "Angular 2 Interface for composer",
   "main": "index.js",
   "scripts": {

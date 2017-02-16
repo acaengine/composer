@@ -358,13 +358,13 @@ export class MockWebSocketInterface {
 					if(this.systems[r.sys][r.mod][r.index-1].$system === undefined) {
 						this.systems[r.sys][r.mod][r.index-1].$system = this.systems[r.sys];
 					}
-					let fn = this.systems[r.sys][r.mod][r.index-1][r.name];
+					let fn = this.systems[r.sys][r.mod][r.index-1][`$${r.name}`];
 					if(fn instanceof Function){
 	                    evt = { data: JSON.stringify({
 	                        id: r.id,
 	                        type: SUCCESS,
 	                        meta: r,
-	                        value: (<any>this.systems[r.sys][r.mod][r.index-1][r.name])(...r.args)
+	                        value: (<any>this.systems[r.sys][r.mod][r.index-1][`$${r.name}`]).apply(this.systems[r.sys][r.mod][r.index-1], r.args)
 	                    })}
 					} else {
 						this.systems[r.sys][r.mod][r.index-1][r.name] = r.args[0];

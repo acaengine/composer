@@ -480,11 +480,16 @@ export class Resources {
 	        }, custom);
 	            // Factory for System
 	        custom = JSON.parse(JSON.stringify(common_crud));
-	        custom.funcs = {
-	            method:'GET',
-	            headers: common_headers,
-	            url: this.url + 'api/systems/:id/funcs'
-	        }
+            custom.funcs = {
+                method:'GET',
+                headers: common_headers,
+                url: this.url + 'api/systems/:id/funcs'
+            }
+            custom.list = {
+                method:'GET',
+                headers: common_headers,
+                url: this.url + 'api/systems?offset=0'
+            }
 	        custom.exec = {
 	            method:'POST',
 	            headers: common_headers,

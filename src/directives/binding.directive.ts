@@ -16,19 +16,21 @@ import { SystemsService } from '../services';
 })
 export class Binding {
         // Bindables
-    @Input() bind: any; // Name of the status variable to bind to
-    @Input() sys: any; // Name of the system to connect to
-    @Input() mod: any; // Name of the module to connect to
+    @Input() bind: string; // Name of the status variable to bind to
+    @Input() sys: string; // Name of the system to connect to
+    @Input() mod: string; // Name of the module to connect to
     @Input() index: number; // Index of the named module in the system
     @Input() value: any; // Value of the status variable bound to
     @Output() valueChange = new EventEmitter(); // Emits changes to the value variable
-    @Input() exec: any; // Name of the function to execute on the module when value changes
+    @Input() exec: string; // Name of the function to execute on the module when value changes
     @Input() params: any; // Parameters to pass to the called function on module
+    @Input() ignore: number = 0; // 
 
     @Output() ontap = new EventEmitter();
     @Output() onpress = new EventEmitter();
     @Output() onrelease = new EventEmitter();
         // Local Variables
+    id: string = '';
     started: boolean = false;
     system: any;
     module: any;
@@ -38,6 +40,7 @@ export class Binding {
     unbind : Function;
     service: SystemsService;
     i: number = 0;
+    ignore_cnt: number = 0;
 
     /**
      * Function call when the element that this is attached to is tapped
@@ -83,6 +86,8 @@ export class Binding {
 
     constructor(private el: ElementRef, private serv: SystemsService){
         this.service = serv;
+        this.id = (Math.floor(Math.random() * 89999999) + 10000000).toString();
+        this.el.nativeElement.classList.add(`binding-directive-${this.id}`);
         /*
         setInterval(() => {
             this.checkVisibility();
@@ -127,7 +132,10 @@ export class Binding {
         }
             // Execute Function changes
         if(this.prev_exec !== this.exec && this.bind && this.bind !== ''){
-            this.call_exec();
+            this.ignore_cnt++
+            if(this.ignore_cnt > this.ignore){
+                    this.call_exec();
+            }
         }
             // System changes
         if(this.hasChanged('system')) {
@@ -148,7 +156,10 @@ export class Binding {
             if(window['debug']) {
                 console.debug(`[COMPOSER][Binding] Value changed calling exec. ${this.prev} => ${this.value}`);
             }
-            this.call_exec();
+            this.ignore_cnt++;
+            if(this.ignore_cnt > this.ignore){
+                    this.call_exec();
+            }
         }
         if(changes.value) this.valueChange.emit(changes.value.currentValue);
     }
@@ -229,6 +240,7 @@ export class Binding {
             // Update binding
         this.prev_exec = this.exec;
         this.prev = this.value;
+        if(window['debug']) console.debug(`[COMPOSER][Binding] Calling exec from directive ${this.id}`);
             // Update value to value set by user
         this.module.exec(this.exec, this.binding ? this.binding.id : '', this.params || (!this.bind || this.bind === '') ? this.params : this.value);
     }
