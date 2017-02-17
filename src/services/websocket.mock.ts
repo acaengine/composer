@@ -150,7 +150,7 @@ export class MockWebSocketInterface {
                         // Prevent another connection attempt for 100ms
                     setTimeout(() => { this.connecting = false; }, 100);
         	        if(!this.connect_check) this.connect_check = setInterval(() => { this.reconnect(); }, 3 * 1000);
-                }, Math.floor(Math.random() * 4000) + 200);
+                }, Math.floor(Math.random() * 1000) + 200);
         	});
         }
         return this.connect_promise;
@@ -174,7 +174,7 @@ export class MockWebSocketInterface {
         this.keepAliveInterval = window.setInterval(() => {
             setTimeout(() => {
                 this.onmessage({ data: PONG });
-            }, Math.floor(Math.random() * 2000), 50);
+            }, 50), 50);
         }, KEEP_ALIVE_TIMER_SECONDS);
     }
 
@@ -308,7 +308,7 @@ export class MockWebSocketInterface {
         })}
         setTimeout(() => {
             this.onmessage(evt_ex);
-        }, Math.floor(Math.random() * 2000) + 100);
+        }, 100);
     }
 	/**
 	 * Imitates a response from the server to any request made
@@ -394,7 +394,7 @@ export class MockWebSocketInterface {
         if(evt_ex) {
             setTimeout(() => {
                 this.onmessage(evt_ex);
-            }, Math.floor(Math.random() * 2000) + 100);
+            }, 100);
         }
     }
 	/**
