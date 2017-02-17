@@ -172,9 +172,7 @@ export class MockWebSocketInterface {
 
     private startKeepAlive () {
         this.keepAliveInterval = window.setInterval(() => {
-            setTimeout(() => {
-                this.onmessage({ data: PONG });
-            }, 50), 50);
+            this.onmessage({ data: PONG });
         }, KEEP_ALIVE_TIMER_SECONDS);
     }
 
