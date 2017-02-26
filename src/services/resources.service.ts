@@ -485,11 +485,6 @@ export class Resources {
                 headers: common_headers,
                 url: this.url + 'api/systems/:id/funcs'
             }
-            custom.list = {
-                method:'GET',
-                headers: common_headers,
-                url: this.url + 'api/systems?offset=0'
-            }
 	        custom.exec = {
 	            method:'POST',
 	            headers: common_headers,
