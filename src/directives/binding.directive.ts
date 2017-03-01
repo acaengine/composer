@@ -143,8 +143,17 @@ export class Binding {
             this.getModule();
             this.getBinding();
         } else if(this.hasChanged('module')) {  // Module changes
-            this.getModule();
-            this.getBinding();
+            let mod = this.mod.split('_');
+            let index = mod.pop();
+            if(isNaN(+index)) {
+                mod.push(index);
+                if(!this.index || this.index <= 0) this.index = 1;
+            } else this.index = +index;
+            this.mod = mod.join('_');
+            if(this.hasChanged('module')) {  // Module changes
+                this.getModule();
+                this.getBinding();
+            } 
         } else if(changes.index) {              //Index changed
             this.getModule();
             this.getBinding();
@@ -172,7 +181,7 @@ export class Binding {
         if(type === 'system') {
             return (this.sys && this.sys !== this.system && (typeof this.system !== 'object' || (this.sys !== this.system.id && this.sys !== '')));
         } else if(type === 'module') {
-            return (this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== '')));
+            return (this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== '' && this.mod !== (`${this.module.id}_${this.module.index}`))));
         } else {
             return true;
         }
