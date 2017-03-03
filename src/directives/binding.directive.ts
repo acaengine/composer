@@ -32,6 +32,7 @@ export class Binding {
         // Local Variables
     id: string = '';
     started: boolean = false;
+    module_id: string = '';
     system: any;
     module: any;
     binding: any;
@@ -134,27 +135,27 @@ export class Binding {
         if(this.prev_exec !== this.exec && this.bind && this.bind !== ''){
             this.ignore_cnt++
             if(this.ignore_cnt > this.ignore){
-                    this.call_exec();
+                if(window['debug']) {
+                    console.debug(`[COMPOSER][Binding] Function changed. ${this.prev_exec} => ${this.exec}`);
+                }
+                this.call_exec();
             }
         }
+        console.log(changes)
             // System changes
-        if(this.hasChanged('system')) {
+        if(changes.sys && this.hasChanged('system')) {
+            this.cleanModule();
             this.getSystem();
             this.getModule();
             this.getBinding();
-        } else if(this.hasChanged('module')) {  // Module changes
-            let mod = this.mod.split('_');
-            let index = mod.pop();
-            if(isNaN(+index)) {
-                mod.push(index);
-                if(!this.index || this.index <= 0) this.index = 1;
-            } else this.index = +index;
-            this.mod = mod.join('_');
+        } else if(changes.mod) {  // Module changes
+            this.cleanModule();
             if(this.hasChanged('module')) {  // Module changes
                 this.getModule();
                 this.getBinding();
             } 
         } else if(changes.index) {              //Index changed
+            this.cleanModule();
             this.getModule();
             this.getBinding();
         } else if(changes.bind) {               // Variable to bind changes
@@ -167,10 +168,25 @@ export class Binding {
             }
             this.ignore_cnt++;
             if(this.ignore_cnt > this.ignore){
-                    this.call_exec();
+                this.call_exec();
+            } else {
+                this.prev = this.value
             }
         }
-        if(changes.value) this.valueChange.emit(changes.value.currentValue);
+        //if(changes.value) this.valueChange.emit(changes.value.currentValue);
+    }
+    /**
+     * Cleans up the module string an pulls out the module index if applicable
+     * @return {void}
+     */
+    cleanModule() {
+        let mod = this.mod.split('_');
+        let index = mod.pop();
+        if(isNaN(+index)) {
+            mod.push(index);
+            if(!this.index || this.index <= 0) this.index = 1;
+        } else this.index = +index;
+        this.module_id = mod.join('_');
     }
     /**
      * Checks if the give type's value has changed
@@ -181,7 +197,7 @@ export class Binding {
         if(type === 'system') {
             return (this.sys && this.sys !== this.system && (typeof this.system !== 'object' || (this.sys !== this.system.id && this.sys !== '')));
         } else if(type === 'module') {
-            return (this.mod && this.mod !== this.module && (typeof this.module !== 'object' || (this.mod !== this.module.id && this.mod !== '' && this.mod !== (`${this.module.id}_${this.module.index}`))));
+            return (this.module_id && this.mod !== this.module && (typeof this.module !== 'object' || (this.module_id !== this.module.id && this.module_id !== '')));
         } else {
             return true;
         }
@@ -203,8 +219,8 @@ export class Binding {
      */
     private getModule(){
         if(!this.system) return;
-        if(typeof this.mod === 'string') this.module = this.system.get(this.mod, !this.index && this.index !== 0 ? 1 : +this.index);
-        else this.module = this.mod;
+        if(typeof this.module_id === 'string') this.module = this.system.get(this.module_id, !this.index && this.index !== 0 ? 1 : +this.index);
+        else this.module = this.module_id;
         if(this.module){
             this.binding = this.module.get(this.bind);
         }

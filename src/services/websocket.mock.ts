@@ -319,7 +319,7 @@ export class MockWebSocketInterface {
         let evt_ex: any = null;
         switch(type) {
             case BIND:
-                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
+                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] && this.systems[r.sys][r.mod][r.index-1]){
                     evt = { data: JSON.stringify({
                         id: r.id,
                         type: SUCCESS,
@@ -352,7 +352,7 @@ export class MockWebSocketInterface {
                 }
                 break;
             case EXEC:
-                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod]){
+                if(this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] && this.systems[r.sys][r.mod][r.index-1]){
 					if(this.systems[r.sys][r.mod][r.index-1].$system === undefined) {
 						this.systems[r.sys][r.mod][r.index-1].$system = this.systems[r.sys];
 					}
