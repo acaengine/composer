@@ -217,7 +217,7 @@ class ResourceFactory {
      */
     private _get(method: any, params: any) {
         let url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             this.__get(url, method, resolve, reject);
         });
     }
@@ -253,7 +253,7 @@ class ResourceFactory {
      */
     private _post(method: any, params: any, data: any) {
         let url = this.createUrl(params);
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             this.__post(url, method, data, resolve, reject);
         });
     }
@@ -291,7 +291,7 @@ class ResourceFactory {
      */
     private _put(method: any, params: any, data: any) {
         let url = this.createUrl(params);
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             this.__put(url, method, data, resolve, reject);
         });
     }
@@ -449,7 +449,7 @@ export class Resources {
      * @return {Promise<any>}    Returns a promise when resolves the state of the auth.
      */
     init(url_base?: string) {
-    	return new Promise((resolve, reject) => {
+    	return new Promise<any>((resolve, reject) => {
 	        if(!url_base && !this.url) this.url = window.location.origin + '/control/';
 	        else this.url = url_base ? url_base : this.url;
             if(this.url[this.url.length-1] !== '/') this.url += '/';
@@ -617,6 +617,7 @@ export class Resources {
      * @return {ResourceFactory} Returns a resource factory, null if not found
      */
     get(name: string){
+        if(window['debug'] && !this.authLoaded) console.warn(`[COMPOSER] [Resources] Not ready to perform API requests.`);
         return this.factories && this.factories[name] ? this.factories[name] : null;
     }
 }

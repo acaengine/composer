@@ -141,7 +141,6 @@ export class Binding {
                 this.call_exec();
             }
         }
-        console.log(changes)
             // System changes
         if(changes.sys && this.hasChanged('system')) {
             this.cleanModule();

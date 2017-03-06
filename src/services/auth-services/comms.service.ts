@@ -252,15 +252,29 @@ export class CommsService {
             if(window['debug']) console.debug('[COMPOSER][COMMS] Attempting login.');
             this.login_promise = new Promise((resolve, reject) => {
                 let oauth:any = this.oAuthService;
-                oauth.tryLogin().then((status: any) => {
-                    if(window['debug']) console.debug(`[COMPOSER][COMMS] Device trusted: ${this.trust}`);
-                    if(this.trust){ // Location is trusted
-                        oauth.response_type = 'code';
-                        let refresh_token = this.store.getItem(`${oauth.clientId}_refresh_token`);
-                        if(!refresh_token) refresh_token = this.store.getItem(`refreshToken`);
-                        if(refresh_token || oauth.code){ // Refresh token exists
-                            if(!this.tokenValid()){
-                                if(window['debug']) console.debug('[COMPOSER][COMMS] No valid access token. Refreshing...');
+                if(this.tokenValid()){ // Token is still valid.
+                    if(window['debug']) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
+                    let token = this.store.getItem(`${oauth.clientId}_access_token`);
+                    if(!token) token = this.store.getItem(`accessToken`)
+                    resolve(token);
+                    setTimeout(() => { this.loginDone(); }, 100);
+                } else {
+                    if(window['debug']) console.debug(`[COMPOSER][COMMS] No valid access token available.`);
+                    oauth.tryLogin().then((status: any) => {
+                        if(this.tokenValid()){ // Token is still valid.
+                            if(window['debug']) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
+                            let token = this.store.getItem(`${oauth.clientId}_access_token`);
+                            if(!token) token = this.store.getItem(`accessToken`)
+                            resolve(token);
+                            setTimeout(() => { this.loginDone(); }, 100);
+                        } else {
+                            if(this.trust){ // Location is trusted
+                                if(window['debug']) console.debug(`[COMPOSER][COMMS] Device is trusted`);
+                                oauth.response_type = 'code';
+                                let refresh_token = this.store.getItem(`${oauth.clientId}_refresh_token`);
+                                if(!refresh_token) refresh_token = this.store.getItem(`refreshToken`);
+                                if(refresh_token || oauth.code){ // Refresh token exists
+                                    if(window['debug']) console.debug('[COMPOSER][COMMS] Refresh token found. Refreshing access token...');
                                     //Perform refresh
                                     if(oauth.clientId === '') {
                                         resolve({ message : 'OAuth not setup, retrying after 100ms'});
@@ -272,35 +286,23 @@ export class CommsService {
                                     else {
                                         this.refreshToken(resolve, reject);
                                     }
-                            } else { // Token is still valid.
-                                if(window['debug']) console.debug('[COMPOSER][COMMS] Valid Access Token availiable.');
-                                let token = this.store.getItem(`${oauth.clientId}_access_token`);
-                                if(!token) token = this.store.getItem(`accessToken`)
-                                resolve(token);
+                                } else { // No refresh token
+                                        if(window['debug']) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
+                                        this.store.setItem(`oauth_redirect`, window.location.href);
+                                        oauth.initImplicitFlow();
+                                        setTimeout(() => { this.loginDone(); }, 100);
+                                }
+                            } else { // Location not trusted
+                                if(window['debug']) console.debug('[COMPOSER][COMMS] Device is not trusted.');
+                                oauth.response_type = 'token';
+                                if(window['debug']) console.debug('[COMPOSER][COMMS] Starting login process...');
+                                this.store.setItem(`oauth_redirect`, window.location.href);
+                                oauth.initImplicitFlow();
                                 setTimeout(() => { this.loginDone(); }, 100);
                             }
-                        } else { // No refresh token
-                            if(window['debug']) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
-                            this.store.setItem(`oauth_redirect`, window.location.href);
-                            oauth.initImplicitFlow();
-                            setTimeout(() => { this.loginDone(); }, 100);
                         }
-                    } else { // Location not trusted
-                        if(!this.tokenValid()){
-                            oauth.response_type = 'token';
-                            if(window['debug']) console.debug('[COMPOSER][COMMS] Location not trusted.');
-                            this.store.setItem(`oauth_redirect`, window.location.href);
-                            oauth.initImplicitFlow();
-                            setTimeout(() => { this.loginDone(); }, 100);
-                        } else {
-                            if(window['debug']) console.debug('[COMPOSER][COMMS] Valid Access Token availiable.');
-                            let token = this.store.getItem(`${oauth.clientId}_access_token`);
-                            if(!token) token = this.store.getItem(`accessToken`)
-                            resolve(token);
-                            setTimeout(() => { this.loginDone(); }, 100);
-                        }
-                    }
-                }, (err: any) => {});
+                    }, (err: any) => {});
+                }
             });
         }
         return this.login_promise;
@@ -481,8 +483,9 @@ export class CommsService {
     tokenValid(){
         let valid:any = true;
         let oauth:any = this.oAuthService;
-        let token:any = this.store.getItem(`${oauth.clientId}_access_token`);
+        let token:any = oauth.getAccessToken();
         let expiry:any = this.store.getItem(`${oauth.clientId}_expires_at`);
+        console.log(token, expiry);
         if(!token) valid = false;
         else if(+expiry <= (new Date).getTime()) valid = false;
         return valid

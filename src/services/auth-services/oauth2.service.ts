@@ -207,6 +207,15 @@ export class OAuthService {
 
 
             let parts = this.getFragment();
+            if(Object.keys(parts).length <= 1) {
+                if(sessionStorage) {
+                    let item = sessionStorage.getItem('OAUTH.params');
+                    if(item) {
+                        parts = JSON.parse(item);
+                        sessionStorage.removeItem('OAUTH.params');
+                    }
+                }
+            }
 
             let accessToken = parts["access_token"];
             let idToken = parts["id_token"];
