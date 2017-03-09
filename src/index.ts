@@ -8,7 +8,8 @@
 */
 
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, APP_BASE_HREF } from '@angular/common';
+import { WorkerAppModule, ClientMessageBrokerFactory } from '@angular/platform-webworker';
 import { HttpModule } from '@angular/http';
 
 import { DIRECTIVES } from './directives';
@@ -19,6 +20,7 @@ import 'rxjs/Rx';
 export * from './directives';
 export * from './pipes';
 export * from './services';
+export * from './data-store.broker';
 
 @NgModule({
   	declarations: [
@@ -35,12 +37,9 @@ export * from './services';
   	]
 })
 export class ACA_COMPOSER_MODULE {
-    version: string = '0.3.15';
-    build: string = '2017-03-03.v1';
+    version: string = '0.4.0';
+    build: string = '2017-03-10.v1';
     constructor() {
         console.debug(`ACA Angular 2 Composer Library - Version: ${this.version} | Build: ${this.build}`);
-        if(!window['debug_module']) {
-            window['debug_module'] = [];
-        }
     }
 }

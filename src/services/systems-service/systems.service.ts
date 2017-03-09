@@ -14,6 +14,9 @@ import { System } from './classes'
 import { $WebSocket } from '../websocket';
 import { $WebSocketMock } from '../websocket.mock';
 import { Resources } from '../resources.service';
+import { DataStoreService } from '../data-store.service';
+
+import { COMPOSER_SETTINGS } from '../../settings';
 
 @Injectable()
 export class SystemsService {
@@ -26,19 +29,19 @@ export class SystemsService {
     fixed_device: boolean = false;
     sub: any = null;
     is_setup: boolean = false;
+    debug: boolean = false;
     system_promises: any = {};
     //private r: any;
 
-    constructor(private r: Resources, private route: ActivatedRoute) {
-        if(sessionStorage) {
-            this.fixed_device = (sessionStorage.getItem(`fixed_device`) === 'true');
-        }
+    constructor(private r: Resources, private route: ActivatedRoute, private store: DataStoreService) {
+    	store.session.getItem(`fixed_device`).then((value) => {
+    		this.fixed_device = (value === 'true');
+    	});
+        this.debug = COMPOSER_SETTINGS.debug;
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.fixed_device = params['fixed_device'] === 'true' ? params['fixed_device'] === 'true' : this.fixed_device;
-            if(sessionStorage) {
-                sessionStorage.setItem(`fixed_device`, this.fixed_device ? 'true': 'false');
-            }
+            store.session.setItem('fixed_device', this.fixed_device ? 'true': 'false');
         });
     	//*
         let auth: any = null;
@@ -71,7 +74,7 @@ export class SystemsService {
         this.mock = options.mock ? true : false;
         this.is_setup = true;
         if(options.mock){
-            if(window['debug']) console.debug('[COMPOSER][Systems] Setting up mock websocket.');
+            if(this.debug) console.debug('[COMPOSER][Systems] Setting up mock websocket.');
             if(this.io) delete this.io;
             this.io = new $WebSocketMock(this, this.r, this.fixed_device);
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
@@ -79,7 +82,7 @@ export class SystemsService {
                 return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
             } else return true;
         } else {
-            if(window['debug']) console.debug('[COMPOSER][Systems] Setting up websocket.');
+            if(this.debug) console.debug('[COMPOSER][Systems] Setting up websocket.');
             this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
             return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
         }

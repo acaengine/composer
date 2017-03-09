@@ -9,6 +9,8 @@
 
 import { Observable } from 'rxjs/Observable';
 
+import { COMPOSER_SETTINGS } from '../../settings';
+
 const EXEC_LIMIT = 10;
 const EXEC_TIME_DELAY = 100;
 
@@ -194,7 +196,7 @@ export class Module {
         }
         let sv = this.get(prop);
         if(sv.bindings <= 0 && prop && prop !== '') {
-            if(window['debug']) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
+            if(COMPOSER_SETTINGS.debug) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
             return 'Error: Variable not bound!';
         } else if(!prop || prop === '') { // Call function not bound to variable
             return this.service.io.exec(this.parent.id, this.id, this.index, fn, args);

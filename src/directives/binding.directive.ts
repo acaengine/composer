@@ -7,8 +7,10 @@
 * @Last modified time: 03/02/2017 1:08 PM
 */
 
-import { Directive, ElementRef, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Directive, ElementRef, Input, Output, EventEmitter, HostListener, Renderer } from '@angular/core';
 import { SystemsService } from '../services';
+
+import { COMPOSER_SETTINGS } from '../settings';
 
 @Directive({
     selector: '[binding]',
@@ -42,6 +44,7 @@ export class Binding {
     service: SystemsService;
     i: number = 0;
     ignore_cnt: number = 0;
+    private debug: boolean = false;
 
     /**
      * Function call when the element that this is attached to is tapped
@@ -85,10 +88,11 @@ export class Binding {
         this.onpress.emit(e);
     }
 
-    constructor(private el: ElementRef, private serv: SystemsService){
+    constructor(private el: ElementRef, private serv: SystemsService, private renderer: Renderer){
         this.service = serv;
         this.id = (Math.floor(Math.random() * 89999999) + 10000000).toString();
-        this.el.nativeElement.classList.add(`binding-directive-${this.id}`);
+        this.renderer.setElementClass(this.el.nativeElement, `binding-directive-${this.id}`, true);
+        this.debug = COMPOSER_SETTINGS.debug;
         /*
         setInterval(() => {
             this.checkVisibility();
@@ -135,7 +139,7 @@ export class Binding {
         if(this.prev_exec !== this.exec && this.bind && this.bind !== ''){
             this.ignore_cnt++
             if(this.ignore_cnt > this.ignore){
-                if(window['debug']) {
+                if(this.debug) {
                     console.debug(`[COMPOSER][Binding] Function changed. ${this.prev_exec} => ${this.exec}`);
                 }
                 this.call_exec();
@@ -162,7 +166,7 @@ export class Binding {
         }
             // Binding value changes
         if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
-            if(window['debug']) {
+            if(this.debug) {
                 console.debug(`[COMPOSER][Binding] Value changed calling exec. ${this.prev} => ${this.value}`);
             }
             this.ignore_cnt++;
@@ -238,7 +242,7 @@ export class Binding {
         });
         this.value = this.binding.current;
         this.prev = this.value;
-        if(window['debug']) console.debug(`[COMPOSER][Binding] Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
+        if(this.debug) console.debug(`[COMPOSER][Binding] Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
         if(this.unbind === null) {
             setTimeout(() => {
                 this.getBinding();
@@ -264,7 +268,7 @@ export class Binding {
             // Update binding
         this.prev_exec = this.exec;
         this.prev = this.value;
-        if(window['debug']) console.debug(`[COMPOSER][Binding] Calling exec from directive ${this.id}`);
+        if(this.debug) console.debug(`[COMPOSER][Binding] Calling exec from directive ${this.id}`);
             // Update value to value set by user
         this.module.exec(this.exec, this.binding ? this.binding.id : '', this.params || (!this.bind || this.bind === '') ? this.params : this.value);
     }

@@ -12,6 +12,8 @@ import { Http } from '@angular/http';
 import { CommsService } from './auth-services';
 import { Observable } from 'rxjs/Observable';
 
+import { COMPOSER_SETTINGS } from '../settings';
+
 let common_headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -231,6 +233,7 @@ class ResourceFactory {
      */
     private __get(url: any, method: any, resolve: any, reject: any) {
         if(this.service.authLoaded) {
+            console.log(url);
             let result: any;
             this.http.get(url, method).subscribe(
                 data => result = this.processData(data, url, method.isArray),
@@ -373,9 +376,10 @@ export class Resources {
     url: string;
     authLoaded: boolean = false;
     auth_promise: any = null;
+    debug: boolean = false;
 
     constructor(public http: CommsService, private http_unauth: Http) {
-
+        this.debug = COMPOSER_SETTINGS.debug;
     }
 
     /**
@@ -385,14 +389,14 @@ export class Resources {
      * @return {void}
      */
     initAuth(resolve: any, reject: any) {
-        if(window['debug']) console.debug(`[COMPOSER][Resources] Loading Authority...`);
+        if(this.debug) console.debug(`[COMPOSER][Resources] Loading Authority...`);
         let parts = this.url.split('/');
         let uri = parts.splice(0, 3).join('/');
         let base_el = document.getElementsByTagName('base')[0];
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth: any) => {
-            if(window['debug']) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`);
+            if(this.debug) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`);
             if(typeof auth !== 'object') {
                 reject({
                     message: 'Auth details no valid.'
@@ -450,7 +454,7 @@ export class Resources {
      */
     init(url_base?: string) {
     	return new Promise<any>((resolve, reject) => {
-	        if(!url_base && !this.url) this.url = window.location.origin + '/control/';
+	        if(!url_base && !this.url) this.url = location.origin + '/control/';
 	        else this.url = url_base ? url_base : this.url;
             if(this.url[this.url.length-1] !== '/') this.url += '/';
 	        let custom: any;
@@ -593,7 +597,7 @@ export class Resources {
      */
     checkAuth(){
         this.http.checkAuth(() => {
-            if(window['debug']) console.debug('[COMPOSER][Resources] Refreshed Auth');
+            if(this.debug) console.debug('[COMPOSER][Resources] Refreshed Auth');
         });
     }
     /**
@@ -617,7 +621,7 @@ export class Resources {
      * @return {ResourceFactory} Returns a resource factory, null if not found
      */
     get(name: string){
-        if(window['debug'] && !this.authLoaded) console.warn(`[COMPOSER] [Resources] Not ready to perform API requests.`);
+        if(this.debug && !this.authLoaded) console.warn(`[COMPOSER] [Resources] Not ready to perform API requests.`);
         return this.factories && this.factories[name] ? this.factories[name] : null;
     }
 }

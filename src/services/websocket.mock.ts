@@ -22,6 +22,8 @@ const SECONDS = 1000;
 const RECONNECT_TIMER_SECONDS  = 5 * SECONDS;
 const KEEP_ALIVE_TIMER_SECONDS = 60 * SECONDS;
 
+import { COMPOSER_SETTINGS } from '../settings';
+
 /*
  * object.watch polyfill
  *
@@ -94,12 +96,14 @@ export class MockWebSocketInterface {
     requests: any = {};
     static retries: number = 0;
     fixed: boolean = false;
+    private _debug: boolean = false;
 
 	systems: any[] = [];
 
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
         this.fixed = fixed;
         this.serv = srv;
+        this._debug = COMPOSER_SETTINGS.debug;
         this.setup(auth, host, port);
     }
 	/**
@@ -123,10 +127,8 @@ export class MockWebSocketInterface {
 	 * @return {void}
 	 */
     private setupSystems() {
-        if(window['systemData']) this.systems = window['systemData'];
-        else if(window['systemsData']) this.systems = window['systemsData'];
-        else if(window['control'] && window['control']['systems']) this.systems = window['control']['systems'];
-        else {
+        this.systems = COMPOSER_SETTINGS.control;
+        if(!this.systems || this.systems.length <= 0) {
             setTimeout(() => {
                 this.setupSystems();
             }, 200);
@@ -163,7 +165,7 @@ export class MockWebSocketInterface {
         return;
         /*
         if (this.io == null || this.io.readyState === this.io.CLOSED){
-            if(window['debug']) console.debug('[COMPOSER][WS(M)] Reconnecting...');
+            if(this._debug) console.debug('[COMPOSER][WS(M)] Reconnecting...');
             this.connect();
             this.reconnected = true;
         }
@@ -171,13 +173,13 @@ export class MockWebSocketInterface {
     };
 
     private startKeepAlive () {
-        this.keepAliveInterval = window.setInterval(() => {
+        this.keepAliveInterval = setInterval(() => {
             this.onmessage({ data: PONG });
         }, KEEP_ALIVE_TIMER_SECONDS);
     }
 
     private stopKeepAlive (){
-        window.clearInterval(this.keepAliveInterval);
+        clearInterval(this.keepAliveInterval);
     }
 	/**
 	 * Called when the websocket is connected
@@ -186,7 +188,7 @@ export class MockWebSocketInterface {
 	 */
     onopen(evt: any) {
         this.connected = true;
-        if(window['debug']) console.debug('[COMPOSER][WS(M)] Connected');
+        if(this._debug) console.debug('[COMPOSER][WS(M)] Connected');
         this.startKeepAlive();
             // Rebind the connected systems modules
         if(this.reconnected) this.serv.rebind();
@@ -200,7 +202,7 @@ export class MockWebSocketInterface {
 	 */
     onclose(evt: any) {
         this.connected = false;
-        if(window['debug']) console.debug('[COMPOSER][WS(M)] Closed');
+        if(this._debug) console.debug('[COMPOSER][WS(M)] Closed');
         this.io = null;
         this.stopKeepAlive();
     }
@@ -223,7 +225,7 @@ export class MockWebSocketInterface {
 		// Process message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
-			if(window['debug']) console.debug(`[COMPOSER][WS(M)] Recieved ${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`, msg.value);
+			if(this._debug) console.debug(`[COMPOSER][WS(M)] Recieved ${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`, msg.value);
             if(msg.type === SUCCESS) {
                 if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].resolve(msg.value);
             } else if(msg.type === ERROR) {
@@ -249,7 +251,7 @@ export class MockWebSocketInterface {
 	 * @return {void}
 	 */
     private fail (msg: any, type: any){
-        if(window['debug']) console.error(`[COMPOSER][WS(M)] Failed(${type}):`, msg);
+        if(this._debug) console.error(`[COMPOSER][WS(M)] Failed(${type}):`, msg);
         return false;
     }
 	/**
@@ -264,7 +266,7 @@ export class MockWebSocketInterface {
 	 */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any[] = []) :any {
         if (!this.connected) {
-            if(window['debug']) console.debug('[COMPOSER][WS(M)] Not connected to websocket. Attempting to connect to websocket');
+            if(this._debug) console.debug('[COMPOSER][WS(M)] Not connected to websocket. Attempting to connect to websocket');
         	return this.connect().then(() => {
                 setTimeout(() => {
             		return this.sendRequest(type, system, mod, index, name, args);
@@ -282,7 +284,7 @@ export class MockWebSocketInterface {
             name:   name,
             args:   args
         };
-        if(window['debug']) console.debug(`[COMPOSER][WS(M)] Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
+        if(this._debug) console.debug(`[COMPOSER][WS(M)] Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
 
         if (args !== null) request.args = args;
         setTimeout(() => {

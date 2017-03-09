@@ -7,14 +7,16 @@
 * @Last modified time: 06/02/2017 12:47 PM
 */
 
-import { Injectable, Inject } from '@angular/core';
+import { Injectable, Inject, Renderer } from '@angular/core';
 import { Location } from '@angular/common';
 import { Http, Headers } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { Router, ActivatedRoute } from '@angular/router';
 
+import { DataStoreService } from '../data-store.service';
 import { OAuthService } from './oauth2.service';
 import { Md5 } from 'ts-md5/dist/md5'
+import { COMPOSER_SETTINGS } from '../../settings';
 
 const MAX_ERROR_COUNT = 5;
 
@@ -22,21 +24,25 @@ const MAX_ERROR_COUNT = 5;
 export class CommsService {
     private trust: boolean = false;
     private sub: any;
-    private store: any = localStorage;
     private refresh = false;
     private login_promise: Promise<any> = null;
     private retry: any = {};
+    private debug: boolean = false;
 
-    constructor(private location: Location, private route: ActivatedRoute, private router: Router, private http: Http, private oAuthService: OAuthService){
-        if(sessionStorage) {
-            this.trust = (sessionStorage.getItem(`trust`) === 'true');
-        }
+    constructor(private route: ActivatedRoute, 
+    			private router: Router, 
+    			private http: Http, 
+    			private oAuthService: OAuthService, 
+    			private store: DataStoreService,
+    			private loc: Location){
+        store.session.getItem('trust').then((value) => {
+        	this.trust = (value === 'true');
+        });
+        this.debug = COMPOSER_SETTINGS.debug;
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.trust = params['trust'] === 'true' ? params['trust'] === 'true' : this.trust;
-            if(sessionStorage) {
-                sessionStorage.setItem(`trust`, this.trust ? 'true': 'false');
-            }
+            store.session.setItem('trust', this.trust ? 'true': 'false');
             if(params['logout'] && params['logout']==='true'){
                 this.oAuthService.logOut();
             }
@@ -80,9 +86,9 @@ export class CommsService {
      * @return {void}
      */
     tryLogin() {
-        if(window['debug']) console.debug('[COMPOSER][COMMS] Trying Login');
+        if(this.debug) console.debug('[COMPOSER][COMMS] Trying Login');
         if(this.oAuthService.code) this.login().then(() => {
-            if(window['debug']) console.debug('[COMPOSER][COMMS] Got Access Token.');
+            if(this.debug) console.debug('[COMPOSER][COMMS] Got Access Token.');
         });
     }
     /**
@@ -90,20 +96,16 @@ export class CommsService {
      * @return {void}
      */
     private cleanUrl() {
-        let redirect: any = this.store.getItem('oauth_redirect');
-        let loc = '/';
-        if(redirect){
-        	let base_el = document.getElementsByTagName('base')[0];
-        	let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
-        	if(location.pathname.indexOf(base) === 0) {
-        		loc = location.pathname.replace(base, '');
-        	}
-            loc = this.location.path().split('?')[0].split('#')[0];
-	        this.location.go(loc);
-            setTimeout(() => {
-	            this.store.removeItem('oauth_redirect');
-            }, 5000);
-        }
+        this.store['local'].getItem('oauth_redirect').then((redirect) => {
+	        let loc = '/';
+	        if(redirect){
+	        	let path = this.loc.path(false);
+	        	this.loc.go(path);
+	            setTimeout(() => {
+		            this.store['local'].removeItem('oauth_redirect');
+	            }, 5000);
+	        }
+        });
     }
 
     /**
@@ -114,32 +116,34 @@ export class CommsService {
      * @return {any} Returns the details for the request
      */
     processOptions(url: string, body?: any, options?: any) {
-        let auth_header = this.oAuthService ? this.oAuthService.authorizationHeader() : '';
-        let headers = new Headers({ "Authorization": auth_header });
-        if(options && options.headers){
-            if(options.headers.values){
-            	let h = options.headers.values();
-            	let k = options.headers.keys();
-                for(var i in h) {
-                	if(k[i].toLowerCase() !== 'authorization') headers.append(k[i], h[i][0]);
-                }
-            } else {
-                let keys = Object.keys(options.headers);
-                for(let j = 0; j < keys.length; j++) {
-                    if(keys[j].toLowerCase() !== 'authorization') headers.append(keys[j], options.headers[keys[j]]);
-                }
-            }
-        }
-            // Store request info for retry if needed.
-        let req: any = {
-            type: 'get',
-            body: body,
-            url: url,
-            auth: (auth_header !== '' && auth_header.indexOf('Bearer null') < 0)
-        };
-        if(!req.options) req.options = { headers: headers};
-        else if(!req.options.headers) req.options.headers = headers;
-        return req;
+    	let oauth = this.oAuthService;
+    	return this.oAuthService.authorizationHeader().then((auth_header) => {
+	        let headers = new Headers({ "Authorization": auth_header });
+	        if(options && options.headers){
+	            if(options.headers.values){
+	            	let h = options.headers.values();
+	            	let k = options.headers.keys();
+	                for(var i in h) {
+	                	if(k[i].toLowerCase() !== 'authorization') headers.append(k[i], h[i][0]);
+	                }
+	            } else {
+	                let keys = Object.keys(options.headers);
+	                for(let j = 0; j < keys.length; j++) {
+	                    if(keys[j].toLowerCase() !== 'authorization') headers.append(keys[j], options.headers[keys[j]]);
+	                }
+	            }
+	        }
+	            // Store request info for retry if needed.
+	        let req: any = {
+	            type: 'get',
+	            body: body,
+	            url: url,
+	            auth: (auth_header !== '' && auth_header.indexOf('Bearer null') < 0)
+	        };
+	        if(!req.options) req.options = { headers: headers};
+	        else if(!req.options.headers) req.options.headers = headers;
+	        return req;
+    	})
     }
 
     /**
@@ -149,19 +153,20 @@ export class CommsService {
      * @return {Observable} Returns an observable which acts like the Http observable
      */
     get(url: string, options?: any) {
-        let req = this.processOptions(url, null, options);
         return new Observable((observer: any) => {
-            if(req.auth) {
-                this.http.get(req.url, req.options)
-                .map(res => res.json())
-                .subscribe(
-                    data => observer.next(data),
-                    err => this.error(err, req, observer),
-                    () => observer.complete()
-                );
-            } else {
-                this.error({status: 401, message: 'No auth token.'}, req, observer);
-            }
+        	this.processOptions(url, null, options).then((req) => {
+	            if(req.auth) {
+	                this.http.get(req.url, req.options)
+	                .map(res => res.json())
+	                .subscribe(
+	                    data => observer.next(data),
+	                    err => this.error(err, req, observer),
+	                    () => observer.complete()
+	                );
+	            } else {
+	                this.error({status: 401, message: 'No auth token.'}, req, observer);
+	            }
+        	});
       });
     }
 
@@ -173,21 +178,22 @@ export class CommsService {
      * @return {Observable} Returns an observable which acts like the Http observable
      */
     post(url: string, body?: any, options?: any) {
-        let req = this.processOptions(url, body, options);
-        req.type = 'post';
         return new Observable((observer: any) => {
-            if(req.auth) {
-                this.http.post(req.url, req.body, req.options)
-                .map(res => res.json())
-                .subscribe(
-                    data => observer.next(data),
-                    err => this.error(err, req, observer),
-                    () => observer.complete()
-                );
-            } else {
-                this.error({status: 401, message: 'No auth token.'}, req, observer);
-            }
-      });
+        	this.processOptions(url, body, options).then((req) => {
+	        	req.type = 'post';
+	            if(req.auth) {
+	                this.http.post(req.url, req.body, req.options)
+	                .map(res => res.json())
+	                .subscribe(
+	                    data => observer.next(data),
+	                    err => this.error(err, req, observer),
+	                    () => observer.complete()
+	                );
+	            } else {
+	                this.error({status: 401, message: 'No auth token.'}, req, observer);
+	            }
+	        });
+      	});
     }
 
     /**
@@ -198,21 +204,22 @@ export class CommsService {
      * @return {Observable} Returns an observable which acts like the Http observable
      */
     put(url: string, body?: any, options?: any){
-        let req = this.processOptions(url, body, options);
-        req.type = 'put';
         return new Observable((observer: any) => {
-            if(req.auth) {
-                this.http.put(req.url, req.body, req.options)
-                .map(res => res.json())
-                .subscribe(
-                    data => observer.next(data),
-                    err => this.error(err, req, observer),
-                    () => observer.complete()
-                );
-            } else {
-                this.error({status: 401, message: 'No auth token.'}, req, observer);
-            }
-      });
+        	this.processOptions(url, body, options).then((req) => {
+        		req.type = 'put';
+	            if(req.auth) {
+	                this.http.put(req.url, req.body, req.options)
+	                .map(res => res.json())
+	                .subscribe(
+	                    data => observer.next(data),
+	                    err => this.error(err, req, observer),
+	                    () => observer.complete()
+	                );
+	            } else {
+	                this.error({status: 401, message: 'No auth token.'}, req, observer);
+	            }
+            });
+      	});
     }
 
     /**
@@ -222,17 +229,18 @@ export class CommsService {
      * @return {Observable} Returns an observable which acts like the Http observable
      */
     delete(url: string, options?: any){
-        let req = this.processOptions(url, null, options);
-        req.type = 'delete';
         return new Observable((observer: any) => {
-            this.http.delete(req.url, req.options)
-            .map(res => res.json())
-            .subscribe(
-                data => observer.next(data),
-                err => this.error(err, req, observer),
-                () => observer.complete()
-            );
-      });
+	        this.processOptions(url, null, options).then((req) => {
+		        req.type = 'delete';
+	            this.http.delete(req.url, req.options)
+	            .map(res => res.json())
+	            .subscribe(
+	                data => observer.next(data),
+	                err => this.error(err, req, observer),
+	                () => observer.complete()
+	            );
+            });
+      	});
     }
     /**
      * Creates a MD5 hash of the given string
@@ -249,63 +257,80 @@ export class CommsService {
      */
     login(){
         if (this.login_promise === null) {
-            if(window['debug']) console.debug('[COMPOSER][COMMS] Attempting login.');
+            if(this.debug) console.debug('[COMPOSER][COMMS] Attempting login.');
             this.login_promise = new Promise((resolve, reject) => {
-                let oauth:any = this.oAuthService;
-                if(this.tokenValid()){ // Token is still valid.
-                    if(window['debug']) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
-                    let token = this.store.getItem(`${oauth.clientId}_access_token`);
-                    if(!token) token = this.store.getItem(`accessToken`)
-                    resolve(token);
-                    setTimeout(() => { this.loginDone(); }, 100);
-                } else {
-                    if(window['debug']) console.debug(`[COMPOSER][COMMS] No valid access token available.`);
-                    oauth.tryLogin().then((status: any) => {
-                        if(this.tokenValid()){ // Token is still valid.
-                            if(window['debug']) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
-                            let token = this.store.getItem(`${oauth.clientId}_access_token`);
-                            if(!token) token = this.store.getItem(`accessToken`)
-                            resolve(token);
-                            setTimeout(() => { this.loginDone(); }, 100);
-                        } else {
-                            if(this.trust){ // Location is trusted
-                                if(window['debug']) console.debug(`[COMPOSER][COMMS] Device is trusted`);
-                                oauth.response_type = 'code';
-                                let refresh_token = this.store.getItem(`${oauth.clientId}_refresh_token`);
-                                if(!refresh_token) refresh_token = this.store.getItem(`refreshToken`);
-                                if(refresh_token || oauth.code){ // Refresh token exists
-                                    if(window['debug']) console.debug('[COMPOSER][COMMS] Refresh token found. Refreshing access token...');
-                                    //Perform refresh
-                                    if(oauth.clientId === '') {
-                                        resolve({ message : 'OAuth not setup, retrying after 100ms'});
-                                        setTimeout(() => {
-                                            this.loginDone();
-                                            this.login();
-                                        }, 100);
-                                    }
-                                    else {
-                                        this.refreshToken(resolve, reject);
-                                    }
-                                } else { // No refresh token
-                                        if(window['debug']) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
-                                        this.store.setItem(`oauth_redirect`, window.location.href);
-                                        oauth.initImplicitFlow();
-                                        setTimeout(() => { this.loginDone(); }, 100);
-                                }
-                            } else { // Location not trusted
-                                if(window['debug']) console.debug('[COMPOSER][COMMS] Device is not trusted.');
-                                oauth.response_type = 'token';
-                                if(window['debug']) console.debug('[COMPOSER][COMMS] Starting login process...');
-                                this.store.setItem(`oauth_redirect`, window.location.href);
-                                oauth.initImplicitFlow();
-                                setTimeout(() => { this.loginDone(); }, 100);
-                            }
-                        }
-                    }, (err: any) => {});
-                }
+            	this.performLogin(resolve, reject);
             });
         }
         return this.login_promise;
+    }
+
+    performLogin(resolve, reject) {
+        let oauth:any = this.oAuthService;
+        if(!oauth || !oauth.clientId || oauth.clientId === '') {
+        	setTimeout(() => {
+        		this.performLogin(resolve, reject);
+        	}, 500);
+        	return;
+        }
+        oauth.hasValidAccessToken().then((valid) => {
+        	if(valid) {
+                if(this.debug) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
+                oauth.getAccessToken().then((token) => {
+                    resolve(token);
+                    setTimeout(() => { this.loginDone(); }, 100);
+                });
+        	} else {
+                if(this.debug) console.debug(`[COMPOSER][COMMS] No valid access token available.`);
+                	// Attempt to finish logging in
+                oauth.tryLogin().then((status: any) => {
+                		// Check if valid access token is available
+                	oauth.hasValidAccessToken().then((valid) => {
+                		if(valid) {
+		                    if(this.debug) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
+		                    oauth.getAccessToken().then((token) => {
+		                        resolve(token);
+		                        setTimeout(() => { this.loginDone(); }, 100);
+		                    });
+		                } else {
+		                	if(this.trust) {
+                                if(this.debug) console.debug(`[COMPOSER][COMMS] Device is trusted`);
+                                oauth.response_type = 'code';
+                                this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((refresh) => {
+	                                if(refresh || oauth.code){ // Refresh token exists
+	                                    if(this.debug) console.debug('[COMPOSER][COMMS] Refresh token found. Refreshing access token...');
+	                                    //Perform refresh
+	                                    if(oauth.clientId === '') {
+	                                        resolve({ message : 'OAuth not setup, retrying after 100ms'});
+	                                        setTimeout(() => {
+	                                            this.loginDone();
+	                                            this.login();
+	                                        }, 100);
+	                                    }
+	                                    else {
+	                                        this.refreshToken(resolve, reject);
+	                                    }
+	                                } else { // No refresh token
+	                                        if(this.debug) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
+	                                        this.store['local'].setItem(`oauth_redirect`, location.href);
+	                                        oauth.initImplicitFlow();
+	                                        setTimeout(() => { this.loginDone(); }, 100);
+	                                }
+                                });
+
+		                	} else {
+                                if(this.debug) console.debug('[COMPOSER][COMMS] Device is not trusted.');
+                                oauth.response_type = 'token';
+                                if(this.debug) console.debug('[COMPOSER][COMMS] Starting login process...');
+                                this.store['local'].setItem(`oauth_redirect`, location.href);
+                                oauth.initImplicitFlow();
+                                setTimeout(() => { this.loginDone(); }, 100);
+		                	}
+		                }
+                	});
+            	});
+        	}
+        });
     }
 
     /**
@@ -328,22 +353,24 @@ export class CommsService {
                         let err_codes = [0, 400, 401, 403]
                             // Try refresh with root client ID
                         if(err && (err_codes.indexOf(err.status) || (err.status == 0 && err.ok == false)) && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
-                            if(window['debug']) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
-                            let rt = this.store.getItem(`${oauth.clientId}_refresh_token`);
-                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
-                            oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
-                            let rt_root = this.store.getItem(`${oauth.clientId}_refresh_token`);
-                            if(rt && !rt_root) {
-                                this.store.setItem(`${oauth.clientId}_refresh_token`, rt);
-                            }
-                            setTimeout(() => {
-                                this.refreshToken(resolve, reject, retries+1);
-                            }, 500 * retries);
+                            if(this.debug) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
+                            oauth.getRefreshToken().then((rt) => {
+	                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
+	                            oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
+	                            this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((rt_root) => {
+		                            if(rt && !rt_root) {
+		                                this.store['local'].setItem(`${oauth.clientId}_refresh_token`, rt);
+		                            }
+		                            setTimeout(() => {
+		                                this.refreshToken(resolve, reject, retries+1);
+		                            }, 500 * retries);
+		                        });
+                            });
                         } else {
                             this.processLoginError(err, reject);
                         }
                     }, () => {
-                        if(window['debug']) console.debug('[COMPOSER][COMMS] Got new tokens:', tokens);
+                        if(this.debug) console.debug('[COMPOSER][COMMS] Got new tokens:', tokens);
                         this.updateToken(tokens, resolve);
                         setTimeout(() => { this.loginDone(); }, 100);
                     }
@@ -357,11 +384,9 @@ export class CommsService {
      * @return {void}
      */
     setLoginStatus(status: boolean) {
-    	if(sessionStorage) {
-        	let oauth:any = this.oAuthService;
-	    	if(status === true) sessionStorage.setItem(`${oauth.clientId}_login`, 'true');
-	    	else sessionStorage.removeItem(`${oauth.clientId}_login`);
-	    }
+    	let oauth:any = this.oAuthService;
+    	if(status === true) this.store['session'].setItem(`${oauth.clientId}_login`, 'true');
+    	else this.store['session'].removeItem(`${oauth.clientId}_login`);
     }
     /**
      * Removes all authentication related keys from storage
@@ -392,7 +417,7 @@ export class CommsService {
         this.storeError('login', err);
             // Clear storage
         if(err.status == 400 || err.status == 401){
-            if(window['debug']) console.debug('[COMPOSER][COMMS] Error with credentials. Getting new credentials...');
+            if(this.debug) console.debug('[COMPOSER][COMMS] Error with credentials. Getting new credentials...');
             this.clearStore();
             this.oAuthService.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
@@ -400,7 +425,7 @@ export class CommsService {
         } else {
             console.error(err);
             //reject(err);
-            setTimeout(() => { window.location.reload(); }, 5000);
+            setTimeout(() => { location.reload(); }, 5000);
             setTimeout(() => { this.loginDone(); }, 100);
         }
     }
@@ -430,35 +455,35 @@ export class CommsService {
      * @return {void}
      */
      private storeError(type: string, error: any) {
-        if(localStorage){
-            let days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            let months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'NOV', 'DEC'];
-            let date = new Date();
-            let hour: any = date.getHours();
-            hour = hour < 10 ? '0' + hour : hour;
-            let min: any = date.getMinutes();
-            min = min < 10 ? '0' + min : min;
-            let sec: any = date.getSeconds();
-            sec = sec < 10 ? '0' + sec : sec;
-            let now = `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${hour}:${min}:${sec}`;
-            now = now.toLowerCase();
-            localStorage.setItem((`${type}_error: ${now}`), JSON.stringify(error));
-            let error_list: any = localStorage.getItem(`${type}_error`);
+        let days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        let months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'NOV', 'DEC'];
+        let date = new Date();
+        let hour: any = date.getHours();
+        hour = hour < 10 ? '0' + hour : hour;
+        let min: any = date.getMinutes();
+        min = min < 10 ? '0' + min : min;
+        let sec: any = date.getSeconds();
+        sec = sec < 10 ? '0' + sec : sec;
+        let now = `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${hour}:${min}:${sec}`;
+        now = now.toLowerCase();
+        this.store['local'].setItem((`${type}_error: ${now}`), JSON.stringify(error));
+        this.store['local'].getItem(`${type}_error`).then((value) => {
+        	let error_list = JSON.parse(value);
             if(error_list) {
                 error_list = JSON.parse(error_list);
                 error_list.push(now);
                 if(error_list.length >= MAX_ERROR_COUNT){
                     for(let i = 0; i < error_list.length - MAX_ERROR_COUNT; i++) {
-                        localStorage.removeItem(`${type}_error: ${error_list[i]}`);
+                        this.store['local'].removeItem(`${type}_error: ${error_list[i]}`);
                     }
                     error_list.splice(0, error_list.length - MAX_ERROR_COUNT);
                 }
             } else {
                 error_list = [now];
             }
-            localStorage.setItem(`${type}_error`, JSON.stringify(error_list));
-        }
-     }
+            this.store['local'].setItem(`${type}_error`, JSON.stringify(error_list));
+        });
+    }
     /**
      * Replaces old tokens with new
      * @param  {any}    data    Object contain new tokens and expiry
@@ -467,28 +492,14 @@ export class CommsService {
      */
     private updateToken(data: any, resolve: any){
         let oauth:any = this.oAuthService;
-        if(data.access_token) this.store.setItem(`${oauth.clientId}_access_token`, data.access_token);
-        if(data.refresh_token) this.store.setItem(`${oauth.clientId}_refresh_token`, data.refresh_token);
+        if(data.access_token) this.store['local'].setItem(`${oauth.clientId}_access_token`, data.access_token);
+        if(data.refresh_token) this.store['local'].setItem(`${oauth.clientId}_refresh_token`, data.refresh_token);
         if(data.expires_in) {
             let expiry:any = ((new Date()).getTime() + data.expires_in * 1000);
-            this.store.setItem(`${oauth.clientId}_expires_at`, expiry.toString());
+            this.store['local'].setItem(`${oauth.clientId}_expires_at`, expiry.toString());
         }
         resolve();
         setTimeout(() => { this.loginDone(); }, 100);
-    }
-    /**
-     * Checks whether current access token is valid or not
-     * @return {boolean} Returns validity of access token
-     */
-    tokenValid(){
-        let valid:any = true;
-        let oauth:any = this.oAuthService;
-        let token:any = oauth.getAccessToken();
-        let expiry:any = this.store.getItem(`${oauth.clientId}_expires_at`);
-        console.log(token, expiry);
-        if(!token) valid = false;
-        else if(+expiry <= (new Date).getTime()) valid = false;
-        return valid
     }
 
     logout(){

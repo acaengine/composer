@@ -48,6 +48,56 @@ Authentication details are setup through this service.
 
 The resources service is used to make accessing Control API simple.
 
+## Usage in Web Workers
+
+Running Angular 2 in web worker limits the access to certain global scope variables. As the auth needs local and session storage to operate correctly you will need to register a Message Broker in you app so that the auth can operate.
+
+An example of how to register this message broker is given below.
+
+```typescript
+
+import {WORKER_UI_LOCATION_PROVIDERS, bootstrapWorkerUi} from '@angular/platform-webworker';
+import { DataStoreBroker } from '@aca-1/a2-composer';
+
+bootstrapWorkerUi('webworker.bundle.js', WORKER_UI_LOCATION_PROVIDERS).then((ref) => {
+	let broker = new DataStoreBroker(ref);
+});
+
+```
+You also need to add the DataStoreWorkerService to root module so that the worker communcates with the broker.
+
+```typescript
+
+import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { HttpModule } from '@angular/http';
+import { RouterModule } from '@angular/router';
+import { WorkerAppModule, WORKER_APP_LOCATION_PROVIDERS } from '@angular/platform-webworker';
+import { ACA_COMPOSER_MODULE, DataStoreService, DataStoreWorkerService } from '@aca-1/a2-composer';
+
+@NgModule({
+  bootstrap: [ AppComponent ],
+  declarations: [
+  	...
+  ],
+  imports: [
+    WorkerAppModule,
+    FormsModule,
+    HttpModule,
+    RouterModule.forRoot(ROUTES, { useHash: true }),
+    ACA_COMPOSER_MODULE
+  ],
+  providers: [
+    ...
+    WORKER_APP_LOCATION_PROVIDERS,
+    { provide: DataStoreService, useClass: DataStoreWorkerService }
+  ]
+})
+export class AppModule {
+
+}
+```
+
 ## License
 
 MIT © [Alex Sorafumo](alex@yuion.net)

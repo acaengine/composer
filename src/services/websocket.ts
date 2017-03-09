@@ -7,6 +7,8 @@
 * @Last modified time: 06/02/2017 11:31 AM
 */
 
+import { COMPOSER_SETTINGS } from '../settings';
+
 const BIND   = 'bind';
 const UNBIND = 'unbind';
 const DEBUG = 'debug';
@@ -38,10 +40,12 @@ export class WebSocketInterface {
     requests: any = {};
     static retries: any = {};
     fixed: boolean = false;
+    private _debug: boolean = false;
 
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
         this.fixed = fixed;
         this.serv = srv;
+        this._debug = COMPOSER_SETTINGS.debug;
         this.setup(auth, host, port);
     }
 
@@ -93,11 +97,11 @@ export class WebSocketInterface {
                                 if(this.fixed) {
                                     uri += '&fixed_device=true';
                                 }
-        	                    let search = window.location.search;
+        	                    let search = location.search;
         	                    if(search.indexOf('fixed_device') >= 0){
         	                        uri += '&fixed_device=true';
         	                    }
-                                if(window['debug']) console.debug('[COMPOSER][WS] Building websocket...');
+                                if(this._debug) console.debug('[COMPOSER][WS] Building websocket...');
         	                        //Create Web Socket
         	                    this.io = new WebSocket(uri);
         	                    this.io.onmessage = (evt: any) => { this.onmessage(evt); }
@@ -153,7 +157,7 @@ export class WebSocketInterface {
      */
     private reconnect() {
         if (this.io == null || this.io.readyState === this.io.CLOSED){
-            if(window['debug']) console.debug('[COMPOSER][WS] Reconnecting websocket...');
+            if(this._debug) console.debug('[COMPOSER][WS] Reconnecting websocket...');
             this.connect();
             this.reconnected = true;
         }
@@ -163,7 +167,7 @@ export class WebSocketInterface {
      * @return {void}
      */
     private startKeepAlive () {
-        this.keepAliveInterval = window.setInterval(() => {
+        this.keepAliveInterval = setInterval(() => {
             if(this.io) {
                 this.io.send('ping');
             }
@@ -174,7 +178,7 @@ export class WebSocketInterface {
      * @return {void}
      */
     private stopKeepAlive (){
-        window.clearInterval(this.keepAliveInterval);
+        clearInterval(this.keepAliveInterval);
     }
 
     /**
@@ -183,7 +187,7 @@ export class WebSocketInterface {
      * @return {void}
      */
     onopen(evt: any) {
-        if(window['debug']) console.debug('[COMPOSER][WS] Websocket connected');
+        if(this._debug) console.debug('[COMPOSER][WS] Websocket connected');
         this.startKeepAlive();
             // Rebind the connected systems modules
         if(this.reconnected) this.serv.rebind();
@@ -197,7 +201,7 @@ export class WebSocketInterface {
     */
     onclose(evt: any) {
         this.connected = false;
-        if(window['debug']) console.debug('[COMPOSER][WS] Websocket closed');
+        if(this._debug) console.debug('[COMPOSER][WS] Websocket closed');
         this.io = null;
         this.stopKeepAlive();
     }
@@ -220,9 +224,9 @@ export class WebSocketInterface {
         //Process responce message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
-            if(window['debug'] && msg.type === ERROR) console.debug(`[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
-            else if(window['debug'] && msg.type === NOTIFY) console.debug(`[COMPOSER][WS] Received notify. ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name} →`, msg.value);
-            else if(window['debug']) {
+            if(this._debug && msg.type === ERROR) console.debug(`[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
+            else if(this._debug && msg.type === NOTIFY) console.debug(`[COMPOSER][WS] Received notify. ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name} →`, msg.value);
+            else if(this._debug) {
                 if(meta) {
                     console.debug(`[COMPOSER][WS] Received success(${msg.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`);
                 } else {
@@ -254,7 +258,7 @@ export class WebSocketInterface {
      * @return {void}
      */
     private fail (msg: any, type: any){
-        if(window['debug'] && type !== 'meta') console.error(`[COMPOSER][WS] Failed ${type}. ${JSON.stringify(msg)}`);
+        if(this._debug && type !== 'meta') console.error(`[COMPOSER][WS] Failed ${type}. ${JSON.stringify(msg)}`);
         return false;
     }
 
@@ -279,7 +283,7 @@ export class WebSocketInterface {
                 }, 200);
                 WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
         	}, (err: any) => {
-                if(window['debug']) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name}). ${err ? err.message : 'No error message'}`);
+                if(this._debug) console.error(`[COMPOSER][WS] Failed to connect(${type}, ${name}). ${err ? err.message : 'No error message'}`);
                 WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]++;
                 if(WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] > 10) return -1;
                 setTimeout(() => {
@@ -298,7 +302,7 @@ export class WebSocketInterface {
             name:   name,
             args:   args
         };
-        if(window['debug']) console.debug(`[COMPOSER][WS] Sent ${type} request(${request.id}). ${system}, ${mod}, ${index}, ${name}`, args);
+        if(this._debug) console.debug(`[COMPOSER][WS] Sent ${type} request(${request.id}). ${system}, ${mod}, ${index}, ${name}`, args);
 
         if (args !== null) request.args = args;
         this.io.send( JSON.stringify(request) );
