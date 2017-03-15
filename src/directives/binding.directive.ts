@@ -92,7 +92,9 @@ export class Binding {
         this.service = serv;
         this.id = (Math.floor(Math.random() * 89999999) + 10000000).toString();
         this.renderer.setElementClass(this.el.nativeElement, `binding-directive-${this.id}`, true);
-        this.debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this.debug = data;
+        });
         /*
         setInterval(() => {
             this.checkVisibility();

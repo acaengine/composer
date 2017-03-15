@@ -154,12 +154,16 @@ export class Module {
     index: number = 0;  // Module Index
     status_variables: StatusVariable[] = [];
     debugger: any;
+    _debug: boolean = false;
 
     constructor(srv: Object, parent: any, name: string, i: number) {
         this.id = name
         this.service = srv;
         this.parent = parent;
         this.index = i;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this._debug = data;
+        });
     }
     /**
      * Bind to status variable on module
@@ -196,7 +200,7 @@ export class Module {
         }
         let sv = this.get(prop);
         if(sv.bindings <= 0 && prop && prop !== '') {
-            if(COMPOSER_SETTINGS.debug) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
+            if(this._debug) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
             return 'Error: Variable not bound!';
         } else if(!prop || prop === '') { // Call function not bound to variable
             return this.service.io.exec(this.parent.id, this.id, this.index, fn, args);

@@ -379,7 +379,9 @@ export class Resources {
     debug: boolean = false;
 
     constructor(public http: CommsService, private http_unauth: Http) {
-        this.debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this.debug = data;
+        });
     }
 
     /**

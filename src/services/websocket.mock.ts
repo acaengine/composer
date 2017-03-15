@@ -103,7 +103,12 @@ export class MockWebSocketInterface {
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
         this.fixed = fixed;
         this.serv = srv;
-        this._debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this._debug = data;
+        });
+        COMPOSER_SETTINGS.observe('control').subscribe((data) => {
+        	this.systems = data;
+        });
         this.setup(auth, host, port);
     }
 	/**
@@ -127,7 +132,6 @@ export class MockWebSocketInterface {
 	 * @return {void}
 	 */
     private setupSystems() {
-        this.systems = COMPOSER_SETTINGS.control;
         if(!this.systems || this.systems.length <= 0) {
             setTimeout(() => {
                 this.setupSystems();

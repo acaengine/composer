@@ -38,7 +38,9 @@ export class OAuthService {
     private debug: boolean = false;
 
     constructor(private location: Location, private store: DataStoreService) {
-        this.debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this.debug = data;
+        });
     }
 
     /**
@@ -108,21 +110,19 @@ export class OAuthService {
                         + encodeURIComponent(this.clientId)
                         + "&redirect_uri="
                         + encodeURIComponent(this.redirectUri)
-            let refresh_token = this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((refresh_token) => {
+            return this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((refresh_token) => {
 	            if(!refresh_token) {
-	                refresh_token = this.store[this._storage].getItem(`refreshToken`).then((refresh_token) => {
-	                	return refresh_token;
+	                return this.store[this._storage].getItem(`refreshToken`).then((refresh_token) => {
+			            if(refresh_token){
+			                return url += `&refresh_token=${encodeURIComponent(refresh_token)}&grant_type=${encodeURIComponent('refresh_token')}`;
+			            } else {
+			                return url += `&code=${encodeURIComponent(this.code)}&grant_type=${encodeURIComponent('authorization_code')}`;
+			            }
 	                });
+	            } else {
+			        return url += `&refresh_token=${encodeURIComponent(refresh_token)}&grant_type=${encodeURIComponent('refresh_token')}`;
 	            }
-	            return refresh_token;
-            });
-            if(refresh_token){
-                url += `&refresh_token=${encodeURIComponent(refresh_token)}&grant_type=${encodeURIComponent('refresh_token')}`;
-            } else {
-                url += `&code=${encodeURIComponent(this.code)}&grant_type=${encodeURIComponent('authorization_code')}`;
-            }
-
-            return url;
+	        });
         });
     };
 
@@ -156,8 +156,15 @@ export class OAuthService {
     initImplicitFlow(additionalState: string = "") {
         if(!this.clientId || this.clientId === '' || this.run_flow) return;
         this.createLoginUrl(additionalState).then((url) => {
-            let here = location.href;
-            this.store[this._storage].setItem('oauth_redirect', here);
+        	let path = this.location.path();
+            if(location.hash.indexOf(path) >= 0) {
+            	path = '/#' + path;
+            	if(path.indexOf('?') >= 0) {
+            		path = path.split('?')[0];
+            	}
+            }
+            let here = location.origin + path;
+            this.store['local'].setItem(`oauth_redirect`, here);
             this.run_flow = true;
         	this.store.session.getItem(`${this.clientId}_login`).then((logged) => {
         		if(logged === 'true') {
@@ -170,7 +177,7 @@ export class OAuthService {
                     if(!this.loginRedirect || this.loginRedirect === '') {
                         this.loginRedirect === location.origin + '/auth/login'
                     }
-                    let url = this.loginRedirect + '?continue=' + here;
+                    let url = this.loginRedirect;//* + '?continue=' + here;*/
                     if(this.debug) console.debug(`[COMPOSER][OAUTH] Login: ${url}`);
 	        		location.href = url;
 	        	}
@@ -213,7 +220,6 @@ export class OAuthService {
 
 
             let parts = this.getFragment();
-            console.log(parts);
             if(Object.keys(parts).length <= 1) {
                 this.store.session.getItem('OAUTH.params').then((item) => {
                     if(item) {
@@ -233,6 +239,7 @@ export class OAuthService {
     }
 
     processLogin(parts: any, options: any, resolve: any, reject: any) {
+    	console.log(parts);
         let accessToken = parts["access_token"];
         let idToken = parts["id_token"];
         let state = parts["state"];
@@ -314,6 +321,9 @@ export class OAuthService {
 	            win.parent.onOAuthCallback(this.state);
 	        }
 	        */
+	       		// Clean up after token has been received
+	       	this.store[this._storage].removeItem('oauth_redirect');
+	       	this.store[this._storage].setItem('oauth_finished', 'true');
 	        return resolve(true);
         });
 
@@ -603,7 +613,8 @@ export class OAuthService {
      * @return {any} Returns a map of key, value pairs from the URL hash/query
      */
     getFragment() {
-        if (location.hash.indexOf("#") === 0) {
+    	let path = this.location.path();
+        if (location.hash.indexOf("#") === 0 && location.hash.indexOf(path) < 0) {
             return this.parseQueryString(location.hash.substr(1));
         } else if (location.search.indexOf("?") === 0) {
             return this.parseQueryString(location.search.substr(1));

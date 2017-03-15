@@ -27,7 +27,7 @@ export class CommsService {
     private refresh = false;
     private login_promise: Promise<any> = null;
     private retry: any = {};
-    private debug: boolean = false;
+    private debug: boolean = true;
 
     constructor(private route: ActivatedRoute, 
     			private router: Router, 
@@ -38,7 +38,9 @@ export class CommsService {
         store.session.getItem('trust').then((value) => {
         	this.trust = (value === 'true');
         });
-        this.debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	//this.debug = data;
+        });
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.trust = params['trust'] === 'true' ? params['trust'] === 'true' : this.trust;
@@ -96,16 +98,22 @@ export class CommsService {
      * @return {void}
      */
     private cleanUrl() {
-        this.store['local'].getItem('oauth_redirect').then((redirect) => {
-	        let loc = '/';
-	        if(redirect){
-	        	let path = this.loc.path(false);
-	        	this.loc.go(path);
-	            setTimeout(() => {
-		            this.store['local'].removeItem('oauth_redirect');
-	            }, 5000);
-	        }
-        });
+    	let path = this.loc.path(false);
+    	if(location.search.indexOf('access_token') >= 0 || location.search.indexOf('code') >= 0){
+        	this.loc.go(path, '');
+        	//*
+            setTimeout(() => {
+	            this.store['local'].removeItem('oauth_redirect');
+	            this.store['local'].removeItem('oauth_finished');
+            }, 5000);
+        } else if(path.indexOf('?') >= 0 && (path.indexOf('access_token') >= 0 || path.indexOf('code') >= 0)) {
+        	this.loc.go(path.split('?')[0], '');
+        	//*
+            setTimeout(() => {
+	            this.store['local'].removeItem('oauth_redirect');
+	            this.store['local'].removeItem('oauth_finished');
+            }, 5000);
+        }
     }
 
     /**
@@ -311,10 +319,18 @@ export class CommsService {
 	                                        this.refreshToken(resolve, reject);
 	                                    }
 	                                } else { // No refresh token
-	                                        if(this.debug) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
-	                                        this.store['local'].setItem(`oauth_redirect`, location.href);
-	                                        oauth.initImplicitFlow();
-	                                        setTimeout(() => { this.loginDone(); }, 100);
+                                        if(this.debug) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
+							        	let path = this.loc.path();
+							            if(location.hash.indexOf(path) >= 0) {
+							            	path = '/#' + path;
+							            	if(path.indexOf('?') >= 0) {
+							            		path = path.split('?')[0];
+							            	}
+							            }
+							            let here = location.origin + path;
+		                                this.store['local'].setItem(`oauth_redirect`, here);
+		                                oauth.initImplicitFlow();
+                                        setTimeout(() => { this.loginDone(); }, 100);
 	                                }
                                 });
 
@@ -322,7 +338,15 @@ export class CommsService {
                                 if(this.debug) console.debug('[COMPOSER][COMMS] Device is not trusted.');
                                 oauth.response_type = 'token';
                                 if(this.debug) console.debug('[COMPOSER][COMMS] Starting login process...');
-                                this.store['local'].setItem(`oauth_redirect`, location.href);
+					        	let path = this.loc.path();
+					            if(location.hash.indexOf(path) >= 0) {
+					            	path = '/#' + path;
+					            	if(path.indexOf('?') >= 0) {
+					            		path = path.split('?')[0];
+					            	}
+					            }
+					            let here = location.origin + path;
+                                this.store['local'].setItem(`oauth_redirect`, here);
                                 oauth.initImplicitFlow();
                                 setTimeout(() => { this.loginDone(); }, 100);
 		                	}
@@ -402,8 +426,8 @@ export class CommsService {
      * @return {void}
      */
     loginDone() {
+    	this.cleanUrl();
         this.login_promise = null;
-        this.cleanUrl();
     }
 
     /**
@@ -439,12 +463,14 @@ export class CommsService {
         if(this.login_promise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
             let uri:any = parts.splice(0, 3).join('/');
-        	let headers = new Headers({ "Authorization": this.oAuthService ? this.oAuthService.authorizationHeader() : '' });
-            this.http.get(uri + '/auth/oauth/token/info', { headers: headers }).subscribe(
-                data => cb_fn(data),
-                err => this.processLoginError(err, () => {}),
-                () => {}
-            );
+            this.oAuthService.authorizationHeader().then((token: string) => {
+	        	let headers = new Headers({ "Authorization": (token ? token : '') });
+	            this.http.get(uri + '/auth/oauth/token/info', { headers: headers }).subscribe(
+	                data => cb_fn(data),
+	                err => this.processLoginError(err, () => {}),
+	                () => {}
+	            );
+            })
         }
     }
 
@@ -468,16 +494,20 @@ export class CommsService {
         now = now.toLowerCase();
         this.store['local'].setItem((`${type}_error: ${now}`), JSON.stringify(error));
         this.store['local'].getItem(`${type}_error`).then((value) => {
-        	let error_list = JSON.parse(value);
-            if(error_list) {
-                error_list = JSON.parse(error_list);
-                error_list.push(now);
-                if(error_list.length >= MAX_ERROR_COUNT){
-                    for(let i = 0; i < error_list.length - MAX_ERROR_COUNT; i++) {
-                        this.store['local'].removeItem(`${type}_error: ${error_list[i]}`);
-                    }
-                    error_list.splice(0, error_list.length - MAX_ERROR_COUNT);
-                }
+        	let error_list: any[] = [];
+        	if(value){
+	        	error_list = JSON.parse(value);
+	            if(error_list) {
+	                error_list.push(now);
+	                if(error_list.length >= MAX_ERROR_COUNT){
+	                    for(let i = 0; i < error_list.length - MAX_ERROR_COUNT; i++) {
+	                        this.store['local'].removeItem(`${type}_error: ${error_list[i]}`);
+	                    }
+	                    error_list.splice(0, error_list.length - MAX_ERROR_COUNT);
+	                }
+	            } else {
+	                error_list = [now];
+	            }
             } else {
                 error_list = [now];
             }

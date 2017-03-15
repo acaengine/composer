@@ -37,7 +37,9 @@ export class SystemsService {
     	store.session.getItem(`fixed_device`).then((value) => {
     		this.fixed_device = (value === 'true');
     	});
-        this.debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this.debug = data;
+        });
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.fixed_device = params['fixed_device'] === 'true' ? params['fixed_device'] === 'true' : this.fixed_device;
@@ -73,18 +75,19 @@ export class SystemsService {
     setup(options: any): any {
         this.mock = options.mock ? true : false;
         this.is_setup = true;
+        let o = options;
         if(options.mock){
             if(this.debug) console.debug('[COMPOSER][Systems] Setting up mock websocket.');
             if(this.io) delete this.io;
             this.io = new $WebSocketMock(this, this.r, this.fixed_device);
-            this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
-            if(options.http) {
+            this.io.setup(this.r, o.host ? o.host : location.hostname , o.port ? o.port : location.port, o.protocol ? o.protocol : location.protocol);
+            if(o.http) {
                 return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
             } else return true;
         } else {
             if(this.debug) console.debug('[COMPOSER][Systems] Setting up websocket.');
-            this.io.setup(this.r, options.host ? options.host : location.hostname , options.port ? options.port : 3000);
-            return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
+            this.io.setup(this.r, o.host ? o.host : location.hostname , o.port ? o.port : location.port, o.protocol ? o.protocol : location.protocol);
+            return this.r.init(o.api_endpoint).then(() => { return true; }, (err) => { return false; });
         }
         //this.r.setup(options);
     }
@@ -98,17 +101,21 @@ export class SystemsService {
         if(!this.mock) {
             if(!this.system_promises[sys_id]) {
                 this.system_promises[sys_id] = new Promise((resolve, reject) => {
-                    system.get({id: sys_id}).then((sys: any) => {
-                        let s = this.getSystem(sys_id);
-                        s.exists = true;
-                        this.system_promises[sys_id] = null;
-                        resolve();
-                    }, (err: any) => {
-                        let sys = this.getSystem(sys_id);
-                        sys.exists = false;
-                        this.system_promises[sys_id] = null
-                        reject();
-                    });
+                	if(system){
+	                    system.get({id: sys_id}).then((sys: any) => {
+	                        let s = this.getSystem(sys_id);
+	                        s.exists = true;
+	                        this.system_promises[sys_id] = null;
+	                        resolve();
+	                    }, (err: any) => {
+	                        let sys = this.getSystem(sys_id);
+	                        sys.exists = false;
+	                        this.system_promises[sys_id] = null
+	                        reject();
+	                    });
+	                } else {
+	                	reject();
+	                }
                 });
             }
         }

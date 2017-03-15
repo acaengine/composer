@@ -42,10 +42,12 @@ export class WebSocketInterface {
     fixed: boolean = false;
     private _debug: boolean = false;
 
-    constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
+    constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = location.port){
         this.fixed = fixed;
         this.serv = srv;
-        this._debug = COMPOSER_SETTINGS.debug;
+        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
+        	this._debug = data;
+        });
         this.setup(auth, host, port);
     }
 
@@ -56,9 +58,9 @@ export class WebSocketInterface {
      * @param  {string =    '3000'}            port Port that the websocket is listening on
      * @return {void}
      */
-    setup(auth: any, host: string = location.hostname, port: string = '3000') {
+    setup(auth: any, host: string = location.hostname, port: string = location.port, protocol: string = location.protocol) {
         this.auth = auth;
-        this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
+        this.end_point = (protocol === 'https:' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
         this.uri = this.end_point + '/control/websocket';
         if(this.auth !== undefined && this.auth !== null){
             this.auth.getToken();
