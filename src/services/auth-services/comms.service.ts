@@ -265,7 +265,7 @@ export class CommsService {
      */
     login(){
         if (this.login_promise === null) {
-            if(this.debug) console.debug('[COMPOSER][COMMS] Attempting login.');
+            if(this.debug) console.error('[COMPOSER][COMMS] Attempting login.');
             this.login_promise = new Promise((resolve, reject) => {
             	this.performLogin(resolve, reject);
             });
@@ -320,14 +320,13 @@ export class CommsService {
 	                                    }
 	                                } else { // No refresh token
                                         if(this.debug) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
-							        	let path = this.loc.path();
-							            if(location.hash.indexOf(path) >= 0) {
-							            	path = '/#' + path;
+							        	let path = location.href;
+							            if(location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
 							            	if(path.indexOf('?') >= 0) {
 							            		path = path.split('?')[0];
 							            	}
 							            }
-							            let here = location.origin + path;
+							            let here = path;
 		                                this.store['local'].setItem(`oauth_redirect`, here);
 		                                oauth.initImplicitFlow();
                                         setTimeout(() => { this.loginDone(); }, 100);
@@ -338,14 +337,13 @@ export class CommsService {
                                 if(this.debug) console.debug('[COMPOSER][COMMS] Device is not trusted.');
                                 oauth.response_type = 'token';
                                 if(this.debug) console.debug('[COMPOSER][COMMS] Starting login process...');
-					        	let path = this.loc.path();
-					            if(location.hash.indexOf(path) >= 0) {
-					            	path = '/#' + path;
+					        	let path = location.href;
+					            if(location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
 					            	if(path.indexOf('?') >= 0) {
 					            		path = path.split('?')[0];
 					            	}
 					            }
-					            let here = location.origin + path;
+					            let here = path;
                                 this.store['local'].setItem(`oauth_redirect`, here);
                                 oauth.initImplicitFlow();
                                 setTimeout(() => { this.loginDone(); }, 100);
@@ -543,6 +541,10 @@ export class CommsService {
         return this.login();
     }
 
+    get hasToken() {
+    	return this.oAuthService.hasValidAccessToken();
+    }
+
     /**
      * Check whether or not the user is logged in
      * @return {[type]} [description]
@@ -559,6 +561,7 @@ export class CommsService {
      * @return {void}
      */
     private error(err: any, req: any, obs:any) {
+    	console.error(err, req);
         let hash = this.hash(req.url+req.body);
         if(!this.retry[hash]) this.retry[hash] = 0;
         if((err.status === 401 || (err.status === 0 && err.ok == false)) && this.retry[hash] < 10) {

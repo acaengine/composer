@@ -231,20 +231,29 @@ class ResourceFactory {
      * @param  {any}    reject  Promise reject function
      * @return {void}
      */
-    private __get(url: any, method: any, resolve: any, reject: any) {
-        if(this.service.authLoaded) {
-            console.log(url);
-            let result: any;
-            this.http.get(url, method).subscribe(
-                data => result = this.processData(data, url, method.isArray),
-                err => reject(err),
-                () => resolve(result)
-            );
-        } else {
+    private __get(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
+    	if(tries > 10) return reject({ status: 401, message: 'No auth tokens loaded.' });
+	    if(this.service.authLoaded) {
+	    	this.service.is_ready.then((ready: boolean) => {
+		        if(ready) {
+		            console.log(url);
+		            let result: any;
+		            this.http.get(url, method).subscribe(
+		                data => result = this.processData(data, url, method.isArray),
+		                err => reject(err),
+		                () => resolve(result)
+		            );
+		        } else {
+		            setTimeout(() => {
+		                this.__get(url, method, resolve, reject, ++tries);
+		            }, 500);
+		        }
+	    	});
+	    } else {
             setTimeout(() => {
                 this.__get(url, method, resolve, reject);
             }, 500);
-        }
+	    }
     }
 
     /**
@@ -270,19 +279,29 @@ class ResourceFactory {
      * @param  {any} reject  Promise reject function
      * @return {void}
      */
-    private __post(url: any, method: any, data: any, resolve: any, reject: any) {
-        if(this.service.authLoaded) {
-            let result: any;
-            this.http.post(url, data, method).subscribe(
-                data => result = this.processData(data, url, method.isArray),
-                err => reject(err),
-                () => resolve(result)
-            );
-        } else {
+    private __post(url: any, method: any, data: any, resolve: any, reject: any, tries: number = 0) {
+    	if(tries > 10) return reject({ status: 401, message: 'No auth tokens loaded.' });
+	    if(this.service.authLoaded) {
+	    	this.service.is_ready.then((ready: boolean) => {
+		        if(ready) {
+		            console.log(url);
+		            let result: any;
+		            this.http.post(url, data, method).subscribe(
+		                data => result = this.processData(data, url, method.isArray),
+		                err => reject(err),
+		                () => resolve(result)
+		            );
+		        } else {
+		            setTimeout(() => {
+		                this.__post(url, method, data, resolve, reject, ++tries);
+		            }, 500);
+		        }
+	    	});
+	    } else {
             setTimeout(() => {
-                this.__post(url, method, data, resolve, reject);
+                this.__post(url, data, method, resolve, reject);
             }, 500);
-        }
+	    }
     }
 
     /**
@@ -308,19 +327,28 @@ class ResourceFactory {
      * @param  {any} reject  Promise reject function
      * @return {void}
      */
-    private __put(url: any, method: any, data: any, resolve: any, reject: any) {
-        if(this.service.authLoaded) {
-            let result: any;
-            this.http.put(url, data, method).subscribe(
-                data => result = this.processData(data, url, method.isArray),
-                err => reject(err),
-                () => resolve(result)
-            );
-        } else {
+    private __put(url: any, method: any, data: any, resolve: any, reject: any, tries: number = 0) {
+    	if(tries > 10) return reject({ status: 401, message: 'No auth tokens loaded.' });
+	    if(this.service.authLoaded) {
+	    	this.service.is_ready.then((ready: boolean) => {
+		        if(ready) {
+		            let result: any;
+		            this.http.put(url, data, method).subscribe(
+		                data => result = this.processData(data, url, method.isArray),
+		                err => reject(err),
+		                () => resolve(result)
+		            );
+		        } else {
+		            setTimeout(() => {
+		                this.__put(url, method, data, resolve, reject, ++tries);
+		            }, 500);
+		        }
+	    	});
+	    } else {
             setTimeout(() => {
                 this.__put(url, method, data, resolve, reject);
             }, 500);
-        }
+	    }
     }
 
     /**
@@ -344,19 +372,28 @@ class ResourceFactory {
      * @param  {any}    reject  Promise reject function
      * @return {void}
      */
-    private __delete(url: any, method: any, resolve: any, reject: any) {
-        if(this.service.authLoaded) {
-            let result: any;
-            this.http.delete(url, method).subscribe(
-                data => result = this.processData(data, url, method.isArray),
-                err => reject(err),
-                () => resolve(result)
-            );
-        } else {
+    private __delete(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
+    	if(tries > 10) return reject({ status: 401, message: 'No auth tokens loaded.' });
+	    if(this.service.authLoaded) {
+	    	this.service.is_ready.then((ready: boolean) => {
+		        if(ready) {
+		            let result: any;
+		            this.http.delete(url, method).subscribe(
+		                data => result = this.processData(data, url, method.isArray),
+		                err => reject(err),
+		                () => resolve(result)
+		            );
+		        } else {
+		            setTimeout(() => {
+		                this.__delete(url, method, resolve, reject, ++tries);
+		            }, 500);
+		        }
+	    	});
+	    } else {
             setTimeout(() => {
                 this.__delete(url, method, resolve, reject);
             }, 500);
-        }
+	    }
     }
 
     /**
@@ -382,6 +419,10 @@ export class Resources {
         COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
         	this.debug = data;
         });
+    }
+
+    get is_ready() {
+    	return this.http.hasToken;
     }
 
     /**

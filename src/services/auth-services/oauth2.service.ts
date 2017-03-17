@@ -156,14 +156,13 @@ export class OAuthService {
     initImplicitFlow(additionalState: string = "") {
         if(!this.clientId || this.clientId === '' || this.run_flow) return;
         this.createLoginUrl(additionalState).then((url) => {
-        	let path = this.location.path();
-            if(location.hash.indexOf(path) >= 0) {
-            	path = '/#' + path;
+        	let path = location.href;
+            if(location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
             	if(path.indexOf('?') >= 0) {
             		path = path.split('?')[0];
             	}
             }
-            let here = location.origin + path;
+            let here = path;
             this.store['local'].setItem(`oauth_redirect`, here);
             this.run_flow = true;
         	this.store.session.getItem(`${this.clientId}_login`).then((logged) => {

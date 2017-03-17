@@ -37,8 +37,8 @@ export * from './data-store.broker';
   	]
 })
 export class ACA_COMPOSER_MODULE {
-    version: string = '0.4.7';
-    build: string = '2017-03-15.v1';
+    version: string = '0.4.9';
+    build: string = '2017-03-17.v1';
     constructor() {
         console.debug(`[ACA][LIBRARY] Angular 2 Composer - Version: ${this.version} | Build: ${this.build}`);
     }
