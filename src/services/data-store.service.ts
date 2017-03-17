@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-03-09 09:05:57
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-03-09 21:27:12
+* @Last Modified time: 2017-03-17 14:38:43
 */
 
 import { PlatformRef, Injectable, ReflectiveInjector, Inject } from '@angular/core';
@@ -19,6 +19,7 @@ export class DataStoreService {
 			getItem: (key: string) => {
 				return new Promise<any>((resolve, reject) => {
 					this.getItem('local', key).then((item) => {
+						//console.log(`[COMPOSER][STORE] Got '${item}' for key '${key}'`)
 						this.store['local'].cache[key] = {
 							value: item,
 							time: (new Date()).getTime()
@@ -80,6 +81,7 @@ export class DataStoreService {
 				});
 			},
 			setItem: (key: string, value: string) => {
+				//console.error(key, value);
 				return new Promise<any>((resolve, reject) => {
 					this.setItem('session', key, value).then((item) => {
 						this.store['session'].cache[key] = {
@@ -134,22 +136,27 @@ export class DataStoreService {
 		});
 
 	};
-	setItem(type: string, key: string, value: string): Promise<void>{
-		return new Promise<void>((resolve) => {
+	setItem(type: string, key: string, value: string): Promise<string>{
+		return new Promise<string>((resolve) => {
+			//console.log(`[COMPOSER][STORE] Settings item '${key}' to value '${value}'`);
 			if(type === 'local' && localStorage) {
-				resolve(localStorage.setItem(key, value));
+				localStorage.setItem(key, value);
+				resolve(value);
 			} else if( type !== 'local' && sessionStorage) {
-				resolve(sessionStorage.setItem(key, value));
+				sessionStorage.setItem(key, value);
+				resolve(value);
 			}
 		});
 	};
 
-	removeItem(type: string, key: string): Promise<void>{
-		return new Promise<void>((resolve) => {
+	removeItem(type: string, key: string): Promise<string>{
+		return new Promise<string>((resolve) => {
 			if(type === 'local' && localStorage) {
-				resolve(localStorage.removeItem(key));
+				localStorage.removeItem(key);
+				resolve(null);
 			} else if( type !== 'local' && sessionStorage) {
-				resolve(sessionStorage.removeItem(key));
+				sessionStorage.removeItem(key);
+				resolve(null);
 			}
 		});
 	};
@@ -167,7 +174,7 @@ export class DataStoreWorkerService extends DataStoreService {
 
 	constructor(private brokerFactory: ClientMessageBrokerFactory) {
 		super();
-		console.log(brokerFactory);
+		//console.log(brokerFactory);
 		if(this.brokerFactory){
 			this.broker = brokerFactory.createMessageBroker('COMPOSER Storage Broker');
 		}

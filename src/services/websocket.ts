@@ -71,9 +71,10 @@ export class WebSocketInterface {
      * Connects to the websocket on the given host and port
      * @return {void}
      */
-    private connect() {
+    private connect(tries: number = 0) {
         if(!this.connect_promise) {
             this.connect_promise = new Promise((resolve, reject) => {
+            	if(tries > 10) reject();
                 if(this.io && this.io.readyState !== this.io.CLOSED) {
                     if(this.io.readyState === this.io.CONNECTING) {
                         reject({message: 'Already attempting to connect to websocket.'});
@@ -118,13 +119,18 @@ export class WebSocketInterface {
         	                    this.io.onerror = (evt: any) => {
                                     this.serv.r.checkAuth();
                                     this.io = null;
-                                    reject();
+                                    if(!this.connected) reject();
                                 }
                                 this.connect_promise = null;
         	                } else {
-        	                    setTimeout(() => { this.connect(); }, 200) ;
+        	                    setTimeout(() => { 
+        	                    	this.connect(++tries).then(() => {
+        	                    		resolve();
+        	                    	}, () => {
+        	                    		reject();
+        	                    	}); 
+        	                    }, 200) ;
                                 this.connect_promise = null;
-        	                    reject();
         	                }
         	            });
                     } else {
@@ -160,7 +166,7 @@ export class WebSocketInterface {
     private reconnect() {
         if (this.io == null || this.io.readyState === this.io.CLOSED){
             if(this._debug) console.debug('[COMPOSER][WS] Reconnecting websocket...');
-            this.connect();
+            this.connect().then(() => {}, () => {});
             this.reconnected = true;
         }
     };

@@ -44,7 +44,7 @@ export class CommsService {
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.trust = params['trust'] === 'true' ? params['trust'] === 'true' : this.trust;
-            store.session.setItem('trust', this.trust ? 'true': 'false');
+            if(this.trust) store.session.setItem('trust', 'true');
             if(params['logout'] && params['logout']==='true'){
                 this.oAuthService.logOut();
             }
@@ -265,7 +265,7 @@ export class CommsService {
      */
     login(){
         if (this.login_promise === null) {
-            if(this.debug) console.error('[COMPOSER][COMMS] Attempting login.');
+            if(this.debug) console.debug('[COMPOSER][COMMS] Attempting login.');
             this.login_promise = new Promise((resolve, reject) => {
             	this.performLogin(resolve, reject);
             });
@@ -457,7 +457,7 @@ export class CommsService {
      * @return {void}
      */
     checkAuth(cb_fn: any) {
-        console.error('[COMPOSER][COMMS] Checking Auth.');
+        if(this.debug) console.debug('[COMPOSER][COMMS] Checking Auth.');
         if(this.login_promise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
             let uri:any = parts.splice(0, 3).join('/');
@@ -526,7 +526,7 @@ export class CommsService {
             let expiry:any = ((new Date()).getTime() + data.expires_in * 1000);
             this.store['local'].setItem(`${oauth.clientId}_expires_at`, expiry.toString());
         }
-        resolve();
+        if(resolve) resolve();
         setTimeout(() => { this.loginDone(); }, 100);
     }
 

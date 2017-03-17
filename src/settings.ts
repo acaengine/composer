@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-03-08 11:23:08
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-03-15 12:45:27
+* @Last Modified time: 2017-03-17 14:40:33
 */
 
 import { Observable } from 'rxjs/Observable';
@@ -34,7 +34,7 @@ export class COMPOSER_SETTINGS {
 		if(globalScope) {
 			for(let i of COMPOSER_SETTINGS.var_list) {
 				if(globalScope[i] !== undefined && (COMPOSER_SETTINGS.data[i] === undefined || globalScope[i] !== COMPOSER_SETTINGS.data[i])) {
-					console.log(`[COMPOSER] [SETTINGS] ${i} was changed from ${COMPOSER_SETTINGS.data[i]} to ${globalScope[i]}`)
+					//console.log(`[COMPOSER][SETTINGS] ${i} was changed from ${COMPOSER_SETTINGS.data[i]} to ${globalScope[i]}`)
 					COMPOSER_SETTINGS.data[i] = globalScope[i];
 					if(!COMPOSER_SETTINGS.obs[i] || !COMPOSER_SETTINGS._obs[i]) {
 						COMPOSER_SETTINGS.obs[i] = new Observable((observer) => {

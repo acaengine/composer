@@ -238,7 +238,6 @@ export class OAuthService {
     }
 
     processLogin(parts: any, options: any, resolve: any, reject: any) {
-    	console.log(parts);
         let accessToken = parts["access_token"];
         let idToken = parts["id_token"];
         let state = parts["state"];
@@ -434,9 +433,11 @@ export class OAuthService {
     				if(!token) {
 	    				this.store[this._storage].getItem(`accessToken`).then((token) => {
 	    					resolve(token);
+				            this.access_token_promise = null;
 	    				});
     				} else {
     					resolve(token);
+			            this.access_token_promise = null;
     				}
     			});
     		});
@@ -455,9 +456,11 @@ export class OAuthService {
     				if(!token) {
 	    				this.store[this._storage].getItem(`refreshToken`).then((token) => {
 	    					resolve(token);
+				           	this.refresh_token_promise = null;
 	    				});
     				} else {
     					resolve(token);
+				        this.refresh_token_promise = null;
     				}
     			});
     		});
@@ -474,6 +477,9 @@ export class OAuthService {
     		this.valid_access_token_promise = new Promise((resolve, reject) => {
     			this.getAccessToken().then((token) => {
 		            this.store[this._storage].getItem(`${this.clientId}_expires_at`).then((expiresAt) => {
+			            setTimeout(() => {
+			            	this.valid_access_token_promise = null;
+			            }, 10);
 		            	if(!expiresAt) {
 		            		this.store[this._storage].getItem(`accessExpiry`).then((expiresAt) => {
 					            let now = new Date();

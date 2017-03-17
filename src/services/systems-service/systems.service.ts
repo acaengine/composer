@@ -99,23 +99,19 @@ export class SystemsService {
     get(sys_id: string) {
         let system = this.r.get('System');
         if(!this.mock) {
-            if(!this.system_promises[sys_id]) {
+            if(!this.system_promises[sys_id] && system) {
                 this.system_promises[sys_id] = new Promise((resolve, reject) => {
-                	if(system){
-	                    system.get({id: sys_id}).then((sys: any) => {
-	                        let s = this.getSystem(sys_id);
-	                        s.exists = true;
-	                        this.system_promises[sys_id] = null;
-	                        resolve();
-	                    }, (err: any) => {
-	                        let sys = this.getSystem(sys_id);
-	                        sys.exists = false;
-	                        this.system_promises[sys_id] = null
-	                        reject();
-	                    });
-	                } else {
-	                	reject();
-	                }
+                    system.get({id: sys_id}).then((sys: any) => {
+                        let s = this.getSystem(sys_id);
+                        s.exists = true;
+                        this.system_promises[sys_id] = null;
+                        resolve();
+                    }, (err: any) => {
+                        let sys = this.getSystem(sys_id);
+                        sys.exists = false;
+                        this.system_promises[sys_id] = null
+                        resolve();
+                    });
                 });
             }
         }
