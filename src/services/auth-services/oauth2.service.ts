@@ -38,9 +38,6 @@ export class OAuthService {
     private debug: boolean = false;
 
     constructor(private location: Location, private store: DataStoreService) {
-        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
-        	this.debug = data;
-        });
     }
 
     /**
@@ -167,17 +164,17 @@ export class OAuthService {
             this.run_flow = true;
         	this.store.session.getItem(`${this.clientId}_login`).then((logged) => {
         		if(logged === 'true') {
-                    if(this.debug) console.debug('[COMPOSER][OAUTH] Logged in. Authorizing...');
+                    if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][OAUTH] Logged in. Authorizing...');
 	        		this.store.session.removeItem(`${this.clientId}_login`);
         			location.href = url;
 	        	} else {
-                    if(this.debug) console.debug('[COMPOSER][OAUTH] Not logged in redirecting to provider...');
+                    if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][OAUTH] Not logged in redirecting to provider...');
 	        		this.store.session.setItem(`${this.clientId}_login`, 'true');
                     if(!this.loginRedirect || this.loginRedirect === '') {
                         this.loginRedirect === location.origin + '/auth/login'
                     }
                     let url = this.loginRedirect;//* + '?continue=' + here;*/
-                    if(this.debug) console.debug(`[COMPOSER][OAUTH] Login: ${url}`);
+                    if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][OAUTH] Login: ${url}`);
 	        		location.href = url;
 	        	}
     		});
@@ -243,8 +240,8 @@ export class OAuthService {
         let state = parts["state"];
         let code = parts['code'];
         let refreshToken = parts['refreshToken'];
-        if(this.debug) console.debug(`[COMPOSER][OAUTH] State: ${state}`);
-        if(this.debug) console.debug(`[COMPOSER][OAUTH] Access: ${accessToken} | Refresh: ${accessToken}`);
+        if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][OAUTH] State: ${state}`);
+        if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][OAUTH] Access: ${accessToken} | Refresh: ${accessToken}`);
 
         let oidcSuccess = false;
         let oauthSuccess = false;
@@ -322,6 +319,7 @@ export class OAuthService {
 	       		// Clean up after token has been received
 	       	this.store[this._storage].removeItem('oauth_redirect');
 	       	this.store[this._storage].setItem('oauth_finished', 'true');
+	       	this.location.go(this.location.path(), '');
 	        return resolve(true);
         });
 
@@ -546,7 +544,7 @@ export class OAuthService {
      * @return {void}
      */
     logOut() {
-        if(this.debug) console.debug('[COMPOSER][OAUTH] Logging out. Clear access tokens...')
+        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][OAUTH] Logging out. Clear access tokens...')
         let id_token = this.getIdToken();
         this.clearAuth();
         if (!this.logoutUrl) {
@@ -557,7 +555,7 @@ export class OAuthService {
         }
 
         let logoutUrl = this.logoutUrl.replace(/\{\{id_token\}\}/, id_token);
-        if(this.debug) console.debug('[COMPOSER][OAUTH] Redirecting to logout URL...')
+        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][OAUTH] Redirecting to logout URL...')
         location.href = logoutUrl;
     };
     /**

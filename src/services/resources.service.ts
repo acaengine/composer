@@ -236,7 +236,6 @@ class ResourceFactory {
 	    if(this.service.authLoaded) {
 	    	this.service.is_ready.then((ready: boolean) => {
 		        if(ready) {
-		            console.log(url);
 		            let result: any;
 		            this.http.get(url, method).subscribe(
 		                data => result = this.processData(data, url, method.isArray),
@@ -284,7 +283,6 @@ class ResourceFactory {
 	    if(this.service.authLoaded) {
 	    	this.service.is_ready.then((ready: boolean) => {
 		        if(ready) {
-		            console.log(url);
 		            let result: any;
 		            this.http.post(url, data, method).subscribe(
 		                data => result = this.processData(data, url, method.isArray),
@@ -414,11 +412,9 @@ export class Resources {
     authLoaded: boolean = false;
     auth_promise: any = null;
     debug: boolean = false;
+    mock: boolean = false;
 
     constructor(public http: CommsService, private http_unauth: Http) {
-        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
-        	this.debug = data;
-        });
     }
 
     get is_ready() {
@@ -432,14 +428,18 @@ export class Resources {
      * @return {void}
      */
     initAuth(resolve: any, reject: any) {
-        if(this.debug) console.debug(`[COMPOSER][Resources] Loading Authority...`);
+        if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][Resources] Loading Authority...`);
+        if(this.mock) {
+        	this.authLoaded = true;
+        	return resolve();
+        }
         let parts = this.url.split('/');
         let uri = parts.splice(0, 3).join('/');
         let base_el = document.getElementsByTagName('base')[0];
         let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
         let redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
         this.get('Authority').get_authority().then((auth: any) => {
-            if(this.debug) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`);
+            if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][Resources] Authority loaded. Session: ${auth.session===true}`);
             if(typeof auth !== 'object') {
                 reject({
                     message: 'Auth details no valid.'
@@ -448,13 +448,9 @@ export class Resources {
             }
         	let url = encodeURIComponent(location.href);
         	url = auth.login_url.replace('{{url}}', url);
-	        this.http.setupOAuth(
-	        	`${uri}/auth/oauth/authorize`,
-	        	`${uri}/auth/token`,
-	        	`${redirect}oauth-resp.html`,
-	        	this.http.hash(`${redirect}oauth-resp.html`),
-	        	(url[0] === '/' ? (uri + url) : url)
-	        );
+	        this.http.setupOAuth({
+	        	loginRedirect: (url[0] === '/' ? (uri + url) : url)
+	        });
 	        if(auth.session) this.http.setLoginStatus(auth.session);
    		 	this.authLoaded = true;
             setTimeout(() => {
@@ -464,12 +460,9 @@ export class Resources {
         }, (err: any) => {
         	console.error('[COMPOSER][Resources] Error getting authority.');
         	console.error(err);
-	        this.http.setupOAuth(
-	        	`${uri}/auth/oauth/authorize`,
-	        	`${uri}/auth/token`,
-	        	`${redirect}oauth-resp.html`,
-	        	this.http.hash(`${redirect}oauth-resp.html`),
-	        	`${uri}/auth/login`);
+	        this.http.setupOAuth({
+	        	loginRedirect: `${uri}/auth/login`
+	        });
         	this.http.tryLogin();
         	reject(err);
         })
@@ -480,13 +473,12 @@ export class Resources {
      * @return {void}
      */
     setup(options: any) {
-        this.http.setupOAuth(
-            options.oauth_server,
-            options.oauth_tokens,
-            options.redirect_uri,
-            this.http.hash(options.redirect_uri),
-            options.api_endpoint
-        )
+        this.http.setupOAuth({
+    		loginUrl: options.oauth_server,
+    		refreshUri: options.oauth_tokens,
+    		redirectUri: options.redirect_uri,
+        	clientId: this.http.hash(options.redirect_uri),
+    	});
         this.url = options.api_endpoint;
     }
 
@@ -495,7 +487,11 @@ export class Resources {
      * @param  {string} url_base Base resource URL, defaults to origin + '/control/'
      * @return {Promise<any>}    Returns a promise when resolves the state of the auth.
      */
-    init(url_base?: string) {
+    init(url_base?: string, mock: boolean = false) {
+    	if(mock) {
+    		this.http.mock();
+    		this.mock = mock;
+    	}
     	return new Promise<any>((resolve, reject) => {
 	        if(!url_base && !this.url) this.url = location.origin + '/control/';
 	        else this.url = url_base ? url_base : this.url;
@@ -640,7 +636,7 @@ export class Resources {
      */
     checkAuth(){
         this.http.checkAuth(() => {
-            if(this.debug) console.debug('[COMPOSER][Resources] Refreshed Auth');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][Resources] Refreshed Auth');
         });
     }
     /**
@@ -664,7 +660,7 @@ export class Resources {
      * @return {ResourceFactory} Returns a resource factory, null if not found
      */
     get(name: string){
-        if(this.debug && !this.authLoaded) console.warn(`[COMPOSER] [Resources] Not ready to perform API requests.`);
+        if(COMPOSER_SETTINGS.get('debug') && !this.authLoaded) console.warn(`[COMPOSER] [Resources] Not ready to perform API requests.`);
         return this.factories && this.factories[name] ? this.factories[name] : null;
     }
 }

@@ -7,4 +7,18 @@
 * @Last modified time: 15/12/2016 11:41 AM
 */
 
-export * from './comms.service'
+
+import { CommsService } from './comms.service';
+import { OAuthService } from './oauth2.service';
+import { MockHttp } from './http.mock';
+
+import './mock.classes';
+
+export * from './comms.service';
+export * from './http.mock';
+
+export let ACA_AUTH_PROVIDERS = [
+    CommsService, OAuthService
+];
+
+

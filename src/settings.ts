@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-03-08 11:23:08
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-03-17 14:40:33
+* @Last Modified time: 2017-03-28 10:04:38
 */
 
 import { Observable } from 'rxjs/Observable';
@@ -63,6 +63,6 @@ setTimeout(() => {
 	COMPOSER_SETTINGS.loadSettings();
 	setInterval(() => {
 		COMPOSER_SETTINGS.loadSettings();
-	}, 2000);
-}, 200);
+	}, 1000);
+}, 50);
 

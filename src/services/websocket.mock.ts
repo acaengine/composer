@@ -96,16 +96,12 @@ export class MockWebSocketInterface {
     requests: any = {};
     static retries: number = 0;
     fixed: boolean = false;
-    private _debug: boolean = false;
 
 	systems: any[] = [];
 
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
         this.fixed = fixed;
         this.serv = srv;
-        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
-        	this._debug = data;
-        });
         COMPOSER_SETTINGS.observe('control').subscribe((data) => {
         	this.systems = data;
         });
@@ -122,9 +118,11 @@ export class MockWebSocketInterface {
         this.auth = auth;
         this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
         this.uri = this.end_point + '/control/websocket';
+        /*
         if(this.auth !== undefined && this.auth !== null){
             this.auth.getToken();
         }
+        //*/
         this.setupSystems();
     }
 	/**
@@ -169,7 +167,7 @@ export class MockWebSocketInterface {
         return;
         /*
         if (this.io == null || this.io.readyState === this.io.CLOSED){
-            if(this._debug) console.debug('[COMPOSER][WS(M)] Reconnecting...');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][WS(M)] Reconnecting...');
             this.connect();
             this.reconnected = true;
         }
@@ -192,7 +190,7 @@ export class MockWebSocketInterface {
 	 */
     onopen(evt: any) {
         this.connected = true;
-        if(this._debug) console.debug('[COMPOSER][WS(M)] Connected');
+        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][WS(M)] Connected');
         this.startKeepAlive();
             // Rebind the connected systems modules
         if(this.reconnected) this.serv.rebind();
@@ -206,7 +204,7 @@ export class MockWebSocketInterface {
 	 */
     onclose(evt: any) {
         this.connected = false;
-        if(this._debug) console.debug('[COMPOSER][WS(M)] Closed');
+        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][WS(M)] Closed');
         this.io = null;
         this.stopKeepAlive();
     }
@@ -229,7 +227,7 @@ export class MockWebSocketInterface {
 		// Process message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
-			if(this._debug) console.debug(`[COMPOSER][WS(M)] Recieved ${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`, msg.value);
+			if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][WS(M)] Recieved ${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`, msg.value);
             if(msg.type === SUCCESS) {
                 if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].resolve(msg.value);
             } else if(msg.type === ERROR) {
@@ -255,7 +253,7 @@ export class MockWebSocketInterface {
 	 * @return {void}
 	 */
     private fail (msg: any, type: any){
-        if(this._debug) console.error(`[COMPOSER][WS(M)] Failed(${type}):`, msg);
+        if(COMPOSER_SETTINGS.get('debug')) console.error(`[COMPOSER][WS(M)] Failed(${type}):`, msg);
         return false;
     }
 	/**
@@ -270,7 +268,7 @@ export class MockWebSocketInterface {
 	 */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any[] = []) :any {
         if (!this.connected) {
-            if(this._debug) console.debug('[COMPOSER][WS(M)] Not connected to websocket. Attempting to connect to websocket');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][WS(M)] Not connected to websocket. Attempting to connect to websocket');
         	return this.connect().then(() => {
                 setTimeout(() => {
             		return this.sendRequest(type, system, mod, index, name, args);
@@ -288,7 +286,7 @@ export class MockWebSocketInterface {
             name:   name,
             args:   args
         };
-        if(this._debug) console.debug(`[COMPOSER][WS(M)] Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
+        if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][WS(M)] Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
 
         if (args !== null) request.args = args;
         setTimeout(() => {

@@ -8,7 +8,7 @@
 */
 
 // Import all services
-import { ACA_AUTH_PROVIDERS } from './auth-services/inc';
+import { ACA_AUTH_PROVIDERS } from './auth-services';
 import { SystemsService } from './systems-service';
 import { Resources } from './resources.service';
 import { DataStoreService, DataStoreWorkerService } from './data-store.service';

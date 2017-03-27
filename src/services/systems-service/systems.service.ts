@@ -29,7 +29,6 @@ export class SystemsService {
     fixed_device: boolean = false;
     sub: any = null;
     is_setup: boolean = false;
-    debug: boolean = false;
     system_promises: any = {};
     //private r: any;
 
@@ -37,9 +36,6 @@ export class SystemsService {
     	store.session.getItem(`fixed_device`).then((value) => {
     		this.fixed_device = (value === 'true');
     	});
-        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
-        	this.debug = data;
-        });
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.fixed_device = params['fixed_device'] === 'true' ? params['fixed_device'] === 'true' : this.fixed_device;
@@ -48,7 +44,7 @@ export class SystemsService {
     	//*
         let auth: any = null;
         if(r) auth = r;
-        this.io = new $WebSocket(this, auth, this.fixed_device);
+        //this.io = new $WebSocket(this, auth, this.fixed_device);
         //*/
         //*
         setInterval(() => {
@@ -73,23 +69,23 @@ export class SystemsService {
      * @return {boolean} Returns the success of the initialisation of the resouces service
      */
     setup(options: any): any {
+    	COMPOSER_SETTINGS.loadSettings();
         this.mock = options.mock ? true : false;
         this.is_setup = true;
         let o = options;
+        if(this.r) this.r.setup(options);
         if(options.mock){
-            if(this.debug) console.debug('[COMPOSER][Systems] Setting up mock websocket.');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][Systems] Setting up mock websocket.');
             if(this.io) delete this.io;
             this.io = new $WebSocketMock(this, this.r, this.fixed_device);
             this.io.setup(this.r, o.host ? o.host : location.hostname , o.port ? o.port : location.port, o.protocol ? o.protocol : location.protocol);
-            if(o.http) {
-                return this.r.init(options.api_endpoint).then(() => { return true; }, (err) => { return false; });
-            } else return true;
+            return this.r.init(options.api_endpoint, true).then(() => { return true; }, (err) => { return false; });
         } else {
-            if(this.debug) console.debug('[COMPOSER][Systems] Setting up websocket.');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][Systems] Setting up websocket.');
+            if(!this.io) this.io = new $WebSocket(this, this.r, this.fixed_device);
             this.io.setup(this.r, o.host ? o.host : location.hostname , o.port ? o.port : location.port, o.protocol ? o.protocol : location.protocol);
             return this.r.init(o.api_endpoint).then(() => { return true; }, (err) => { return false; });
         }
-        //this.r.setup(options);
     }
     /**
      * Get a system with the given id, creates a new system if it doesn't exist

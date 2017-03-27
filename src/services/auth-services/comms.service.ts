@@ -7,7 +7,7 @@
 * @Last modified time: 06/02/2017 12:47 PM
 */
 
-import { Injectable, Inject, Renderer } from '@angular/core';
+import { Injectable, Inject, Injector, ReflectiveInjector, Renderer } from '@angular/core';
 import { Location } from '@angular/common';
 import { Http, Headers } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
@@ -15,6 +15,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { DataStoreService } from '../data-store.service';
 import { OAuthService } from './oauth2.service';
+import { MockHttp } from './http.mock';
 import { Md5 } from 'ts-md5/dist/md5'
 import { COMPOSER_SETTINGS } from '../../settings';
 
@@ -28,18 +29,18 @@ export class CommsService {
     private login_promise: Promise<any> = null;
     private retry: any = {};
     private debug: boolean = true;
+    private http: any = null;
 
     constructor(private route: ActivatedRoute, 
     			private router: Router, 
-    			private http: Http, 
+    			private http_service: Http, 
     			private oAuthService: OAuthService, 
     			private store: DataStoreService,
-    			private loc: Location){
+    			private loc: Location,
+    			private injector: Injector){
+    	this.http = this.http_service;
         store.session.getItem('trust').then((value) => {
         	this.trust = (value === 'true');
-        });
-        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
-        	//this.debug = data;
         });
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
@@ -50,6 +51,7 @@ export class CommsService {
             }
         });
         //*/
+        this.oAuthService.tryLogin().then(() => {}, () => {});
     }
     /**
      * Initialises OAuth
@@ -64,33 +66,43 @@ export class CommsService {
      * @param  {string}  logout   Logout URL
      * @return {void}
      */
-    setupOAuth(url: string, refresh: string, redirect: string, c_id: string, login:string, issuer?: string, scope?: string, oidc?: boolean, logout?: string) {
+    
+    valid_params = ['loginUrl', 'loginRedirect', 'refreshUrl', 'redirectUri', 'refreshUri', 'clientId', 'issuer', 'scope', 'oidc', 'logoutUrl'];
+
+    setupOAuth(options: any) {
         let oauth = this.oAuthService;
-        oauth.loginUrl = url;
-        oauth.loginRedirect = login;
-        oauth.refreshUri = refresh;
-        oauth.redirectUri = redirect;
-        oauth.clientId = c_id;
-        oauth.issuer = issuer ? issuer : (oauth.issuer ? oauth.issuer : '');
-        oauth.scope = scope ? scope : (oauth.scope ? oauth.scope : '');
-        oauth.oidc = oidc ? oidc : (oauth.oidc ? oauth.oidc : false);
-        oauth.logoutUrl = logout ? logout : (oauth.logoutUrl ? oauth.logoutUrl : 'logout');
-        /*
-        this.login().then(() => {
+        if(options) {
+        	for(let i in options) {
+        		if(typeof options[i] === 'string' && this.valid_params.indexOf(i) >= 0) {
+        			oauth[i] = options[i];
+        		}
+        	}
+        }
+    }
+    /**
+     * Changes the http service to respond with mock data
+     * @param {boolean = true} enable Enables or disables mock data responses
+     * @return {void}
+     */
+    mock(enable: boolean = true) {
+    	if(enable && this.http instanceof Http) {
+		  	let resolvedProviders = ReflectiveInjector.resolve([MockHttp]);
+		  	let childInjector = ReflectiveInjector.fromResolvedProviders(resolvedProviders, this.injector);
 
-        }, () => {
-
-        });
-        */
+		  	let http : MockHttp = childInjector.get(MockHttp);
+		  	this.http = http;
+    	} else if(this.http instanceof MockHttp && this.http_service) {
+    		this.http = this.http_service;
+    	}
     }
     /**
      * Attempt to login to the system
      * @return {void}
      */
     tryLogin() {
-        if(this.debug) console.debug('[COMPOSER][COMMS] Trying Login');
+        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Trying Login');
         if(this.oAuthService.code) this.login().then(() => {
-            if(this.debug) console.debug('[COMPOSER][COMMS] Got Access Token.');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Got Access Token.');
         });
     }
     /**
@@ -146,7 +158,7 @@ export class CommsService {
 	            type: 'get',
 	            body: body,
 	            url: url,
-	            auth: (auth_header !== '' && auth_header.indexOf('Bearer null') < 0)
+	            auth: ((auth_header !== '' && auth_header.indexOf('Bearer null') < 0) || this.http instanceof MockHttp)
 	        };
 	        if(!req.options) req.options = { headers: headers};
 	        else if(!req.options.headers) req.options.headers = headers;
@@ -264,8 +276,9 @@ export class CommsService {
      * @return {Promise<any>} Returns a promise which resolves with an access token
      */
     login(){
+    	console.error('Login');
         if (this.login_promise === null) {
-            if(this.debug) console.debug('[COMPOSER][COMMS] Attempting login.');
+            if(COMPOSER_SETTINGS.get('debug')) console.error('[COMPOSER][COMMS] Attempting login.');
             this.login_promise = new Promise((resolve, reject) => {
             	this.performLogin(resolve, reject);
             });
@@ -274,6 +287,10 @@ export class CommsService {
     }
 
     performLogin(resolve, reject) {
+    	if(this.http instanceof MockHttp) {
+    		this.login_promise = null;
+    		return resolve('mock_token');
+    	}
         let oauth:any = this.oAuthService;
         if(!oauth || !oauth.clientId || oauth.clientId === '') {
         	setTimeout(() => {
@@ -283,30 +300,30 @@ export class CommsService {
         }
         oauth.hasValidAccessToken().then((valid) => {
         	if(valid) {
-                if(this.debug) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
+                if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
                 oauth.getAccessToken().then((token) => {
                     resolve(token);
                     setTimeout(() => { this.loginDone(); }, 100);
                 });
         	} else {
-                if(this.debug) console.debug(`[COMPOSER][COMMS] No valid access token available.`);
+                if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][COMMS] No valid access token available.`);
                 	// Attempt to finish logging in
                 oauth.tryLogin().then((status: any) => {
                 		// Check if valid access token is available
                 	oauth.hasValidAccessToken().then((valid) => {
                 		if(valid) {
-		                    if(this.debug) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
+		                    if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
 		                    oauth.getAccessToken().then((token) => {
 		                        resolve(token);
 		                        setTimeout(() => { this.loginDone(); }, 100);
 		                    });
 		                } else {
 		                	if(this.trust) {
-                                if(this.debug) console.debug(`[COMPOSER][COMMS] Device is trusted`);
+                                if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][COMMS] Device is trusted`);
                                 oauth.response_type = 'code';
                                 this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((refresh) => {
 	                                if(refresh || oauth.code){ // Refresh token exists
-	                                    if(this.debug) console.debug('[COMPOSER][COMMS] Refresh token found. Refreshing access token...');
+	                                    if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Refresh token found. Refreshing access token...');
 	                                    //Perform refresh
 	                                    if(oauth.clientId === '') {
 	                                        resolve({ message : 'OAuth not setup, retrying after 100ms'});
@@ -319,7 +336,7 @@ export class CommsService {
 	                                        this.refreshToken(resolve, reject);
 	                                    }
 	                                } else { // No refresh token
-                                        if(this.debug) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
+                                        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] No Refresh Token or Code');
 							        	let path = location.href;
 							            if(location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
 							            	if(path.indexOf('?') >= 0) {
@@ -334,9 +351,9 @@ export class CommsService {
                                 });
 
 		                	} else {
-                                if(this.debug) console.debug('[COMPOSER][COMMS] Device is not trusted.');
+                                if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Device is not trusted.');
                                 oauth.response_type = 'token';
-                                if(this.debug) console.debug('[COMPOSER][COMMS] Starting login process...');
+                                if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Starting login process...');
 					        	let path = location.href;
 					            if(location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
 					            	if(path.indexOf('?') >= 0) {
@@ -375,7 +392,7 @@ export class CommsService {
                         let err_codes = [0, 400, 401, 403]
                             // Try refresh with root client ID
                         if(err && (err_codes.indexOf(err.status) || (err.status == 0 && err.ok == false)) && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
-                            if(this.debug) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
+                            if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
                             oauth.getRefreshToken().then((rt) => {
 	                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
 	                            oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
@@ -392,7 +409,7 @@ export class CommsService {
                             this.processLoginError(err, reject);
                         }
                     }, () => {
-                        if(this.debug) console.debug('[COMPOSER][COMMS] Got new tokens:', tokens);
+                        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Got new tokens:', tokens);
                         this.updateToken(tokens, resolve);
                         setTimeout(() => { this.loginDone(); }, 100);
                     }
@@ -439,7 +456,7 @@ export class CommsService {
         this.storeError('login', err);
             // Clear storage
         if(err.status == 400 || err.status == 401){
-            if(this.debug) console.debug('[COMPOSER][COMMS] Error with credentials. Getting new credentials...');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Error with credentials. Getting new credentials...');
             this.clearStore();
             this.oAuthService.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
@@ -457,7 +474,7 @@ export class CommsService {
      * @return {void}
      */
     checkAuth(cb_fn: any) {
-        if(this.debug) console.debug('[COMPOSER][COMMS] Checking Auth.');
+        if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Checking Auth.');
         if(this.login_promise === null) {
             let parts:any = this.oAuthService.loginUrl.split('/');
             let uri:any = parts.splice(0, 3).join('/');
@@ -542,7 +559,13 @@ export class CommsService {
     }
 
     get hasToken() {
-    	return this.oAuthService.hasValidAccessToken();
+    	if(this.http instanceof MockHttp) {
+    		return new Promise<boolean>((resolve) => {
+    			resolve(true);
+    		});
+    	} else {
+	    	return this.oAuthService.hasValidAccessToken();
+	    }
     }
 
     /**
@@ -566,32 +589,34 @@ export class CommsService {
         if(!this.retry[hash]) this.retry[hash] = 0;
         if((err.status === 401 || (err.status === 0 && err.ok == false)) && this.retry[hash] < 10) {
             // Re-authenticate if authentication error.
-            this.login()
-                .then((res) => {
-                    this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
-                    setTimeout(() => {
-                        this.refresh = false;
-                        if(req.type == 'get' || req.type == 'delete'){
-                            this[req.type](req.url, req.options).subscribe(
-                                (data: any) => obs.next(data),
-                                (err: any) => obs.error(err),
-                                () => { obs.complete(); this.retry[hash] = 0; }
-                            );
-                        } else {
-                            this[req.type](req.url, req.body, req.options).subscribe(
-                                (data: any) => obs.next(data),
-                                (err: any) => obs.error(err),
-                                () => { obs.complete(); this.retry[hash] = 0; }
-                            );
-                        }
-                    }, 500 * this.retry[hash]);
-                }, (err) => {
-                	console.error('[COMPOSER][COMMS] Error logging in.');
-                    this.clearStore();
-                    location.reload();
-                	console.error(err);
-                    this.retry[hash] = 0;
-                });
+            setTimeout(() => {
+	            this.login()
+	                .then((res) => {
+	                    this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
+	                    setTimeout(() => {
+	                        this.refresh = false;
+	                        if(req.type == 'get' || req.type == 'delete'){
+	                            this[req.type](req.url, req.options).subscribe(
+	                                (data: any) => obs.next(data),
+	                                (err: any) => obs.error(err),
+	                                () => { obs.complete(); this.retry[hash] = 0; }
+	                            );
+	                        } else {
+	                            this[req.type](req.url, req.body, req.options).subscribe(
+	                                (data: any) => obs.next(data),
+	                                (err: any) => obs.error(err),
+	                                () => { obs.complete(); this.retry[hash] = 0; }
+	                            );
+	                        }
+	                    }, 500 * this.retry[hash]);
+	                }, (err) => {
+	                	console.error('[COMPOSER][COMMS] Error logging in.');
+	                    this.clearStore();
+	                    location.reload();
+	                	console.error(err);
+	                    this.retry[hash] = 0;
+	                });
+            }, 200)
         } else { // Return error
         	console.error('[COMPOSER][COMMS] Error processing request.');
         	console.error(err);
