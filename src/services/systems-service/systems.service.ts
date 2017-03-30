@@ -33,13 +33,13 @@ export class SystemsService {
     //private r: any;
 
     constructor(private r: Resources, private route: ActivatedRoute, private store: DataStoreService) {
-    	store.session.getItem(`fixed_device`).then((value) => {
+    	store.local.getItem(`fixed_device`).then((value) => {
     		this.fixed_device = (value === 'true');
     	});
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.fixed_device = params['fixed_device'] === 'true' ? params['fixed_device'] === 'true' : this.fixed_device;
-            store.session.setItem('fixed_device', this.fixed_device ? 'true': 'false');
+            store.local.setItem('fixed_device', this.fixed_device ? 'true': 'false');
         });
     	//*
         let auth: any = null;

@@ -37,8 +37,8 @@ export * from './data-store.broker';
   	]
 })
 export class ACA_COMPOSER_MODULE {
-    version: string = '0.5.0';
-    build: string = '2017-03-22.v1';
+    version: string = '0.5.3';
+    build: string = '2017-03-29.v1';
     constructor() {
         console.debug(`[ACA][LIBRARY] Composer - Version: ${this.version} | Build: ${this.build}`);
     }

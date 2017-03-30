@@ -39,13 +39,13 @@ export class CommsService {
     			private loc: Location,
     			private injector: Injector){
     	this.http = this.http_service;
-        store.session.getItem('trust').then((value) => {
+        store.local.getItem('trust').then((value) => {
         	this.trust = (value === 'true');
         });
         //*
         this.sub = this.route.queryParams.subscribe( (params: any) => {
             this.trust = params['trust'] === 'true' ? params['trust'] === 'true' : this.trust;
-            if(this.trust) store.session.setItem('trust', 'true');
+            if(this.trust) store.local.setItem('trust', 'true');
             if(params['logout'] && params['logout']==='true'){
                 this.oAuthService.logOut();
             }

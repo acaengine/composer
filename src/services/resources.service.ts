@@ -660,7 +660,7 @@ export class Resources {
      * @return {ResourceFactory} Returns a resource factory, null if not found
      */
     get(name: string){
-        if(COMPOSER_SETTINGS.get('debug') && !this.authLoaded) console.warn(`[COMPOSER] [Resources] Not ready to perform API requests.`);
+        if(COMPOSER_SETTINGS.get('debug') && !this.authLoaded) console.warn(`[COMPOSER][Resources] Not ready to perform API requests.`);
         return this.factories && this.factories[name] ? this.factories[name] : null;
     }
 }
