@@ -26,7 +26,9 @@ export class StatusVariable {
     execs: any[] = [];
     value: any = {};
     cb_fn: Function;
-    local_change = false;   //
+    local_change = false;
+    private obs: any = null;
+    private view: any = null;
     constructor(srv: Object, parent: any, name: string, init_val: any) {
         this.id = name;
         this.previous = init_val;
@@ -48,16 +50,40 @@ export class StatusVariable {
      * @return {Observable} Returns an observerable that post changes to the status variable
      */
     get observe(){
-        return new Observable((observer: any) => {
-            let val = this.current;
-            setInterval(() => {
-                if(this.bindings === 0) observer.complete();
-                if(this.current !== val){
-                    val = this.current;
-                    observer.next(this.current);
-                }
-            }, 100);
-        });
+    	if(!this.obs) {
+    		return this.bound();
+    	} else {
+    		return this.obs;
+    	}
+    }
+
+    bound() {
+    	if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][BIND] Bound to ${this.id} on ${this.parent.id} ${this.parent.index} in ${this.parent.parent.id}, Value:`, this.current)
+    	if(!this.obs) {
+    		this.obs = new Observable((observer: any) => {
+	            let val = this.current;
+	            this.view = observer;
+	            setInterval(() => {
+	                if(this.bindings === 0) {
+	                	observer.complete();
+	                	this.obs = null;
+	                	this.view = null;
+	                }
+	                if(this.current !== val){
+	                    val = this.current;
+	                    observer.next(this.current);
+
+	                }
+	            }, 100);
+	        });
+    	}
+    	setTimeout(() => {
+    		if(this.view) {
+    			this.view.next(this.current);
+    		}
+    		this.callback();
+    	}, 200);
+    	return this.obs;
     }
     /**
      * Called when an execute returns successful
@@ -125,7 +151,8 @@ export class StatusVariable {
             let mod = this.parent;
             let e = this.execs[this.execs.length-1];
             if(this.current !== e.value) {
-                let id = this.service.io.exec(mod.parent.id, mod.id, mod.index, e.fn, e.value);
+                this.service.io.exec(mod.parent.id, mod.id, mod.index, e.fn, e.value)
+                	.then((data) => { e.resolve(data); }, (err) => { e.reject(err); });
             }
             this.execs = [];
         }
@@ -139,9 +166,9 @@ export class StatusVariable {
      * @return {void}
      */
     unbind() {
-        if(this.bindings > 1) {
-            this.bindings--;
-        } else if(this.bindings == 1) {
+        this.bindings--;
+        console.debug(`[COMPOSER][VAR] Unbound binding. ${this.bindings} remaining.`);
+        if(this.bindings <= 0) {
             this.parent.unbind(this.id);
         }
     }
@@ -172,15 +199,22 @@ export class Module {
      * @return {Function} Returns a function that can be called to unbind to the status variable
      */
     bind(prop: string, cb_fn?: Function) {
-        let success = this.service.io.bind(this.parent.id, this.id, this.index, prop);
-        if(success){
-            let val = this.get(prop);
+        let val = this.get(prop);
+    	if(val.bindings > 0) {
             val.bindings++;
             val.add_cb_fn(cb_fn);
-            return () => { val.unbind(); };
-        } else {
-            return null;
-        }
+            val.bound();
+	        return () => { val.unbind(); };
+    	} else {
+	        let success = this.service.io.bind(this.parent.id, this.id, this.index, prop);
+	        if(success){
+	            val.bindings++;
+	            val.add_cb_fn(cb_fn);
+	            return () => { val.unbind(); };
+	        } else {
+	            return null;
+	        }
+	    }
     }
 
     /**
@@ -192,25 +226,37 @@ export class Module {
      */
     exec(fn: string, prop: string, args: any) {
         let now = (new Date()).getTime();
-        let ids = {
-            system_id: this.parent.id,
-            module_name: this.id,
-            module_index: this.index,
-            name: prop
-        }
-        let sv = this.get(prop);
-        if(sv.bindings <= 0 && prop && prop !== '') {
-            if(this._debug) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
-            return 'Error: Variable not bound!';
-        } else if(!prop || prop === '') { // Call function not bound to variable
+        if(prop && prop !== '') {
+	        let ids = {
+	            system_id: this.parent.id,
+	            module_name: this.id,
+	            module_index: this.index,
+	            name: prop
+	        }
+        	let sv = this.get(prop);
+        	if(sv.bindings <= 0) {
+	            if(this._debug) console.error('[COMPOSER][Module] Variable "' + prop + '" not bound!')
+	            return new Promise((resolve, reject) => { 
+	            	resolve({
+	            		type:'error', 
+	            		message:`Error: Variable not bound!, ${fn}, ${prop}`, 
+	            		args: args
+	            	});
+	            });
+        	} else {
+            	return new Promise((resolve, reject) => {
+			        sv.execs.push({
+			            prop: prop,
+			            fn: fn,
+			            value: args,
+			            resolve: resolve,
+			            reject: reject
+			        });
+            	});
+        	}
+        } else {
             return this.service.io.exec(this.parent.id, this.id, this.index, fn, args);
         }
-
-        sv.execs.push({
-            prop: prop,
-            fn: fn,
-            value: args
-        });
     }
 
     /**
@@ -269,20 +315,6 @@ export class Module {
         this.debugger = debug;
         console.log('Debugger bound to module ' + this.id + ' ' + this.index + ' on system ' + this.parent.id);
         return true;
-    }
-
-    private months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    /**
-     * Gets a string display of the current time
-     * @return {string} Returns a date string with the format 'DD-MM-YYYY @ hh:mm:ss'
-     */
-    get now(){
-        let now = (new Date());
-        let time = now.getDate().toString() + '-' + this.months[now.getMonth()] + '-' + now.getFullYear().toString() + ' @ ';
-        let min = now.getMinutes() < 10 ? '0' + now.getMinutes().toString() : now.getMinutes().toString();
-        let sec = now.getSeconds() < 10 ? '0' + now.getSeconds().toString() : now.getSeconds().toString();
-        time += now.getHours().toString() + ':' + min + ':' + sec;
-        return time;
     }
 }
 

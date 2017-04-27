@@ -102,7 +102,7 @@ export class MockWebSocketInterface {
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000'){
         this.fixed = fixed;
         this.serv = srv;
-        COMPOSER_SETTINGS.observe('control').subscribe((data) => {
+        COMPOSER_SETTINGS.observe('control').subscribe((data: any) => {
         	this.systems = data;
         });
         this.setup(auth, host, port);

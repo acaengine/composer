@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-03-09 09:05:57
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-03-17 14:38:43
+* @Last Modified time: 2017-03-31 13:39:09
 */
 
 import { PlatformRef, Injectable, ReflectiveInjector, Inject } from '@angular/core';
@@ -17,7 +17,7 @@ export class DataStoreService {
 		// Create Interface for LocalStorage
 		this.store['local'] = {
 			getItem: (key: string) => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string>((resolve, reject) => {
 					this.getItem('local', key).then((item) => {
 						//console.log(`[COMPOSER][STORE] Got '${item}' for key '${key}'`)
 						this.store['local'].cache[key] = {
@@ -31,7 +31,7 @@ export class DataStoreService {
 				});
 			},
 			setItem: (key: string, value: string) => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string>((resolve, reject) => {
 					this.setItem('local', key, value).then((item) => {
 						this.store['local'].cache[key] = {
 							value: item,
@@ -44,7 +44,7 @@ export class DataStoreService {
 				});
 			},
 			removeItem: (key: string) => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string>((resolve, reject) => {
 					this.removeItem('local', key).then((item) => {
 						this.store['local'].cache[key] = {
 							value: item,
@@ -57,7 +57,7 @@ export class DataStoreService {
 				});
 			},
 			keys: () => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string[]>((resolve, reject) => {
 					this.keys('local').then((keys) => {
 						resolve(keys);
 					});
@@ -68,7 +68,7 @@ export class DataStoreService {
 		// Create Interface for SessionStorage
 		this.store['session'] = {
 			getItem: (key: string) => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string>((resolve, reject) => {
 					this.getItem('session', key).then((item) => {
 						this.store['session'].cache[key] = {
 							value: item,
@@ -82,7 +82,7 @@ export class DataStoreService {
 			},
 			setItem: (key: string, value: string) => {
 				//console.error(key, value);
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string>((resolve, reject) => {
 					this.setItem('session', key, value).then((item) => {
 						this.store['session'].cache[key] = {
 							value: item,
@@ -95,7 +95,7 @@ export class DataStoreService {
 				});
 			},
 			removeItem: (key: string) => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string>((resolve, reject) => {
 					this.removeItem('session', key).then((item) => {
 						this.store['session'].cache[key] = {
 							value: item,
@@ -108,7 +108,7 @@ export class DataStoreService {
 				});
 			},
 			keys: () => {
-				return new Promise<any>((resolve, reject) => {
+				return new Promise<string[]>((resolve, reject) => {
 					this.keys('session').then((keys) => {
 						resolve(keys);
 					});
@@ -163,7 +163,8 @@ export class DataStoreService {
 
 	keys(type: string): Promise<any[]> {
 		return new Promise<any>((resolve, reject) => {
-			resolve([]);
+			let keys: string[] = [];
+			resolve(keys);
 		});
 	}
 }

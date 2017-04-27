@@ -36,10 +36,12 @@ export * from './data-store.broker';
   		...SERVICES
   	]
 })
-export class ACA_COMPOSER_MODULE {
-    version: string = '0.5.3';
-    build: string = '2017-03-29.v1';
+export class ComposerModule {
+    version: string = '0.5.8';
+    build: string = '2017-04-06.v1';
     constructor() {
         console.debug(`[ACA][LIBRARY] Composer - Version: ${this.version} | Build: ${this.build}`);
     }
 }
+
+export let ACA_COMPOSER_MODULE = ComposerModule;

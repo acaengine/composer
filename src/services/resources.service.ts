@@ -611,9 +611,9 @@ export class Resources {
 	                let authority: any;
 	                let parts = auth_url.split('/');
 	                let url = parts.splice(0, 3).join('/') + '/';
-	                this.http_unauth.get(url + 'auth/authority').map(res => res.json() ).subscribe(
-	                    data => authority = data,
-	                    err => reject(err),
+	                this.http_unauth.get(url + 'auth/authority')['map']((res:any) => res.json() ).subscribe(
+	                    (data: any) => authority = data,
+	                    (err: any) => reject(err),
 	                    () => resolve(authority)
 	                );
 	            }));

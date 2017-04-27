@@ -30,10 +30,11 @@ export class SystemsService {
     sub: any = null;
     is_setup: boolean = false;
     system_promises: any = {};
+    system_exists: any = {};
     //private r: any;
 
     constructor(private r: Resources, private route: ActivatedRoute, private store: DataStoreService) {
-    	store.local.getItem(`fixed_device`).then((value) => {
+    	store.local.getItem(`fixed_device`).then((value: string) => {
     		this.fixed_device = (value === 'true');
     	});
         //*
@@ -96,18 +97,27 @@ export class SystemsService {
         let system = this.r.get('System');
         if(!this.mock) {
             if(!this.system_promises[sys_id] && system) {
-                this.system_promises[sys_id] = new Promise((resolve, reject) => {
-                    system.get({id: sys_id}).then((sys: any) => {
+                this.system_promises[sys_id] = new Promise((resolve) => {
+                	if(this.system_exists[sys_id]) {
                         let s = this.getSystem(sys_id);
                         s.exists = true;
                         this.system_promises[sys_id] = null;
                         resolve();
-                    }, (err: any) => {
-                        let sys = this.getSystem(sys_id);
-                        sys.exists = false;
-                        this.system_promises[sys_id] = null
-                        resolve();
-                    });
+                	} else {
+	                    system.get({id: sys_id}).then((sys: any) => {
+	                    	this.system_exists[sys_id] = true;
+	                        let s = this.getSystem(sys_id);
+	                        s.exists = true;
+	                        this.system_promises[sys_id] = null;
+	                        resolve();
+	                    }, (err: any) => {
+	                    	this.system_exists[sys_id] = false;
+	                        let sys = this.getSystem(sys_id);
+	                        sys.exists = false;
+	                        this.system_promises[sys_id] = null
+	                        resolve();
+	                    });
+                	}
                 });
             }
         }

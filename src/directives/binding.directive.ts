@@ -44,6 +44,7 @@ export class Binding {
     service: SystemsService;
     i: number = 0;
     ignore_cnt: number = 0;
+    private init: boolean = false;
     private debug: boolean = false;
 
     /**
@@ -92,14 +93,15 @@ export class Binding {
         this.service = serv;
         this.id = (Math.floor(Math.random() * 89999999) + 10000000).toString();
         this.renderer.setElementClass(this.el.nativeElement, `binding-directive-${this.id}`, true);
-        COMPOSER_SETTINGS.observe('debug').subscribe((data: any) => {
-        	this.debug = data;
-        });
         /*
         setInterval(() => {
             this.checkVisibility();
         }, 50);
         //*/
+    }
+
+    ngOnInit() {
+    	this.init = false;
     }
     /**
      * Checks if the element is exists on the page and binds/unbinds from the
@@ -138,10 +140,10 @@ export class Binding {
             return;
         }
             // Execute Function changes
-        if(this.prev_exec !== this.exec && this.bind && this.bind !== ''){
+        if(this.init && this.prev_exec !== this.exec && this.bind && this.bind !== ''){
             this.ignore_cnt++
             if(this.ignore_cnt > this.ignore){
-                if(this.debug) {
+                if(COMPOSER_SETTINGS.get('debug')) {
                     console.debug(`[COMPOSER][Binding] Function changed. ${this.prev_exec} => ${this.exec}`);
                 }
                 this.call_exec();
@@ -167,8 +169,8 @@ export class Binding {
             this.getBinding();
         }
             // Binding value changes
-        if(this.binding && this.value !== this.binding.current && this.value !== this.prev){
-            if(this.debug) {
+        if(this.init && this.binding && this.value !== this.binding.current && this.value !== this.prev){
+            if(COMPOSER_SETTINGS.get('debug')) {
                 console.debug(`[COMPOSER][Binding] Value changed calling exec. ${this.prev} => ${this.value}`);
             }
             this.ignore_cnt++;
@@ -177,7 +179,11 @@ export class Binding {
             } else {
                 this.prev = this.value
             }
+        } else if(!this.init) {
+        	this.prev = this.value
+        	this.init = true;
         }
+
         //if(changes.value) this.valueChange.emit(changes.value.currentValue);
     }
     /**
@@ -240,11 +246,12 @@ export class Binding {
         this.binding = this.module.get(this.bind);
         this.unbind = this.module.bind(this.bind, (curr: any, prev: any) => {
                 //changes local value
+
             this.valueChange.emit(curr)
         });
         this.value = this.binding.current;
         this.prev = this.value;
-        if(this.debug) console.debug(`[COMPOSER][Binding] Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
+        if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][Binding] Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
         if(this.unbind === null) {
             setTimeout(() => {
                 this.getBinding();
@@ -270,9 +277,10 @@ export class Binding {
             // Update binding
         this.prev_exec = this.exec;
         this.prev = this.value;
-        if(this.debug) console.debug(`[COMPOSER][Binding] Calling exec from directive ${this.id}`);
+        if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][Binding] Calling exec from directive ${this.id}`);
             // Update value to value set by user
-        this.module.exec(this.exec, this.binding ? this.binding.id : '', this.params || (!this.bind || this.bind === '') ? this.params : this.value);
+        this.module.exec(this.exec, this.binding ? this.binding.id : '', this.params || (!this.bind || this.bind === '') ? this.params : this.value)
+        	.then((res: any) => {}, (err: any) => {});
     }
 
 }

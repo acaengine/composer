@@ -22,6 +22,10 @@ gulp.task('webpack:dev', ['source', 'sass'], function() {
     return gulp.src(['./_build/**']).pipe(gulp.dest('./dist'));
 });
 
+gulp.task('webpack:test', ['source', 'sass'], function() {
+    return gulp.src(['./_build/**']).pipe(gulp.dest('./dist'));
+});
+
 gulp.task('webpack:prod', ['ngc'], function() {
         //Copy compiled source to dist
     gulp.src(['./_build/compiled/_build/**', './_build/**/*.html', './_build/**/*.css']).pipe(gulp.dest('./dist/_build'));

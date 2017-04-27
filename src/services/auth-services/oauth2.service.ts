@@ -107,9 +107,9 @@ export class OAuthService {
                         + encodeURIComponent(this.clientId)
                         + "&redirect_uri="
                         + encodeURIComponent(this.redirectUri)
-            return this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((refresh_token) => {
+            return this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((refresh_token: string) => {
 	            if(!refresh_token) {
-	                return this.store[this._storage].getItem(`refreshToken`).then((refresh_token) => {
+	                return this.store[this._storage].getItem(`refreshToken`).then((refresh_token: string) => {
 			            if(refresh_token){
 			                return url += `&refresh_token=${encodeURIComponent(refresh_token)}&grant_type=${encodeURIComponent('refresh_token')}`;
 			            } else {
@@ -162,7 +162,7 @@ export class OAuthService {
             let here = path;
             this.store['local'].setItem(`oauth_redirect`, here);
             this.run_flow = true;
-        	this.store.session.getItem(`${this.clientId}_login`).then((logged) => {
+        	this.store.session.getItem(`${this.clientId}_login`).then((logged: string) => {
         		if(logged === 'true') {
                     if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][OAUTH] Logged in. Authorizing...');
 	        		this.store.session.removeItem(`${this.clientId}_login`);
@@ -217,7 +217,7 @@ export class OAuthService {
 
             let parts = this.getFragment();
             if(Object.keys(parts).length <= 1) {
-                this.store.session.getItem('OAUTH.params').then((item) => {
+                this.store.session.getItem('OAUTH.params').then((item: string) => {
                     if(item) {
                         parts = JSON.parse(item);
                     }
@@ -256,7 +256,7 @@ export class OAuthService {
         if(code) this.code = code;
         if(refreshToken) this.store[this._storage].setItem(`${this.clientId}_refresh_token`, refreshToken);
 
-        this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce) => {
+        this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce: string) => {
 
 	        let stateParts = state.split(';');
 	        let nonceInState = stateParts[0];
@@ -286,7 +286,7 @@ export class OAuthService {
 	        }
 
 	        if (this.oidc) {
-	            this.processIdToken(idToken, accessToken).then((oidcSuccess) => {
+	            this.processIdToken(idToken, accessToken).then((oidcSuccess: string) => {
 	           		if (!oidcSuccess) return resolve(false);
 	            });
 	        }
@@ -336,7 +336,7 @@ export class OAuthService {
             let claimsBase64 = this.padBase64(tokenParts[1]);
             let claimsJson = Base64.decode(claimsBase64);
             let claims = JSON.parse(claimsJson);
-            this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce) => {
+            this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce: string) => {
 
 	            if (claims.aud !== this.clientId) {
 	                console.warn("Wrong audience: " + claims.aud);
@@ -393,7 +393,7 @@ export class OAuthService {
      * @return {string} Returns the identity claims
      */
     getIdentityClaims() {
-        let claims = this.store[this._storage].getItem(`${this.clientId}_id_token_claims_obj`).then((res) => {return res;});
+        let claims = this.store[this._storage].getItem(`${this.clientId}_id_token_claims_obj`).then((res: string) => {return res;});
         if (!claims) return null;
         return JSON.parse(claims);
     }
@@ -402,7 +402,7 @@ export class OAuthService {
      * @return {string} Returns the id token
      */
     getIdToken() {
-        return this.store[this._storage].getItem(`${this.clientId}_id_token`).then((res) => { return res; });
+        return this.store[this._storage].getItem(`${this.clientId}_id_token`).then((res: string) => { return res; });
     }
 
     padBase64(base64data: any) {
@@ -427,9 +427,9 @@ export class OAuthService {
     getAccessToken() {
     	if(!this.access_token_promise) {
     		this.access_token_promise = new Promise((resolve) => {
-    			this.store[this._storage].getItem(`${this.clientId}_access_token`).then((token) => {
+    			this.store[this._storage].getItem(`${this.clientId}_access_token`).then((token: string) => {
     				if(!token) {
-	    				this.store[this._storage].getItem(`accessToken`).then((token) => {
+	    				this.store[this._storage].getItem(`accessToken`).then((token: string) => {
 	    					resolve(token);
 				            this.access_token_promise = null;
 	    				});
@@ -450,9 +450,9 @@ export class OAuthService {
     getRefreshToken() {
     	if(!this.refresh_token_promise) {
     		this.refresh_token_promise = new Promise((resolve) => {
-    			this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((token) => {
+    			this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((token: string) => {
     				if(!token) {
-	    				this.store[this._storage].getItem(`refreshToken`).then((token) => {
+	    				this.store[this._storage].getItem(`refreshToken`).then((token: string) => {
 	    					resolve(token);
 				           	this.refresh_token_promise = null;
 	    				});
@@ -472,14 +472,14 @@ export class OAuthService {
     valid_access_token_promise: any = null;
     hasValidAccessToken() {
     	if(!this.valid_access_token_promise) {
-    		this.valid_access_token_promise = new Promise((resolve, reject) => {
-    			this.getAccessToken().then((token) => {
-		            this.store[this._storage].getItem(`${this.clientId}_expires_at`).then((expiresAt) => {
+    		this.valid_access_token_promise = new Promise<boolean>((resolve, reject) => {
+    			this.getAccessToken().then((token: string) => {
+		            this.store[this._storage].getItem(`${this.clientId}_expires_at`).then((expiresAt: string) => {
 			            setTimeout(() => {
 			            	this.valid_access_token_promise = null;
 			            }, 10);
 		            	if(!expiresAt) {
-		            		this.store[this._storage].getItem(`accessExpiry`).then((expiresAt) => {
+		            		this.store[this._storage].getItem(`accessExpiry`).then((expiresAt: string) => {
 					            let now = new Date();
 					            if (!expiresAt || parseInt(expiresAt) < now.getTime()) {
 					                return resolve(false);
@@ -503,9 +503,9 @@ export class OAuthService {
     valid_id_token_promise: any = null;
     hasValidIdToken() {
     	if(!this.valid_id_token_promise) {
-    		this.valid_id_token_promise = new Promise((resolve, reject) => {
+    		this.valid_id_token_promise = new Promise<boolean>((resolve, reject) => {
 		        if (this.getIdToken) {
-		            this.store[this._storage].getItem(`${this.clientId}_id_token_expires_at`).then((expiresAt) => {
+		            this.store[this._storage].getItem(`${this.clientId}_id_token_expires_at`).then((expiresAt: string) => {
 			            let now = new Date();
 			            if (expiresAt && parseInt(expiresAt) < now.getTime()) {
 			                return resolve(false);
@@ -527,8 +527,8 @@ export class OAuthService {
     auth_header_promise: any = null;
     authorizationHeader() {
     	if(!this.auth_header_promise) {
-    		this.auth_header_promise = new Promise<any>((resolve) => {
-    			this.getAccessToken().then((token) => {
+    		this.auth_header_promise = new Promise<string>((resolve) => {
+    			this.getAccessToken().then((token: string) => {
     				resolve(`Bearer ${token}`);
     				setTimeout(() => {
     					this.auth_header_promise = null;
@@ -594,7 +594,7 @@ export class OAuthService {
      */
     createNonce() {
 
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
 
             if (this.rngUrl) {
                 throw new Error("createNonce with rng-web-api has not been implemented so far");

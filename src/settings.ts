@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-03-08 11:23:08
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-03-28 10:04:38
+* @Last Modified time: 2017-03-31 13:27:48
 */
 
 import { Observable } from 'rxjs/Observable';
@@ -19,7 +19,7 @@ export class COMPOSER_SETTINGS {
 
 	static observe(var_name: string) {
 		if(!COMPOSER_SETTINGS.obs[var_name]) {
-			COMPOSER_SETTINGS.obs[var_name] = new Observable((observer) => {
+			COMPOSER_SETTINGS.obs[var_name] = new Observable<any>((observer) => {
 				COMPOSER_SETTINGS._obs[var_name] = observer;
 				setTimeout(() => {
 					COMPOSER_SETTINGS._obs[var_name].next(COMPOSER_SETTINGS.data[var_name]);

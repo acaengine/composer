@@ -39,7 +39,7 @@ export class CommsService {
     			private loc: Location,
     			private injector: Injector){
     	this.http = this.http_service;
-        store.local.getItem('trust').then((value) => {
+        store.local.getItem('trust').then((value: string) => {
         	this.trust = (value === 'true');
         });
         //*
@@ -137,7 +137,7 @@ export class CommsService {
      */
     processOptions(url: string, body?: any, options?: any) {
     	let oauth = this.oAuthService;
-    	return this.oAuthService.authorizationHeader().then((auth_header) => {
+    	return this.oAuthService.authorizationHeader().then((auth_header: string) => {
 	        let headers = new Headers({ "Authorization": auth_header });
 	        if(options && options.headers){
 	            if(options.headers.values){
@@ -174,13 +174,13 @@ export class CommsService {
      */
     get(url: string, options?: any) {
         return new Observable((observer: any) => {
-        	this.processOptions(url, null, options).then((req) => {
+        	this.processOptions(url, null, options).then((req: any) => {
 	            if(req.auth) {
 	                this.http.get(req.url, req.options)
-	                .map(res => res.json())
+	                .map((res: any) => res.json())
 	                .subscribe(
-	                    data => observer.next(data),
-	                    err => this.error(err, req, observer),
+	                    (data: any) => observer.next(data),
+	                    (err: any) => this.error(err, req, observer),
 	                    () => observer.complete()
 	                );
 	            } else {
@@ -199,14 +199,14 @@ export class CommsService {
      */
     post(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
-        	this.processOptions(url, body, options).then((req) => {
+        	this.processOptions(url, body, options).then((req: any) => {
 	        	req.type = 'post';
 	            if(req.auth) {
 	                this.http.post(req.url, req.body, req.options)
-	                .map(res => res.json())
+	                .map((res: any) => res.json())
 	                .subscribe(
-	                    data => observer.next(data),
-	                    err => this.error(err, req, observer),
+	                    (data: any) => observer.next(data),
+	                    (err: any) => this.error(err, req, observer),
 	                    () => observer.complete()
 	                );
 	            } else {
@@ -225,14 +225,14 @@ export class CommsService {
      */
     put(url: string, body?: any, options?: any){
         return new Observable((observer: any) => {
-        	this.processOptions(url, body, options).then((req) => {
+        	this.processOptions(url, body, options).then((req: any) => {
         		req.type = 'put';
 	            if(req.auth) {
 	                this.http.put(req.url, req.body, req.options)
-	                .map(res => res.json())
+	                .map((res: any) => res.json())
 	                .subscribe(
-	                    data => observer.next(data),
-	                    err => this.error(err, req, observer),
+	                    (data: any) => observer.next(data),
+	                    (err: any) => this.error(err, req, observer),
 	                    () => observer.complete()
 	                );
 	            } else {
@@ -250,13 +250,13 @@ export class CommsService {
      */
     delete(url: string, options?: any){
         return new Observable((observer: any) => {
-	        this.processOptions(url, null, options).then((req) => {
+	        this.processOptions(url, null, options).then((req: any) => {
 		        req.type = 'delete';
 	            this.http.delete(req.url, req.options)
-	            .map(res => res.json())
+	            .map((res: any) => res.json())
 	            .subscribe(
-	                data => observer.next(data),
-	                err => this.error(err, req, observer),
+	                (data: any) => observer.next(data),
+	                (err: any) => this.error(err, req, observer),
 	                () => observer.complete()
 	            );
             });
@@ -276,9 +276,8 @@ export class CommsService {
      * @return {Promise<any>} Returns a promise which resolves with an access token
      */
     login(){
-    	console.error('Login');
         if (this.login_promise === null) {
-            if(COMPOSER_SETTINGS.get('debug')) console.error('[COMPOSER][COMMS] Attempting login.');
+            if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Attempting login.');
             this.login_promise = new Promise((resolve, reject) => {
             	this.performLogin(resolve, reject);
             });
@@ -286,7 +285,7 @@ export class CommsService {
         return this.login_promise;
     }
 
-    performLogin(resolve, reject) {
+    performLogin(resolve: any, reject: any) {
     	if(this.http instanceof MockHttp) {
     		this.login_promise = null;
     		return resolve('mock_token');
@@ -298,10 +297,10 @@ export class CommsService {
         	}, 500);
         	return;
         }
-        oauth.hasValidAccessToken().then((valid) => {
+        oauth.hasValidAccessToken().then((valid: boolean) => {
         	if(valid) {
                 if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
-                oauth.getAccessToken().then((token) => {
+                oauth.getAccessToken().then((token: string) => {
                     resolve(token);
                     setTimeout(() => { this.loginDone(); }, 100);
                 });
@@ -310,10 +309,10 @@ export class CommsService {
                 	// Attempt to finish logging in
                 oauth.tryLogin().then((status: any) => {
                 		// Check if valid access token is available
-                	oauth.hasValidAccessToken().then((valid) => {
+                	oauth.hasValidAccessToken().then((valid: boolean) => {
                 		if(valid) {
 		                    if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Valid access token availiable.');
-		                    oauth.getAccessToken().then((token) => {
+		                    oauth.getAccessToken().then((token: string) => {
 		                        resolve(token);
 		                        setTimeout(() => { this.loginDone(); }, 100);
 		                    });
@@ -321,7 +320,7 @@ export class CommsService {
 		                	if(this.trust) {
                                 if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][COMMS] Device is trusted`);
                                 oauth.response_type = 'code';
-                                this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((refresh) => {
+                                this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((refresh: string) => {
 	                                if(refresh || oauth.code){ // Refresh token exists
 	                                    if(COMPOSER_SETTINGS.get('debug')) console.debug('[COMPOSER][COMMS] Refresh token found. Refreshing access token...');
 	                                    //Perform refresh
@@ -385,18 +384,18 @@ export class CommsService {
         oauth.refresh_url.then((url: any) => {
             let tokens:any;
             this.http.post(url, '')
-                .map(res => res.json())
+                .map((res: any) => res.json())
                 .subscribe(
-                    data => tokens = data,
-                    err => {
+                    (data: any) => tokens = data,
+                    (err: any) => {
                         let err_codes = [0, 400, 401, 403]
                             // Try refresh with root client ID
                         if(err && (err_codes.indexOf(err.status) || (err.status == 0 && err.ok == false)) && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
                             if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][COMMS(S)] Failed token refresh request for ${url}`);
-                            oauth.getRefreshToken().then((rt) => {
+                            oauth.getRefreshToken().then((rt: string) => {
 	                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
 	                            oauth.clientId = this.hash(`${location.origin}/oauth-resp.html`);
-	                            this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((rt_root) => {
+	                            this.store['local'].getItem(`${oauth.clientId}_refresh_token`).then((rt_root: string) => {
 		                            if(rt && !rt_root) {
 		                                this.store['local'].setItem(`${oauth.clientId}_refresh_token`, rt);
 		                            }
@@ -481,8 +480,8 @@ export class CommsService {
             this.oAuthService.authorizationHeader().then((token: string) => {
 	        	let headers = new Headers({ "Authorization": (token ? token : '') });
 	            this.http.get(uri + '/auth/oauth/token/info', { headers: headers }).subscribe(
-	                data => cb_fn(data),
-	                err => this.processLoginError(err, () => {}),
+	                (data: any) => cb_fn(data),
+	                (err: any) => this.processLoginError(err, () => {}),
 	                () => {}
 	            );
             })
@@ -508,7 +507,7 @@ export class CommsService {
         let now = `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${hour}:${min}:${sec}`;
         now = now.toLowerCase();
         this.store['local'].setItem((`${type}_error: ${now}`), JSON.stringify(error));
-        this.store['local'].getItem(`${type}_error`).then((value) => {
+        this.store['local'].getItem(`${type}_error`).then((value: string) => {
         	let error_list: any[] = [];
         	if(value){
 	        	error_list = JSON.parse(value);
@@ -591,7 +590,7 @@ export class CommsService {
             // Re-authenticate if authentication error.
             setTimeout(() => {
 	            this.login()
-	                .then((res) => {
+	                .then((res: any) => {
 	                    this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
 	                    setTimeout(() => {
 	                        this.refresh = false;

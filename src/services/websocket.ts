@@ -225,7 +225,7 @@ export class WebSocketInterface {
         //Process responce message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
-            if(COMPOSER_SETTINGS.get('debug') && msg.type === ERROR) console.debug(`[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
+            if(COMPOSER_SETTINGS.get('debug') && msg.type === ERROR) console.error(`[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
             else if(COMPOSER_SETTINGS.get('debug') && msg.type === NOTIFY) console.debug(`[COMPOSER][WS] Received notify. ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name} →`, msg.value);
             else if(COMPOSER_SETTINGS.get('debug')) {
                 if(meta) {
@@ -237,7 +237,7 @@ export class WebSocketInterface {
             if(msg.type === SUCCESS) {
                 if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].resolve(msg.value);
             } else if(msg.type === ERROR) {
-                if(this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].reject(msg.msg);
+                if(this.requests[msg.id] && this.requests[msg.id].reject) this.requests[msg.id].reject(msg.msg);
             }
             if(this.requests[msg.id]) delete this.requests[msg.id];
             if (!meta) return this.fail(msg, 'meta');
@@ -347,7 +347,7 @@ export class WebSocketInterface {
      * @return {Promise<any>}   Returns a promise which resolves the result of the call or rejects with an error message
      */
     exec(sys_id: string, mod_id: string, i: number, fn: any, args: any){
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             let id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
             this.requests[id] = {
                 resolve: resolve,

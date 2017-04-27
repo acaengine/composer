@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-03-21 16:57:15
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-03-28 10:07:27
+* @Last Modified time: 2017-04-06 12:02:09
 */
 
 import { Injectable } from '@angular/core';
@@ -16,7 +16,7 @@ export class MockRequestHandler {
 	constructor() {
 	}
 
-	register(url: string, is_array: boolean, data: any) {
+	register(url: string, data: any, fn?: (frag: any, data: any) => any) {
 		let parts = url.split('/');
 		let params: string[] = [];
 		for(let i = 0; i < parts.length; i++) {
@@ -28,47 +28,30 @@ export class MockRequestHandler {
 			data: data,
 			parts: parts,
 			route_params: params,
-			is_array: is_array
+			fn: fn
 		};
-		//if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] Registered handler for url "${url}"`);
+		if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] Registered handler for url "${url}"`);
 	}
 
 	response(method: string, url: string, fragment?: any) {
-		console.log(`${method} for ${url}`)
 		let error = {
 			status: 404,
 			code: 404,
 			message: 'Requested resource was not found.',
 			data: {}
 		};
-		console.log(this.handlers[url]);
 		if(method === 'GET'){
 			if(this.handlers[url]) {
-				let items = this.handlers[url].data;
-				if(this.handlers[url].is_array) {
-					items = [];
-					let offset = fragment && !isNaN(fragment['offset']) ? +fragment['offset'] : 0;
-					let limit = fragment && !isNaN(fragment['offset']) ? +fragment['offset'] : 500;
-					for(let i = offset; i < this.handlers[url].data.length && items.length < limit; i++) {
-						items.push(this.handlers[url].data[i]);
-					}
-					return {
-						status: 200,
-						code: 200,
-						results : items
-					};
-				}
-				if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] ${method} Response for url "${url}"`, items);
-				return items
+				let resp = this.handlers[url].fn ? this.handlers[url].fn(fragment, this.handlers[url].data) : this.handlers[url].data;
+				if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] Response to ${method} for url "${url}"`, resp);
+				return resp;
 			} else {
-				if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] ${method} Response for url "${url}"`, error);
+				if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] Response to ${method} for url "${url}"`, error);
 				return error;
 			}
 		} else {
-			if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] ${method} Response for url "${url}"`, 'Success');
+			if(COMPOSER_SETTINGS.get('debug')) console.debug(`[COMPOSER][HTTP(M)] Response to ${method} for url "${url}"`, 'Success');
 			return {
-				status: 200,
-				code: 200,
 				message: 'Ok',
 				data: {}
 			}
@@ -103,7 +86,7 @@ export class MockRequest {
 				for(let item of params) {
 					let pair = item.split('=');
 					if(pair.length === 2) {
-						parts[pair[0]] = parts[pair[1]];
+						parts[pair[0]] = pair[1];
 					}
 				}
 			}
@@ -120,10 +103,10 @@ export class MockRequest {
 		return new Observable((observer) => {
 			setTimeout(() => {
 				let res = MOCK_REQ_HANDLER.response(this.method, this.url, this.fragments);
-				if(res.status === 200){
-					observer.next(res);
-				} else {
+				if(res.status === 400 || res.status === 404){
 					observer.error(res);
+				} else {
+					observer.next(res);
 				}
 				setTimeout(() => {
 					observer.complete();
