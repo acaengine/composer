@@ -5,6 +5,8 @@ engines:
     channel: beta
   duplication:
     enabled: true
+    exclude_paths:
+    - config
     config:
       languages:
       - javascript
