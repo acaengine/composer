@@ -42,7 +42,13 @@
      private requests: any = {};
      private fixed: boolean = false;
 
-     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = location.port) {
+     constructor(srv: any, auth: any, fixed: boolean = false, host?: string, port?: string) {
+         if (!host) {
+             host = location.hostname;
+         }
+         if (!port) {
+             port = location.port;
+         }
          this.fixed = fixed;
          this.serv = srv;
          this.setup(auth, host, port);
@@ -55,9 +61,20 @@
      * @param  {string =    '3000'}            port Port that the websocket is listening on
      * @return {void}
      */
-     public setup(auth: any, host: string = location.hostname, port: string = location.port, protocol: string = location.protocol) {
+     public setup(auth: any, host?: string, port?: string, protocol?: string) {
+         if (!host) {
+             host = location.hostname;
+         }
+         if (!port) {
+             port = location.port;
+         }
+         if (!protocol) {
+             port = location.protocol;
+         }
          this.auth = auth;
-         this.end_point = (protocol === 'https:' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
+         const prot = (protocol === 'https:' ? 'wss://' : 'ws://');
+         const use_port = (port === '80' || port === '443' ? '' : (':' + port));
+         this.end_point = prot + host + use_port;
          this.uri = this.end_point + '/control/websocket';
      }
 
@@ -221,7 +238,7 @@
                  }
              });
         }
-        return this.connect_promise;
+         return this.connect_promise;
     }
 
     /**
@@ -303,13 +320,14 @@
         //Process responce message
         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
             meta = msg.meta;
+            const meta_list = `${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
             if (msg.type === ERROR) {
             	COMPOSER.error('WS', `[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
             } else if (msg.type === NOTIFY) {
-            	COMPOSER.log(`WS`, `Received notify. ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name} →`, msg.value);
+            	COMPOSER.log(`WS`, `Received notify. ${meta_list} →`, msg.value);
             } else {
                 if (meta) {
-                    COMPOSER.log(`WS`, `Received success(${msg.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`);
+                    COMPOSER.log(`WS`, `Received success(${msg.id}). ${meta_list}`);
                 } else {
                     COMPOSER.log(`WS`, `Received success(${msg.id}). Value: ${msg.value}`);
                 }
@@ -381,7 +399,8 @@
                  }, 200);
                  WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
              }, (err: any) => {
-                 COMPOSER.log('WS(M)', `Failed to connect(${type}, ${name}). ${err ? err.message : 'No error message'}`);
+                 const error = err ? err.message : 'No error message';
+                 COMPOSER.log('WS(M)', `Failed to connect(${type}, ${name}). ${error}`);
                  WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]++;
                  if (WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] > 10) {
                      return -1;

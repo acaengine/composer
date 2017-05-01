@@ -15,20 +15,21 @@
  const EXEC_TIME_DELAY = 100;
 
  export class StatusVariable {
-     id: string;             // Name of status variable
-     private service: any;   // System service
-     parent: any;            // Module connected to status variable
-     previous: any = null;   // Previous value
-     current: any = null;    // Current value
-     private callbacks: any[] = []; // Execute Callbacks
-     bindings: number = 0;   // Binding count
-     exec_active = false;
-     execs: any[] = [];
-     value: any = {};
-     cb_fn: Function;
-     local_change = false;
+     public id: string;             // Name of status variable
+     public parent: any;            // Module connected to status variable
+     public previous: any = null;   // Previous value
+     public current: any = null;    // Current value
+     public bindings: number = 0;   // Binding count
+     public exec_active = false;
+     public execs: any[] = [];
+     public value: any = {};
+     public cb_fn: Function;
+     public local_change = false;
+     private service: any;           // System service
+     private callbacks: any[] = [];  // Execute Callbacks
      private obs: any = null;
      private view: any = null;
+
      constructor(srv: Object, parent: any, name: string, init_val: any) {
          this.id = name;
          this.previous = init_val;
@@ -57,8 +58,8 @@
          }
      }
 
-     bound() {
-         if (COMPOSER.get('debug')) console.debug(`[COMPOSER][BIND] Bound to ${this.id} on ${this.parent.id} ${this.parent.index} in ${this.parent.parent.id}, Value:`, this.current);
+     public bound() {
+         COMPOSER.log('BIND', `Bound to ${this.id} on ${this.parent.id} ${this.parent.index} in ${this.parent.parent.id}, Value:`, this.current);
          if (!this.obs) {
              this.obs = new Observable((observer: any) => {
                  let val = this.current;
@@ -90,7 +91,7 @@
      * @param  {any}  msg Message returned by the server
      * @return {void}
      */
-     success(msg: any) {
+     private success(msg: any) {
          if (msg.meta.cmd == 'exec') {
              this.previous = this.current;
              this.current = msg.meta.args;
@@ -108,8 +109,8 @@
      * @param  {any}  msg Message returned by the server
      * @return {void}
      */
-     error(msg: any) {
-
+     private error(msg: any) {
+         return;
      }
 
     /**
@@ -117,7 +118,7 @@
      * @param  {any}  msg Message returned by the server
      * @return {void}
      */
-     notify(msg: any) {
+     private notify(msg: any) {
          this.local_change = false;
          this.previous = this.current;
          this.current = msg.value;
@@ -136,17 +137,17 @@
 
     /**
      * Adds a new callback function to the collection
-     * @param  {Function} cb_fn Function to add to the binding
+     * @param  {() => void} cb_fn Function to add to the binding
      * @return {void}
      */
-     add_cb_fn(cb_fn: Function){
+     private add_cb_fn(cb_fn: () => void){
          if (cb_fn !== undefined || cb_fn !== null) this.callbacks.push(cb_fn);
      }
     /**
      * Execute the next function in the stack
      * @return {void}
      */
-     exec() {
+     public exec() {
          if (this.execs.length > 0) {
              const mod = this.parent;
              const e = this.execs[this.execs.length - 1];
@@ -175,13 +176,13 @@
  }
 
  export class Module {
-     id: string;         // Module name
-     service: any;       // Systems Service
-     parent: any;        // Module's system
-     index: number = 0;  // Module Index
-     status_variables: StatusVariable[] = [];
-     debugger: any;
-     _debug: boolean = false;
+     public id: string;         // Module name
+     public parent: any;        // Module's system
+     public index: number = 0;  // Module Index
+     public status_variables: StatusVariable[] = [];
+     public debugger: any;
+     private _debug: boolean = false;
+     private service: any;       // Systems Service
 
      constructor(srv: Object, parent: any, name: string, i: number) {
          this.id = name;
@@ -195,10 +196,10 @@
     /**
      * Bind to status variable on module
      * @param  {string}   prop  Name of the status variable to bind
-     * @param  {Function} cb_fn Function that is called when the binding value changes
-     * @return {Function} Returns a function that can be called to unbind to the status variable
+     * @param  {() => void} cb_fn Function that is called when the binding value changes
+     * @return {() => void} Returns a function that can be called to unbind to the status variable
      */
-     bind(prop: string, cb_fn?: Function) {
+     public bind(prop: string, cb_fn?: () => void) {
          const val = this.get(prop);
          if (val.bindings > 0) {
              val.bindings++;
@@ -224,7 +225,7 @@
      * @param  {any}    args  Arguments to pass to the function
      * @return {Promise<any>|string} Returns a exec promise or an error message
      */
-     exec(fn: string, prop: string, args: any) {
+     public exec(fn: string, prop: string, args: any) {
          const now = (new Date()).getTime();
          if (prop && prop !== '') {
              const ids = {
@@ -264,17 +265,17 @@
      * @param  {string} prop Name of the status variable to unbind
      * @return {void}
      */
-     unbind(prop: string) {
+     public unbind(prop: string) {
          const val = this.get(prop);
          val.bindings = 0;
          const id = this.service.io.unbind(this.parent.id, this.id, this.index, prop);
      }
 
-     debug(){
+     public debug(){
          const id = this.service.io.debug(this.parent.id, this.id, this.index);
      }
 
-     ignore(){
+     public ignore(){
          const id = this.service.io.ignore(this.parent.id, this.id, this);
      }
     /**
@@ -282,7 +283,7 @@
      * @param  {string} prop Name of status variable to get
      * @return {StatusVariable} Returns the status variable with the give name
      */
-     get(prop: string) {
+     public get(prop: string) {
          for (let i = 0; i < this.status_variables.length; i++){
              if (this.status_variables[i].id == prop) {
                  return this.status_variables[i];
@@ -297,7 +298,7 @@
      * Rebinds all the status variables in the module
      * @return {void}
      */
-     rebind(){
+     public rebind(){
          for (let i = 0; i < this.status_variables.length; i++){
              if (this.status_variables[i].bindings > 0){
                  this.bind(this.status_variables[i].id);
@@ -310,7 +311,7 @@
      * @param  {any}    debug Debugger
      * @return {boolean} Returns the active state of the debugger
      */
-     setDebug(debug: any){
+     public setDebug(debug: any){
          if (typeof debug !== 'object') return false;
          this.debugger = debug;
          console.log('Debugger bound to module ' + this.id + ' ' + this.index + ' on system ' + this.parent.id);
@@ -319,11 +320,12 @@
  }
 
  export class System {
-     id: string;
-     service: any;
-     parent: any;
-     modules: Module[] = [];
-     exists = true;
+     public id: string;
+     public service: any;
+     public parent: any;
+     public modules: Module[] = [];
+     public exists = true;
+
      constructor(srv: Object, sys_id: string) {
          this.service = srv;
          this.parent = srv;
@@ -335,7 +337,7 @@
      * @param  {number = 1}  index Index of module in system
      * @return {Module} Returns the module with the given id and index
      */
-     get(mod_id: string, index: number = 1) {
+     public get(mod_id: string, index: number = 1) {
          let module: any = null;
          // Check if system already exists
          for (let i = 0; i < this.modules.length; i++) {
@@ -354,7 +356,7 @@
      * Rebinds all bound status variables on existing modules in the system
      * @return {void}
      */
-     rebind(){
+     public rebind(){
          for (let i = 0; i < this.modules.length; i++) {
              this.modules[i].rebind();
          }

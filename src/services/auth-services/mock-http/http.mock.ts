@@ -66,7 +66,7 @@
      if (self && self.control && self.control.systems) {
          const systems: any = self.control.systems;
          for (const i in systems) {
-             if(i){
+             if (i){
                   SYSTEM_LIST.push(new MockSystem(i, systems[i]));
               }
          }

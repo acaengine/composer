@@ -40,14 +40,13 @@
          enumerable: false
          , configurable: true
          , writable: false
-         , value: function(prop: any, handler: any) {
-             let
-             oldval = this[prop]
-             , newval = oldval
-             , getter = function() {
+         , value: (prop: any, handler: any) => {
+             let oldval = this[prop]
+             , newval = oldval;
+             const getter = () => {
                  return newval;
-             }
-             , setter = function(val: any) {
+             };
+             const setter = (val: any) => {
                  oldval = newval;
                  return newval = handler.call(this, prop, oldval, val);
              }
@@ -116,13 +115,10 @@
 	 */
      setup(auth: any, host: string = location.hostname, port: string = '3000') {
          this.auth = auth;
-         this.end_point = (port === '443' ? 'wss://' : 'ws://') + host + (port === '80' || port === '443' ? '' : (':' + port));
+         const protocol = (port === '443' ? 'wss://' : 'ws://');
+         const use_port = (port === '80' || port === '443' ? '' : (':' + port));
+         this.end_point = protocol + host + use_port;
          this.uri = this.end_point + '/control/websocket';
-        /*
-        if(this.auth !== undefined && this.auth !== null){
-            this.auth.getToken();
-        }
-        //*/
          this.setupSystems();
     }
 	/**
@@ -231,7 +227,8 @@
          // Process message
          if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
              meta = msg.meta;
-             COMPOSER.log('WS(M)', `Recieved ${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name} ${JSON.stringify(msg.value)}`);
+             const meta_list = `${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
+             COMPOSER.log('WS(M)', `Recieved ${meta_list} ${JSON.stringify(msg.value)}`);
              if (msg.type === SUCCESS) {
                  if (this.requests[msg.id] && this.requests[msg.id].resolve) this.requests[msg.id].resolve(msg.value);
              } else if (msg.type === ERROR) {
@@ -328,7 +325,8 @@
          let evt_ex: any = null;
          switch (type) {
              case BIND:
-             if (this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] && this.systems[r.sys][r.mod][r.index - 1]){
+             if (this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] &&
+                 this.systems[r.sys][r.mod][r.index - 1]){
                  evt = { data: JSON.stringify({
                      id: r.id,
                      type: SUCCESS,
@@ -361,7 +359,8 @@
              }
              break;
              case EXEC:
-             if (this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] && this.systems[r.sys][r.mod][r.index - 1]){
+             if (this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] &&
+                 this.systems[r.sys][r.mod][r.index - 1]){
                  if (this.systems[r.sys][r.mod][r.index - 1].$system === undefined) {
                      this.systems[r.sys][r.mod][r.index - 1].$system = this.systems[r.sys];
                  }
@@ -371,7 +370,7 @@
                          id: r.id,
                          type: SUCCESS,
                          meta: r,
-                         value: (this.systems[r.sys][r.mod][r.index - 1][`$${r.name}`] as any).apply(this.systems[r.sys][r.mod][r.index - 1], r.args),
+                         value: (fn as any).apply(this.systems[r.sys][r.mod][r.index - 1], r.args),
                      })};
                  } else {
                      this.systems[r.sys][r.mod][r.index - 1][r.name] = r.args[0];

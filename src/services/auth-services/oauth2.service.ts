@@ -259,7 +259,7 @@
      public clearAuth() {
          const items = [
          'access_token', 'refresh_token', 'accesstoken', 'refreshtoken',
-         'id_token', 'idtoken', 'nonce', 'expires', 'login', 'oauth'
+         'id_token', 'idtoken', 'nonce', 'expires', 'login', 'oauth',
          ];
          const keys = this.store[this._storage].keys();
          for (const key of keys){
@@ -528,11 +528,11 @@
                 }
                 */
                 // Clean up after token has been received
-                this.store[this._storage].removeItem('oauth_redirect');
-                this.store[this._storage].setItem('oauth_finished', 'true');
-                this.location.go(this.location.path(), '');
-                return resolve(true);
-            }
+                 this.store[this._storage].removeItem('oauth_redirect');
+                 this.store[this._storage].setItem('oauth_finished', 'true');
+                 this.location.go(this.location.path(), '');
+                 return resolve(true);
+            },
         );
 
      }
@@ -665,7 +665,7 @@
      * @return {any} Returns a map of key, value pairs from the query string
      */
      private parseQueryString(queryString: string) {
-         let data: any = {};
+         const data: any = {};
          let pairs: any;
          let pair: any;
          let separatorIndex: any;

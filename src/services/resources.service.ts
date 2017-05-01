@@ -97,10 +97,10 @@
              const method = JSON.parse(JSON.stringify(common_crud.save));
              method.url = url;
              this.factory._put(common_crud.save, { id: this.id }, data).subscribe(
-                 (data: any) => result = data,
-                 (err: any) => reject(err),
-                 () => resolve(result),
-                 );
+                                                                                  (data: any) => result = data,
+                                                                                  (err: any) => reject(err),
+                                                                                  () => resolve(result),
+                                                                                  );
          })).then((res) => res, (err) => err);
      }
  }
@@ -244,10 +244,10 @@
                  if (ready) {
                      let result: any;
                      this.http.get(url, method).subscribe(
-                         (data) => result = this.processData(data, url, method.isArray),
-                         (err) => reject(err),
-                         () => resolve(result),
-                         );
+                                                          (data) => result = this.processData(data, url, method.isArray),
+                                                          (err) => reject(err),
+                                                          () => resolve(result),
+                                                          );
                  } else {
                      setTimeout(() => {
                          this.__get(url, method, resolve, reject, ++tries);
@@ -293,10 +293,10 @@
                  if (ready) {
                      let result: any;
                      this.http.post(url, data, method).subscribe(
-                         (data) => result = this.processData(data, url, method.isArray),
-                         (err) => reject(err),
-                         () => resolve(result),
-                         );
+                                                                 (data) => result = this.processData(data, url, method.isArray),
+                                                                 (err) => reject(err),
+                                                                 () => resolve(result),
+                                                                 );
                  } else {
                      setTimeout(() => {
                          this.__post(url, method, data, resolve, reject, ++tries);
@@ -342,10 +342,10 @@
                  if (ready) {
                      let result: any;
                      this.http.put(url, data, method).subscribe(
-                         (data) => result = this.processData(data, url, method.isArray),
-                         (err) => reject(err),
-                         () => resolve(result),
-                         );
+                                                                (data) => result = this.processData(data, url, method.isArray),
+                                                                (err) => reject(err),
+                                                                () => resolve(result),
+                                                                );
                  } else {
                      setTimeout(() => {
                          this.__put(url, method, data, resolve, reject, ++tries);
@@ -389,10 +389,10 @@
                  if (ready) {
                      let result: any;
                      this.http.delete(url, method).subscribe(
-                         (data) => result = this.processData(data, url, method.isArray),
-                         (err) => reject(err),
-                         () => resolve(result),
-                         );
+                                                             (data) => result = this.processData(data, url, method.isArray),
+                                                             (err) => reject(err),
+                                                             () => resolve(result),
+                                                             );
                  } else {
                      setTimeout(() => {
                          this.__delete(url, method, resolve, reject, ++tries);
@@ -631,10 +631,10 @@
                      const parts = auth_url.split('/');
                      const url = parts.splice(0, 3).join('/') + '/';
                      this.http_unauth.get(url + 'auth/authority')['map']((res: any) => res.json() ).subscribe(
-                         (data: any) => authority = data,
-                         (err: any) => reject(err),
-                         () => resolve(authority),
-                         );
+                                                                                                              (data: any) => authority = data,
+                                                                                                              (err: any) => reject(err),
+                                                                                                              () => resolve(authority),
+                                                                                                              );
                  }));
              };
              if (this.factories === undefined) {
