@@ -1,24 +1,21 @@
 /**
-* @Author: Alex Sorafumo
-* @Date:   13/09/2016 2:54 PM
-* @Email:  alex@yuion.net
-* @Filename: index.ts
-* @Last modified by:   Alex Sorafumo
-* @Last modified time: 15/12/2016 11:41 AM
-*/
+ * @Author: Alex Sorafumo
+ * @Date:   13/09/2016 2:54 PM
+ * @Email:  alex@yuion.net
+ * @Filename: index.ts
+ * @Last modified by:   Alex Sorafumo
+ * @Last modified time: 15/12/2016 11:41 AM
+ */
 
+ import { CommsService } from './comms.service';
+ import { MockHttp } from './mock-http';
+ import { OAuthService } from './oauth2.service';
 
-import { CommsService } from './comms.service';
-import { OAuthService } from './oauth2.service';
-import { MockHttp } from './http.mock';
+ import './mock.classes';
 
-import './mock.classes';
+ export * from './comms.service';
+ export * from './http.mock';
 
-export * from './comms.service';
-export * from './http.mock';
-
-export let ACA_AUTH_PROVIDERS = [
-    CommsService, OAuthService
-];
-
-
+ export let ACA_AUTH_PROVIDERS = [
+     CommsService, OAuthService,
+ ];

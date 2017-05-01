@@ -104,7 +104,7 @@ module.exports = function (options) {
                   removeComments: true
 
                 }
-              },
+              }
             },
             'angular2-template-loader'
           ],
@@ -205,7 +205,7 @@ module.exports = function (options) {
         'process.env': {
           'ENV': JSON.stringify(ENV),
           'NODE_ENV': JSON.stringify(ENV),
-          'HMR': false,
+          'HMR': false
         }
       }),
 

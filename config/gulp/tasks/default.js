@@ -20,7 +20,7 @@ gulp.task('build:prod', ['webpack:prod']);
 gulp.task('test',       ['webpack:test']);
 gulp.task('build:test', ['webpack:test']);
 
-gulp.task('source', ['clean:build', 'clean:dist'], function () {
+gulp.task('source', ['clean:prod'], function () {
     return gulp.src(['./src/**', '!./src/**/*.scss'])
         .pipe(gulp.dest('./_build'));
 });
@@ -36,10 +36,8 @@ gulp.task('dev:watch', function () {
 
 gulp.task('ngc', ['inject:css+html'], function (cb) {
     return exec('./node_modules/.bin/ngc -p ./tsconfig.aot.json', function (err, stdout, stderr) {
-        console.log(stdout);
-        console.log(stderr);
-        cb(err);
         del(['./dist/**/*.ts']);
+        return cb(err);
     });
 });
 
@@ -50,6 +48,6 @@ var Server = require('karma').Server;
  */
 gulp.task('test', ['source', 'sass'], function (done) {
   new Server({
-    configFile: __dirname + '/../../../karma.conf.js'
+    configFile: path.join(__dirname, '/../../../karma.conf.js')
   }, done).start();
 });

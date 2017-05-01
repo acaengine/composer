@@ -15,6 +15,7 @@
         "no-internal-module": true,
         "no-trailing-whitespace": true,
         "no-var-keyword": true,
+        "object-literal-sort-keys": false,
         "one-line": [
             true,
             "check-open-brace",
@@ -38,7 +39,9 @@
         "variable-name": [
             true,
             "ban-keywords",
-            "check-format"
+            "check-format",
+            "allow-snake-case",
+            "allow-leading-underscore"
         ],
         "whitespace": [
             true,

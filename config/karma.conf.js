@@ -2,8 +2,9 @@
  * @author: @AngularClass
  */
 
+var testWebpackConfig = require('./webpack/webpack.test.js')({ env: 'test' });
+
 module.exports = function (config) {
-  var testWebpackConfig = require('./webpack/webpack.test.js')({ env: 'test' });
 
   var configuration = {
 

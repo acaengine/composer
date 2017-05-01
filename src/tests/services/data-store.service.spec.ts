@@ -1,9 +1,9 @@
 /*
-* @Author: Alex Sorafumo
-* @Date:   2017-03-31 12:51:02
-* @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-04-03 09:56:22
-*/
+ * @Author: Alex Sorafumo
+ * @Date:   2017-03-31 12:51:02
+ * @Last Modified by:   Alex Sorafumo
+ * @Last Modified time: 2017-05-01 09:29:08
+ */
 
 import { TestBed, inject, async } from '@angular/core/testing';
 import { By }              from '@angular/platform-browser';
