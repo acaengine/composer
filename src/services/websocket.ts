@@ -87,7 +87,7 @@
      * @param  {Function} callback Function to call when the binding is successful
      * @return {number}   Returns the id of the request
      */
-     public bind(sys_id: string, mod_id: string, i: number, name: string, callback: Function) {
+     public bind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
          return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
      }
 
@@ -100,7 +100,7 @@
      * @param  {Function} callback Function to call when the unbind is successful
      * @return {number}   Returns the id of the request
      */
-     public unbind(sys_id: string, mod_id: string, i: number, name: string, callback: Function) {
+     public unbind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
          return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
      }
 
@@ -152,7 +152,9 @@
      private connect(tries: number = 0) {
          if (!this.connect_promise) {
              this.connect_promise = new Promise((resolve, reject) => {
-                 if (tries > 10) reject();
+                 if (tries > 10) {
+                     reject();
+                 }
                  if (this.io && this.io.readyState !== this.io.CLOSED) {
                      if (this.io.readyState === this.io.CONNECTING) {
                          reject({message: 'Already attempting to connect to websocket.'});
@@ -173,7 +175,7 @@
                          this.auth.getToken().then((token: any) => {
                              if (token) {
                                  let uri = this.uri;
-                                 //Setup URI
+                                 // Setup URI
                                  uri += '?bearer_token=' + token;
                                  if (this.fixed) {
                                      uri += '&fixed_device=true';
@@ -183,7 +185,7 @@
                                      uri += '&fixed_device=true';
                                  }
                                  COMPOSER.log('WS', 'Building websocket...');
-                                 //Create Web Socket
+                                 // Create Web Socket
                                  this.io = new WebSocket(uri);
                                  this.io.onmessage = (evt: any) => { this.onmessage(evt); };
                                  this.io.onclose = (evt: any) => { this.onclose(evt); };
@@ -214,7 +216,7 @@
                              }
                          });
                      } else {
-                         //Create WebSocket
+                         // Create WebSocket
                          this.io = new WebSocket(this.uri);
                          this.io.onmessage = (evt: any) => { this.onmessage(evt); };
                          this.io.onclose = (evt: any) => { this.onclose(evt); };
@@ -237,16 +239,16 @@
                      this.connect_check = setInterval(() => { this.reconnect(); }, RECONNECT_TIMER);
                  }
              });
-        }
+         }
          return this.connect_promise;
-    }
+     }
 
     /**
      * Reconnects the websocket is it closes or does not exist
      * @return {void}
      */
      private reconnect() {
-         if (this.io == null || this.io.readyState === this.io.CLOSED) {
+         if (this.io === null || this.io.readyState === this.io.CLOSED) {
              COMPOSER.log('WS', 'Reconnecting websocket...');
              this.connect().then(() => { return; }, () => { return; });
              this.reconnected = true;
@@ -287,85 +289,85 @@
      }
 
     /**
-    * Function that is called when the websocket is disconnected
-    * @param  {any}    evt Event returned by the websocket
-    * @return {void}
-    */
-    private onclose(evt: any) {
-        this.connected = false;
-        COMPOSER.log('WS', 'Websocket closed');
-        this.io = null;
-        this.stopKeepAlive();
-    }
+     * Function that is called when the websocket is disconnected
+     * @param  {any}    evt Event returned by the websocket
+     * @return {void}
+     */
+     private onclose(evt: any) {
+         this.connected = false;
+         COMPOSER.log('WS', 'Websocket closed');
+         this.io = null;
+         this.stopKeepAlive();
+     }
 
     /**
-    * Function that is called when the websocket is receives a message
-    * @param  {any}    evt Event returned by the websocket
-    * @return {void}
-    */
-    private onmessage(evt: any) {
-        let msg: any;
-        let meta: any;
-        let system: any;
-        let module: any;
-        let binding: any;
+     * Function that is called when the websocket is receives a message
+     * @param  {any}    evt Event returned by the websocket
+     * @return {void}
+     */
+     private onmessage(evt: any) {
+         let msg: any;
+         let meta: any;
+         let system: any;
+         let module: any;
+         let binding: any;
 
-        // message data will either be the string 'PONG', or json
-        // data with an associated type
-        if (evt.data === PONG || !evt.data) {
-            return;
-        } else {
-            msg = JSON.parse(evt.data);
-        }
-        //Process responce message
-        if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
-            meta = msg.meta;
-            const meta_list = `${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
-            if (msg.type === ERROR) {
-            	COMPOSER.error('WS', `[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
-            } else if (msg.type === NOTIFY) {
-            	COMPOSER.log(`WS`, `Received notify. ${meta_list} →`, msg.value);
-            } else {
-                if (meta) {
-                    COMPOSER.log(`WS`, `Received success(${msg.id}). ${meta_list}`);
-                } else {
-                    COMPOSER.log(`WS`, `Received success(${msg.id}). Value: ${msg.value}`);
-                }
-            }
-            if (msg.type === SUCCESS) {
-                if (this.requests[msg.id] && this.requests[msg.id].resolve) {
-                	this.requests[msg.id].resolve(msg.value);
-                }
-            } else if (msg.type === ERROR) {
-                if (this.requests[msg.id] && this.requests[msg.id].reject) {
-                	this.requests[msg.id].reject(msg.msg);
-                }
-            }
-            if (this.requests[msg.id]) {
-            	delete this.requests[msg.id];
-            }
-            if (!meta) {
-            	return this.fail(msg, 'meta');
-            }
-            system = this.serv.get(meta.sys);
-            if (!system) {
-            	return this.fail(msg, 'system');
-            }
-            module = system.get(meta.mod, meta.index);
-            if (!module) {
-            	return this.fail(msg, 'module');
-            }
-            binding = module.get(meta.name);
-            if (!binding) {
-            	return this.fail(msg, 'binding');
-            } else {
-            	binding[msg.type](msg);
-            }
-        } else if (msg.type === 'debug') {
-            return true;
-        }
-        return true;
-    }
+         // message data will either be the string 'PONG', or json
+         // data with an associated type
+         if (evt.data === PONG || !evt.data) {
+             return;
+         } else {
+             msg = JSON.parse(evt.data);
+         }
+         // Process response message
+         if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
+             meta = msg.meta;
+             const meta_list = `${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
+             if (msg.type === ERROR) {
+                 COMPOSER.error('WS', `[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
+             } else if (msg.type === NOTIFY) {
+                 COMPOSER.log(`WS`, `Received notify. ${meta_list} →`, msg.value);
+             } else {
+                 if (meta) {
+                     COMPOSER.log(`WS`, `Received success(${msg.id}). ${meta_list}`);
+                 } else {
+                     COMPOSER.log(`WS`, `Received success(${msg.id}). Value: ${msg.value}`);
+                 }
+             }
+             if (msg.type === SUCCESS) {
+                 if (this.requests[msg.id] && this.requests[msg.id].resolve) {
+                     this.requests[msg.id].resolve(msg.value);
+                 }
+             } else if (msg.type === ERROR) {
+                 if (this.requests[msg.id] && this.requests[msg.id].reject) {
+                     this.requests[msg.id].reject(msg.msg);
+                 }
+             }
+             if (this.requests[msg.id]) {
+                 delete this.requests[msg.id];
+             }
+             if (!meta) {
+                 return this.fail(msg, 'meta');
+             }
+             system = this.serv.get(meta.sys);
+             if (!system) {
+                 return this.fail(msg, 'system');
+             }
+             module = system.get(meta.mod, meta.index);
+             if (!module) {
+                 return this.fail(msg, 'module');
+             }
+             binding = module.get(meta.name);
+             if (!binding) {
+                 return this.fail(msg, 'binding');
+             } else {
+                 binding[msg.type](msg);
+             }
+         } else if (msg.type === 'debug') {
+             return true;
+         }
+         return true;
+     }
 
     /**
      * Called when processing a message failed

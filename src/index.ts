@@ -16,6 +16,7 @@
  import { DIRECTIVES } from './directives';
  import { PIPES } from './pipes';
  import { SERVICES } from './services';
+ import { COMPOSER } from './settings';
 
  export * from './directives';
  export * from './pipes';
@@ -44,7 +45,7 @@
      constructor() {
          if (!ComposerModule.init) {
              ComposerModule.init = true;
-             console.debug(`[ACA][LIBRARY] Composer - Version: ${this.version} | Build: ${this.build}`);
+             COMPOSER.version(this.version, this.build);
          }
      }
  }

@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-03-08 11:23:08
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-01 13:10:49
+ * @Last Modified time: 2017-05-02 10:57:59
  */
 
 import { Observable } from 'rxjs/Observable';
@@ -70,6 +70,10 @@ export class COMPOSER {
 
     public static error(type: string, msg: string, args?: any) {
         COMPOSER.log(type, msg, args, 'error');
+    }
+
+    public static version(version: string, build: string, out: any = 'debug') {
+        console[out](`[ACA][LIBRARY] Composer - Version: ${version} | Build: ${build}`);
     }
 }
 

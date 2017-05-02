@@ -38,7 +38,7 @@
          });
 
          this.sub = this.route.queryParams.subscribe( (params: any) => {
-             this.fixed_device = params['fixed_device'] === 'true' ? params['fixed_device'] === 'true' : this.fixed_device;
+             this.fixed_device = params.fixed_device === 'true' ? params.fixed_device === 'true' : this.fixed_device;
              store.local.setItem('fixed_device', this.fixed_device ? 'true' : 'false');
          });
 
@@ -73,20 +73,24 @@
          if (this.r) {
              this.r.setup(options);
          }
-         if (options.mock){
+         const host = o.host ? o.host : location.hostname;
+         const port = o.port ? o.port : location.port;
+         const prot = o.protocol ? o.protocol : location.protocol;
+         if (options.mock) {
              COMPOSER.log('Systems', 'Setting up mock websocket.');
              if (this.io) {
                  delete this.io;
              }
              this.io = new $WebSocketMock(this, this.r, this.fixed_device);
-             this.io.setup(this.r, o.host ? o.host : location.hostname , o.port ? o.port : location.port, o.protocol ? o.protocol : location.protocol);
+
+             this.io.setup(this.r, host, port, prot);
              return this.r.init(options.api_endpoint, true).then(() => true, (err) => false);
          } else {
              COMPOSER.log('Systems', 'Setting up websocket.');
              if (!this.io) {
                  this.io = new $WebSocket(this, this.r, this.fixed_device);
              }
-             this.io.setup(this.r, o.host ? o.host : location.hostname , o.port ? o.port : location.port, o.protocol ? o.protocol : location.protocol);
+             this.io.setup(this.r, host, port, prot);
              return this.r.init(o.api_endpoint).then(() => true, (err) => false);
          }
      }
@@ -107,7 +111,7 @@
                          this.system_promises[sys_id] = null;
                          resolve();
                      } else {
-                         system.get({id: sys_id}).then((sys: any) => {
+                         system.get({id: sys_id}).then((check_sys: any) => {
                              this.system_exists[sys_id] = true;
                              const s = this.getSystem(sys_id);
                              s.exists = true;
@@ -153,7 +157,7 @@
      * Rebinds all the bindings in each system
      * @return {void}
      */
-     public rebind(){
+     public rebind() {
          for (let i = 0; this.systems && i < this.systems.length; i++) {
              this.systems[i].rebind();
          }
@@ -164,7 +168,7 @@
      * @param  {string} sys_id System ID
      * @return {any} Returns the system with the given id
      */
-     private getSystem(sys_id: string){
+     private getSystem(sys_id: string) {
          let system: any = null;
          // Check if system already exists
          for (let i = 0; this.systems && i < this.systems.length; i++) {
@@ -184,18 +188,20 @@
      * Checks if each system stored exists on the server
      * @return {void}
      */
-     private updateSystems(): any{
+     private updateSystems(): any {
          if (this.r && this.io) {
              for (let i = 0; this.systems && i < this.systems.length; i++) {
                  const system = this.systems[i];
-                 if (!system.exists){
+                 if (!system.exists) {
                      const sys = this.r.get('System');
-                     if (sys){
+                     if (sys) {
                          const mod = sys.get({id: system.id});
                          if (mod) {
-                             mod.then((sys: any) => {
+                             mod.then((check_sys: any) => {
                                  system.exists = true;
-                             }, (err: any) => {});
+                             }, (err: any) => {
+                                 return false;
+                             });
                          }
                      }
                  }

@@ -2,7 +2,7 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-05-01 15:16:12
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-05-01 15:55:47
+* @Last Modified time: 2017-05-02 10:43:08
 */
 
 import { COMPOSER } from '../../../settings';
@@ -36,7 +36,12 @@ export class MockRequestHandler {
         };
         if (method === 'GET') {
             if (this.handlers[url]) {
-                const resp = this.handlers[url].fn ? this.handlers[url].fn(fragment, this.handlers[url].data) : this.handlers[url].data;
+                let resp: any = null;
+                if (this.handlers[url].fn) {
+                    resp = this.handlers[url].fn(fragment, this.handlers[url].data);
+                } else {
+                    resp = this.handlers[url].data;
+                }
                 COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, resp);
                 return resp;
             } else {

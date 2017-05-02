@@ -8,10 +8,10 @@
  */
 
  // Import all services
- import { ACA_AUTH_PROVIDERS } from './auth-services';
+ import { ACA_AUTH_PROVIDERS } from './auth';
  import { DataStoreService, DataStoreWorkerService } from './data-store.service';
  import { Resources } from './resources.service';
- import { SystemsService } from './systems-service';
+ import { SystemsService } from './systems';
 
  // Export all services
  export * from './auth-services';

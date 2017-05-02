@@ -84,11 +84,11 @@
                  this.getModule();
                  this.getBinding();
              }
-         } else if (changes.index) {              //Index changed
+         } else if (changes.index) { // Index changed
              this.cleanModule();
              this.getModule();
              this.getBinding();
-         } else if (changes.bind) {               // Variable to bind changes
+         } else if (changes.bind) { // Variable to bind changes
              this.getBinding();
          }
          // Binding value changes
@@ -124,8 +124,10 @@
          this.prev = this.value;
          COMPOSER.log('Binding', `Calling exec from directive ${this.id}`);
          // Update value to value set by user
-         this.module.exec(this.exec, this.binding ? this.binding.id : '', this.params || (!this.bind || this.bind === '') ? this.params : this.value)
-         .then((res: any) => { return; }, (err: any) => { return; });
+         const binding = this.binding ? this.binding.id : '';
+         const params = this.params || (!this.bind || this.bind === '') ? this.params : this.value;
+         this.module.exec(this.exec, binding, params)
+             .then((res: any) => { return; }, (err: any) => { return; });
      }
 
      private ngOnDestory() {
@@ -295,7 +297,8 @@
          });
          this.value = this.binding.current;
          this.prev = this.value;
-         COMPOSER.log('Binding', `Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`);
+         const msg = `Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`;
+         COMPOSER.log('Binding', msg);
          if (this.unbind === null) {
              setTimeout(() => {
                  this.getBinding();

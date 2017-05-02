@@ -273,33 +273,36 @@
              this.http.post(url, '')
              .map((res: any) => res.json())
              .subscribe(
-                        (data: any) => tokens = data,
-                        (err: any) => {
-                            const err_codes = [0, 400, 401, 403];
-                            // Try refresh with root client ID
-                            if (err && (err_codes.indexOf(err.status) || (err.status === 0 && err.ok === false)) && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
-                                COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
-                                oauth.getRefreshToken().then((rt: string) => {
-                                    oauth.redirectUri = `${location.origin}/oauth-resp.html`;
-                                    const client_id = this.hash(`${location.origin}/oauth-resp.html`);
-                                    this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
-                                        if (rt && !rt_root) {
-                                            this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
-                                        }
-                                        setTimeout(() => {
-                                            this.refreshToken(resolve, reject, retries + 1);
-                                        }, 500 * retries);
-                                    });
-                                });
-                            } else {
-                                this.processLoginError(err, reject);
-                            }
-                        }, () => {
-                            COMPOSER.log('COMMS', `Got new tokens:`, tokens);
-                            this.updateToken(tokens, resolve);
-                            setTimeout(() => { this.loginDone(); }, 100);
-                        },
-                        );
+                (data: any) => tokens = data,
+                (err: any) => {
+                    const err_codes = [0, 400, 401, 403];
+                    // Try refresh with root client ID
+                    if (err && (err_codes.indexOf(err.status)
+                        || (err.status === 0 && err.ok === false))
+                        && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
+
+                        COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
+                        oauth.getRefreshToken().then((rt: string) => {
+                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
+                            const client_id = this.hash(`${location.origin}/oauth-resp.html`);
+                            this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
+                                if (rt && !rt_root) {
+                                    this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
+                                }
+                                setTimeout(() => {
+                                    this.refreshToken(resolve, reject, retries + 1);
+                                }, 500 * retries);
+                            });
+                        });
+                    } else {
+                        this.processLoginError(err, reject);
+                    }
+                }, () => {
+                    COMPOSER.log('COMMS', `Got new tokens:`, tokens);
+                    this.updateToken(tokens, resolve);
+                    setTimeout(() => { this.loginDone(); }, 100);
+                },
+            );
          });
      }
 
@@ -397,7 +400,9 @@
                                     } else { // No refresh token
                                         COMPOSER.log('COMMS', `No Refresh Token or Code`);
                                         let path = location.href;
-                                        if (location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
+                                        if (location.hash.indexOf(path) >= 0
+                                            && location.href.indexOf(location.origin + '/#/') >= 0) {
+
                                             if (path.indexOf('?') >= 0) {
                                                 path = path.split('?')[0];
                                             }
@@ -414,7 +419,9 @@
                                 oauth.response_type = 'token';
                                 COMPOSER.log('COMMS', `Starting login process...`);
                                 let path = location.href;
-                                if (location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
+                                if (location.hash.indexOf(path) >= 0
+                                    && location.href.indexOf(location.origin + '/#/') >= 0) {
+
                                     if (path.indexOf('?') >= 0) {
                                         path = path.split('?')[0];
                                     }
@@ -580,7 +587,7 @@
                  type: 'get',
                  body,
                  url,
-                 auth: ((auth_header !== '' && auth_header.indexOf('Bearer null') < 0) || this.http instanceof MockHttp),
+                 auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
              };
              if (!req.options) {
                  req.options = {
