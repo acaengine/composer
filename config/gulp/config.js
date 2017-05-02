@@ -16,7 +16,7 @@ module.exports = function () {
         build: build,
         coverage: coverage,
         index: index,
-        assets: public
+        assets: assets
     };
 
     return gulpConfig;

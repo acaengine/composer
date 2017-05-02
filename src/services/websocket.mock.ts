@@ -35,7 +35,8 @@
  */
 
  // object.watch
- if (!Object.prototype.watch) {
+ const proto = Object.prototype as any;
+ if (!proto.watch) {
      Object.defineProperty(Object.prototype, 'watch', {
          enumerable: false
          , configurable: true
@@ -64,7 +65,7 @@
  }
 
  // object.unwatch
- if (!Object.prototype.unwatch) {
+ if (!proto.unwatch) {
      Object.defineProperty(Object.prototype, 'unwatch', {
          enumerable: false
          , configurable: true

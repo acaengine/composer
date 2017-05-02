@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-05-02 10:49:31
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 10:50:02
+ * @Last Modified time: 2017-05-02 11:09:19
  */
 
  import { Observable } from 'rxjs/Observable';
@@ -116,6 +116,17 @@
              this.parent.unbind(this.id);
          }
      }
+
+    /**
+     * Adds a new callback function to the collection
+     * @param  {() => void} cb_fn Function to add to the binding
+     * @return {void}
+     */
+     public add_cb_fn(cb_fn: () => void) {
+         if (cb_fn !== undefined || cb_fn !== null) {
+             this.callbacks.push(cb_fn);
+         }
+     }
     /**
      * Called when an execute returns successful
      * @param  {any}  msg Message returned by the server
@@ -164,17 +175,6 @@
              if (cb instanceof Function) {
                  cb(this.current, this.previous);
              }
-         }
-     }
-
-    /**
-     * Adds a new callback function to the collection
-     * @param  {() => void} cb_fn Function to add to the binding
-     * @return {void}
-     */
-     private add_cb_fn(cb_fn: () => void) {
-         if (cb_fn !== undefined || cb_fn !== null) {
-             this.callbacks.push(cb_fn);
          }
      }
  }

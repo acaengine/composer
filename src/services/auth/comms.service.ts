@@ -16,7 +16,7 @@
  import { Md5 } from 'ts-md5/dist/md5';
  import { COMPOSER } from '../../settings';
  import { DataStoreService } from '../data-store.service';
- import { MockHttp } from './http.mock';
+ import { MockHttp } from './mock-http';
  import { OAuthService } from './oauth2.service';
 
  const MAX_ERROR_COUNT = 5;

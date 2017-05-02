@@ -12,7 +12,7 @@
  import { System } from './classes';
 
  import { DataStoreService } from '../data-store.service';
- import { Resources } from '../resources.service';
+ import { Resources } from '../resources';
  import { $WebSocket } from '../websocket';
  import { $WebSocketMock } from '../websocket.mock';
 
@@ -20,6 +20,7 @@
 
  @Injectable()
  export class SystemsService {
+     public is_setup: boolean = false;
      private systems: System[] = [];
      private bound_systems: System[] = [];
      private io: any;
@@ -28,7 +29,6 @@
      private mock: boolean = false;
      private fixed_device: boolean = false;
      private sub: any = null;
-     private is_setup: boolean = false;
      private system_promises: any = {};
      private system_exists: any = {};
 

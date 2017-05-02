@@ -2,11 +2,13 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-05-01 14:23:37
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-01 14:53:54
+ * @Last Modified time: 2017-05-02 11:30:53
  */
 
 import { Injectable } from '@angular/core';
 import { ClientMessageBrokerFactory, FnArg, PRIMITIVE, UiArguments } from '@angular/platform-webworker';
+
+import { DataStoreService } from './data-store.service';
 
 @Injectable()
 export class DataStoreWorkerService extends DataStoreService {
@@ -17,6 +19,45 @@ export class DataStoreWorkerService extends DataStoreService {
         if (this.brokerFactory) {
             this.broker = brokerFactory.createMessageBroker('COMPOSER Storage Broker');
         }
+    }
+
+    protected getItem(type: string, key: string) {
+        return new Promise<any>((resolve, reject) => {
+            if (this.broker) {
+                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_getItem`;
+                this.execOnUI(exec, [key]).then((result: string) => {
+                    resolve(result);
+                });
+            }
+        });
+    }
+
+    protected setItem(type: string, key: string, value: string) {
+        return new Promise<any>((resolve, reject) => {
+            if (this.broker) {
+                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_setItem`;
+                this.execOnUI(exec, [key, value]).then((result: string) => {
+                    resolve(result);
+                });
+            }
+        });
+    }
+
+    protected removeItem(type: string, key: string) {
+        return new Promise<any>((resolve, reject) => {
+            if (this.broker) {
+                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_removeItem`;
+                this.execOnUI(exec, [key]).then((result: string) => {
+                    resolve(result);
+                });
+            }
+        });
+    }
+
+    protected keys(type: string) {
+        return new Promise<any>((resolve, reject) => {
+            resolve([]);
+        });
     }
 
     private execOnUI(fn: string, args: any[]) {
@@ -36,42 +77,4 @@ export class DataStoreWorkerService extends DataStoreService {
         });
     }
 
-    private getItem(type: string, key: string) {
-        return new Promise<any>((resolve, reject) => {
-            if (this.broker) {
-                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_getItem`;
-                this.execOnUI(exec, [key]).then((result: string) => {
-                    resolve(result);
-                });
-            }
-        });
-    }
-
-    private setItem(type: string, key: string, value: string) {
-        return new Promise<any>((resolve, reject) => {
-            if (this.broker) {
-                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_setItem`;
-                this.execOnUI(exec, [key, value]).then((result: string) => {
-                    resolve(result);
-                });
-            }
-        });
-    }
-
-    private removeItem(type: string, key: string) {
-        return new Promise<any>((resolve, reject) => {
-            if (this.broker) {
-                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_removeItem`;
-                this.execOnUI(exec, [key]).then((result: string) => {
-                    resolve(result);
-                });
-            }
-        });
-    }
-
-    private keys(type: string) {
-        return new Promise<any>((resolve, reject) => {
-            resolve([]);
-        });
-    }
 }

@@ -546,7 +546,7 @@
          return new Promise((resolve) => {
              const tokenParts = idToken.split('.');
              const claimsBase64 = this.padBase64(tokenParts[1]);
-             const claimsJson = Base64.decode(claimsBase64);
+             const claimsJson = ''; // Base64.decode(claimsBase64);
              const claims = JSON.parse(claimsJson);
              this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce: string) => {
 

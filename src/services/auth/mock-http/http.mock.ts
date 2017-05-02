@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-03-21 16:57:15
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 10:12:57
+ * @Last Modified time: 2017-05-02 11:31:13
  */
 
  import { Injectable } from '@angular/core';
@@ -63,8 +63,9 @@
      }
      MOCK_REQ_HANDLER.register('/control/api/zones', ZONE_LIST);
      // Add mock systems to the system
-     if (self && self.control && self.control.systems) {
-         const systems: any = self.control.systems;
+     const win = self as any;
+     if (win && win.control && win.control.systems) {
+         const systems: any = win.control.systems;
          for (const i in systems) {
              if (i) {
                   SYSTEM_LIST.push(new MockSystem(i, systems[i]));
@@ -72,7 +73,7 @@
          }
      } else {
          const sys_cnt = Math.floor(Math.random() * 50 + 10);
-         for (const i = 0; i < sys_cnt; i++) {
+         for (let i = 0; i < sys_cnt; i++) {
              const system = new MockSystem();
              SYSTEM_LIST.push(system);
              MOCK_REQ_HANDLER.register(`/control/api/system/${system.id}`, system);

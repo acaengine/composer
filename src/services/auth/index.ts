@@ -14,7 +14,7 @@
  import './mock.classes';
 
  export * from './comms.service';
- export * from './http.mock';
+ export * from './mock-http';
 
  export let ACA_AUTH_PROVIDERS = [
      CommsService, OAuthService,

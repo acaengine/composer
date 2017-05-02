@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-05-02 10:36:28
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 10:55:28
+ * @Last Modified time: 2017-05-02 11:20:09
  */
 
  import { Observable } from 'rxjs/Observable';
@@ -10,6 +10,7 @@
  import { COMPOSER } from '../../settings';
  import { CommsService } from '../auth';
  import './common';
+ import { Resource } from './resource.class';
  import { Resources } from './resources.service';
 
  export class ResourceFactory {
@@ -208,13 +209,13 @@
                                 );
                  } else {
                      setTimeout(() => {
-                         this.__post(url, method, data, resolve, reject, ++tries);
+                         this.__post(url, method, req_data, resolve, reject, ++tries);
                      }, 500);
                  }
              });
          } else {
              setTimeout(() => {
-                 this.__post(url, data, method, resolve, reject);
+                 this.__post(url, req_data, method, resolve, reject);
              }, 500);
          }
      }
@@ -258,13 +259,13 @@
                                 );
                  } else {
                      setTimeout(() => {
-                         this.__put(url, method, data, resolve, reject, ++tries);
+                         this.__put(url, method, req_data, resolve, reject, ++tries);
                      }, 500);
                  }
              });
          } else {
              setTimeout(() => {
-                 this.__put(url, method, data, resolve, reject);
+                 this.__put(url, method, req_data, resolve, reject);
              }, 500);
          }
      }

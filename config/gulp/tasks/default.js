@@ -20,7 +20,7 @@ gulp.task('build:prod', ['webpack:prod']);
 gulp.task('test',       ['webpack:test']);
 gulp.task('build:test', ['webpack:test']);
 
-gulp.task('source', ['clean:prod'], function () {
+gulp.task('source', ['clean'], function () {
     return gulp.src(['./src/**', '!./src/**/*.scss'])
         .pipe(gulp.dest('./_build'));
 });

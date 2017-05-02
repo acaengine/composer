@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-03-08 11:23:08
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 10:57:59
+ * @Last Modified time: 2017-05-02 11:16:12
  */
 
 import { Observable } from 'rxjs/Observable';
@@ -30,7 +30,7 @@ export class COMPOSER {
     }
 
     public static loadSettings() {
-        const globalScope = self;
+        const globalScope = self as any;
         if (globalScope) {
             for (const i of COMPOSER.var_list) {
                 if (globalScope[i] !== undefined &&
@@ -48,9 +48,9 @@ export class COMPOSER {
                 }
             }
             // Load data for mock control systems
-            if (globalScope.systemData as any) {
+            if (globalScope.systemData) {
                 COMPOSER.data.control = globalScope.systemData;
-            } else if (globalScope.systemsData.) {
+            } else if (globalScope.systemsData) {
                 COMPOSER.data.control = globalScope.systemsData;
             } else if (globalScope.control && globalScope.control.systems) {
                 COMPOSER.data.control = globalScope.control.systems;

@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-03-09 09:05:57
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-01 16:47:55
+ * @Last Modified time: 2017-05-02 11:23:04
  */
 
  import { Inject, Injectable, PlatformRef, ReflectiveInjector } from '@angular/core';
@@ -124,7 +124,7 @@
          return this.store.session;
      }
 
-     private getItem(type: string, key: string): Promise<string> {
+     protected getItem(type: string, key: string): Promise<string> {
          return new Promise<string>((resolve) => {
              if (type === 'local' && localStorage) {
                  resolve(localStorage.getItem(key));
@@ -135,7 +135,7 @@
 
      }
 
-     private setItem(type: string, key: string, value: string): Promise<string> {
+     protected setItem(type: string, key: string, value: string): Promise<string> {
          return new Promise<string>((resolve) => {
              if (type === 'local' && localStorage) {
                  localStorage.setItem(key, value);
@@ -147,7 +147,7 @@
          });
      }
 
-     private removeItem(type: string, key: string): Promise<string> {
+     protected removeItem(type: string, key: string): Promise<string> {
          return new Promise<string>((resolve) => {
              if (type === 'local' && localStorage) {
                  localStorage.removeItem(key);
@@ -159,7 +159,7 @@
          });
      }
 
-     private keys(type: string): Promise<any[]> {
+     protected keys(type: string): Promise<any[]> {
          return new Promise<any>((resolve, reject) => {
              const keys: string[] = [];
              resolve(keys);
