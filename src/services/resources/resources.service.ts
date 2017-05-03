@@ -42,6 +42,7 @@
          COMPOSER.log('Resources', `Loading Authority...`);
          if (this.mock) {
              this.authLoaded = true;
+             this.http.mock(true);
              return resolve();
          }
          const parts = this.url.split('/');

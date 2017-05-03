@@ -142,8 +142,8 @@ module.exports = function (options) {
         {
             test: /\.scss$/,
             loader: ['raw-loader', {
-            	loader:'sass-loader', 
-            	options: { 
+            	loader:'sass-loader',
+            	options: {
             		includePaths: [helpers.root('src/app/shared')]
             	}
             }],
@@ -235,7 +235,7 @@ module.exports = function (options) {
         options: {
           // legacy options go here
         }
-      }),
+      })
 
     ],
 

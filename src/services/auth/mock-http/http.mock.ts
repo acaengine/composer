@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-03-21 16:57:15
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 11:31:13
+ * @Last Modified time: 2017-05-03 16:14:21
  */
 
  import { Injectable } from '@angular/core';
@@ -20,7 +20,7 @@
      constructor() {
          setTimeout(() => {
              initialiseMockClasses();
-         }, 200);
+         }, 1000);
      }
 
      public get(url: string, options: any) {
@@ -68,8 +68,9 @@
          const systems: any = win.control.systems;
          for (const i in systems) {
              if (i) {
-                  SYSTEM_LIST.push(new MockSystem(i, systems[i]));
-              }
+                 SYSTEM_LIST.push(new MockSystem(i, systems[i]));
+                 MOCK_REQ_HANDLER.register(`/control/api/system/${i}`, systems[i]);
+             }
          }
      } else {
          const sys_cnt = Math.floor(Math.random() * 50 + 10);

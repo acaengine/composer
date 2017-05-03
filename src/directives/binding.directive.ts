@@ -38,8 +38,8 @@
      private system: any;
      private module: any;
      private binding: any;
-     private prev: any;
-     private prev_exec: any;
+     private prev: any = null;
+     private prev_exec: any = null;
      private unbind: () => void;
      private service: SystemsService;
      private i: number = 0;
@@ -64,14 +64,6 @@
              }, 500);
              return;
          }
-         // Execute () => void changes
-         if (this.init && this.prev_exec !== this.exec && this.bind && this.bind !== '') {
-             this.ignore_cnt++;
-             if (this.ignore_cnt > this.ignore) {
-                 COMPOSER.log('Binding', `() => void changed. ${this.prev_exec} => ${this.exec}`);
-                 this.call_exec();
-             }
-         }
          // System changes
          if (changes.sys && this.hasChanged('system')) {
              this.cleanModule();
@@ -90,6 +82,14 @@
              this.getBinding();
          } else if (changes.bind) { // Variable to bind changes
              this.getBinding();
+         }
+         // Execute () => void changes
+         if (this.init && this.prev_exec !== this.exec && this.bind && this.bind !== '') {
+             this.ignore_cnt++;
+             if (this.ignore_cnt > this.ignore) {
+                 COMPOSER.log('Binding', `() => void changed. ${this.prev_exec} => ${this.exec}`);
+                 this.call_exec();
+             }
          }
          // Binding value changes
          if (this.init && this.binding && this.value !== this.binding.current && this.value !== this.prev) {

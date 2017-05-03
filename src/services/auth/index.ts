@@ -11,8 +11,6 @@
  import { MockHttp } from './mock-http';
  import { OAuthService } from './oauth2.service';
 
- import './mock.classes';
-
  export * from './comms.service';
  export * from './mock-http';
 

@@ -162,7 +162,7 @@ module.exports = function(env) {
         mangle: { screw_ie8 : true, keep_fnames: true }, //prod
         compress: { screw_ie8: true }, //prod
         comments: false //prod
-      }),
+      })
 
       /**
        * Plugin: IgnorePlugin
@@ -205,7 +205,6 @@ module.exports = function(env) {
      *
      * See: https://github.com/webpack/html-loader#advanced-options
      */
-    // TODO: Need to workaround Angular 2's html syntax => #id [bind] (event) *ngFor
     htmlLoader: {
       minimize: true,
       removeAttributeQuotes: false,
