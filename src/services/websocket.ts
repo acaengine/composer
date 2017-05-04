@@ -322,7 +322,10 @@
          // Process response message
          if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
              meta = msg.meta;
-             const meta_list = `${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
+             let meta_list = '';
+             if (meta) {
+                meta_list = `${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
+             }
              if (msg.type === ERROR) {
                  COMPOSER.error('WS', `[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
              } else if (msg.type === NOTIFY) {

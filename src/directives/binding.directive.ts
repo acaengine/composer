@@ -49,7 +49,7 @@
 
      constructor(private el: ElementRef, private serv: SystemsService, private renderer: Renderer) {
          this.service = serv;
-         this.id = (Math.floor(Math.random() * 89999999) + 10000000).toString();
+         this.id = (Math.floor(Math.random() * 899999) + 100000).toString();
          this.renderer.setElementClass(this.el.nativeElement, `binding-directive-${this.id}`, true);
      }
 
@@ -83,27 +83,32 @@
          } else if (changes.bind) { // Variable to bind changes
              this.getBinding();
          }
-         // Execute () => void changes
+         // Execute function has changed
          if (this.init && this.prev_exec !== this.exec && this.bind && this.bind !== '') {
              this.ignore_cnt++;
              if (this.ignore_cnt > this.ignore) {
-                 COMPOSER.log('Binding', `() => void changed. ${this.prev_exec} => ${this.exec}`);
+                 COMPOSER.log('Binding', `${this.id}: Execute function changed. ${this.prev_exec} → ${this.exec}`);
                  this.call_exec();
              }
          }
-         // Binding value changes
+         // Bindings local value has change
          if (this.init && this.binding && this.value !== this.binding.current && this.value !== this.prev) {
-             COMPOSER.log('Binding', `Value changed calling exec. ${this.prev} => ${this.value}`);
+             const change = `${this.prev} → ${this.value}`;
+             COMPOSER.log('Binding', `{this.id}: Local value for ${this.bind} has changed calling exec. ${change}`);
              this.ignore_cnt++;
              if (this.ignore_cnt > this.ignore) {
                  this.call_exec();
              } else {
                  this.prev = this.value;
              }
-         } else if (!this.init) {
-             this.prev = this.value;
-             this.init = true;
          }
+             // Initialized local binding value
+         if (!this.init) {
+             setTimeout(() => {
+                     this.prev = this.value;
+                     this.init = true;
+             }, 100);
+        }
      }
 
     /**
@@ -122,7 +127,8 @@
          // Update binding
          this.prev_exec = this.exec;
          this.prev = this.value;
-         COMPOSER.log('Binding', `Calling exec from directive ${this.id}`);
+         const bind_info = `${this.sys}, ${this.mod}, ${this.bind}`;
+         COMPOSER.log('Binding', `{this.id}: Calling exec from directive ${this.id}: ${bind_info}`);
          // Update value to value set by user
          const binding = this.binding ? this.binding.id : '';
          const params = this.params || (!this.bind || this.bind === '') ? this.params : this.value;
@@ -297,7 +303,7 @@
          });
          this.value = this.binding.current;
          this.prev = this.value;
-         const msg = `Binding to '${this.binding.id}' on ${this.system.id}, ${this.module.id} ${this.module.index}`;
+         const msg = `{this.id}: Binding to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
          COMPOSER.log('Binding', msg);
          if (this.unbind === null) {
              setTimeout(() => {

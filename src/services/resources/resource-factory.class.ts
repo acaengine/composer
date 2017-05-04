@@ -2,14 +2,14 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-05-02 10:36:28
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 11:20:09
+ * @Last Modified time: 2017-05-03 17:45:41
  */
 
  import { Observable } from 'rxjs/Observable';
 
  import { COMPOSER } from '../../settings';
  import { CommsService } from '../auth';
- import './common';
+ import { COMMON } from './common';
  import { Resource } from './resource.class';
  import { Resources } from './resources.service';
 
@@ -27,7 +27,7 @@
          for (const key of keys) {
              let func: any;
              switch (this.methods[key].method) {
-                 case GET:
+                 case COMMON.cmd.GET:
                  func = (ikey: any) => {
                      this[ikey] = (params: any) => {
                          return this._get(this.methods[ikey], params);
@@ -35,7 +35,7 @@
                  };
                  func(key);
                  break;
-                 case POST:
+                 case COMMON.cmd.POST:
                  func = (ikey: any) => {
                      this[ikey] = (params: any, data: any) => {
                          return this._post(this.methods[ikey], params, data);
@@ -43,7 +43,7 @@
                  };
                  func(key);
                  break;
-                 case PUT:
+                 case COMMON.cmd.PUT:
                  func = (ikey: any) => {
                      this[ikey] = (params: any, data: any) => {
                          return this._put(this.methods[ikey], params, data);
@@ -51,7 +51,7 @@
                  };
                  func(key);
                  break;
-                 case DELETE:
+                 case COMMON.cmd.DELETE:
                  func = (ikey: any) => {
                      this[ikey] = (params: any) => {
                          return this._delete(this.methods[ikey], params);

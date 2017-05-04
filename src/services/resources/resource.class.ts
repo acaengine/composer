@@ -2,10 +2,10 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-05-02 10:35:51
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 10:39:54
+ * @Last Modified time: 2017-05-03 17:38:15
  */
 
- import './common';
+ import { COMMON } from './common';
 
  export class Resource {
      public factory: any;   // Parent Factory for resource
@@ -39,9 +39,9 @@
          this.save = s; this.factory = f; this.url = url;
          return (new Promise((resolve, reject) => {
              let result: any;
-             const method = JSON.parse(JSON.stringify(common_crud.save));
+             const method = JSON.parse(JSON.stringify(COMMON.crud.save));
              method.url = url;
-             this.factory._put(common_crud.save, { id: this.id }, req_data)
+             this.factory._put(COMMON.crud.save, { id: this.id }, req_data)
              .subscribe(
                         (data: any) => result = data,
                         (err: any) => reject(err),
