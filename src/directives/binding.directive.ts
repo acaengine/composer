@@ -94,7 +94,7 @@
          // Bindings local value has change
          if (this.init && this.binding && this.value !== this.binding.current && this.value !== this.prev) {
              const change = `${this.prev} → ${this.value}`;
-             COMPOSER.log('Binding', `{this.id}: Local value for ${this.bind} has changed calling exec. ${change}`);
+             COMPOSER.log('Binding', `${this.id}: Local value for ${this.bind} has changed calling exec. ${change}`);
              this.ignore_cnt++;
              if (this.ignore_cnt > this.ignore) {
                  this.call_exec();
@@ -128,7 +128,7 @@
          this.prev_exec = this.exec;
          this.prev = this.value;
          const bind_info = `${this.sys}, ${this.mod}, ${this.bind}`;
-         COMPOSER.log('Binding', `{this.id}: Calling exec from directive ${this.id}: ${bind_info}`);
+         COMPOSER.log('Binding', `${this.id}: Calling exec from directive ${this.id}: ${bind_info}`);
          // Update value to value set by user
          const binding = this.binding ? this.binding.id : '';
          const params = this.params || (!this.bind || this.bind === '') ? this.params : this.value;
@@ -303,7 +303,7 @@
          });
          this.value = this.binding.current;
          this.prev = this.value;
-         const msg = `{this.id}: Binding to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
+         const msg = `${this.id}: Binding to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
          COMPOSER.log('Binding', msg);
          if (this.unbind === null) {
              setTimeout(() => {
