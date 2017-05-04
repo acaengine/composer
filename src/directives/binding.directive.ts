@@ -111,6 +111,12 @@
         }
      }
 
+     public ngOnDestroy() {
+         if (this.unbind) {
+             this.unbind();
+         }
+     }
+
     /**
      * Executes a function on the module
      * @param  {string} exec (Optional) Name of the function to call on the module, defaults to the

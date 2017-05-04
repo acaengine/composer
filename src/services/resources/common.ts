@@ -2,13 +2,13 @@
 * @Author: Alex Sorafumo
 * @Date:   2017-05-02 10:39:06
 * @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-05-04 11:57:21
+* @Last Modified time: 2017-05-04 12:15:34
 */
 
-const headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    };
+const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+};
 const GET = 'GET';
 const POST = 'POST';
 const PUT = 'PUT';

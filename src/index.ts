@@ -39,8 +39,8 @@
  })
  export class ComposerModule {
      private static init: boolean = false;
-     private version: string = '0.6.3';
-     private build: string = '2017-05-04.v2';
+     private version: string = '0.6.4';
+     private build: string = '2017-05-04.v3';
 
      constructor() {
          if (!ComposerModule.init) {
