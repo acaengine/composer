@@ -7,6 +7,8 @@
  * @Last modified time: 25/01/2017 1:36 PM
  */
 
+ import { watch, unwatch } from 'watch-object';
+
  const BIND   = 'bind';
  const UNBIND = 'unbind';
  const DEBUG = 'debug';
@@ -23,60 +25,6 @@
  const KEEP_ALIVE_TIMER_SECONDS = 60 * SECONDS;
 
  import { COMPOSER } from '../settings';
-
-/*
- * object.watch polyfill
- *
- * 2012-04-03
- *
- * By Eli Grey, http://eligrey.com
- * Public Domain.
- * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
- */
-
- // object.watch
- const proto = Object.prototype as any;
- if (!proto.watch) {
-     Object.defineProperty(Object.prototype, 'watch', {
-         enumerable: false
-         , configurable: true
-         , writable: false
-         , value: (prop: any, handler: any) => {
-             let oldval = this[prop];
-             let newval = oldval;
-             const getter = () => {
-                 return newval;
-             };
-             const setter = (val: any) => {
-                 oldval = newval;
-                 return newval = handler.call(this, prop, oldval, val);
-             };
-
-             if (delete this[prop]) { // can't watch constants
-                 Object.defineProperty(this, prop, {
-                     get: getter
-                     , set: setter
-                     , enumerable: true
-                     , configurable: true,
-                 });
-         }
-     },
- });
- }
-
- // object.unwatch
- if (!proto.unwatch) {
-     Object.defineProperty(Object.prototype, 'unwatch', {
-         enumerable: false
-         , configurable: true
-         , writable: false
-         , value: (prop: any) => {
-             const val = this[prop];
-             delete this[prop]; // remove accessors
-             this[prop] = val;
-         },
-     });
- }
 
  export class MockWebSocketInterface {
      private static retries: number = 0;
@@ -95,6 +43,7 @@
      private io: any;
      private keepAliveInterval: any;
      private auth: any;
+     private watching: any = {};
 
      private systems: any[] = [];
 
@@ -297,7 +246,7 @@
          if (msg.type === SUCCESS || msg.type === ERROR || msg.type === NOTIFY) {
              meta = msg.meta;
              const meta_list = `${msg.type}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
-             COMPOSER.log('WS(M)', `Recieved ${meta_list} ${JSON.stringify(msg.value)}`);
+             COMPOSER.log('WS(M)', `Recieved ${meta_list}`, msg.value);
              if (msg.type === SUCCESS) {
                  if (this.requests[msg.id] && this.requests[msg.id].resolve) {
                      this.requests[msg.id].resolve(msg.value);
@@ -404,24 +353,33 @@
              case BIND:
              if (this.systems && this.systems[r.sys] && this.systems[r.sys][r.mod] &&
                  this.systems[r.sys][r.mod][r.index - 1]) {
+                 const val = this.systems[r.sys][r.mod][r.index - 1][r.name];
                  evt = { data: JSON.stringify({
                      id: r.id,
                      type: SUCCESS,
                      meta: r,
-                     value: this.systems[r.sys][r.mod][r.index - 1][r.name],
+                     value: val === undefined ? null : val,
                  })};
                  evt_ex = { data: JSON.stringify({
                      id: r.id,
                      type: NOTIFY,
                      meta: r,
-                     value: this.systems[r.sys][r.mod][r.index - 1][r.name],
+                     value: val === undefined ? null : val,
                  })};
-                 setTimeout(() => {
-                     this.systems[r.sys][r.mod][r.index - 1].watch(r.name, (id: string, oldval: any, newval: any) => {
-                         this.notifyChange(r, newval);
-                         return newval;
+                 console.log(this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`]);
+                 if (!this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`]) {
+                     this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`] = true;
+                     console.log(`Watching ${r.sys},${r.mod},${r.index - 1},${r.name}`);
+                     setTimeout(() => {
+                         watch(this.systems[r.sys][r.mod][r.index - 1], r.name, (newval: any, oldval: any) => {
+                             this.notifyChange(r, newval);
+                         });
+                     }, 100);
+                 } else {
+                     setTimeout(() => {
+                        this.notifyChange(r, this.systems[r.sys][r.mod][r.index - 1][r.name]);
                      });
-                 }, 100);
+                 }
              }
              break;
              case UNBIND:
@@ -432,7 +390,13 @@
                      meta: r,
                      value: this.systems[r.sys][r.mod][r.index - 1][r.name],
                  })};
-                 this.systems[r.sys][r.mod][r.index - 1].unwatch(r.name);
+                 if (this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`]) {
+                         /*
+                     console.log(`Unwatching ${r.sys},${r.mod},${r.index - 1},${r.name}`);
+                     this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`] = false;
+                      unwatch(this.systems[r.sys][r.mod][r.index - 1], r.name);
+                      // */
+                  }
              }
              break;
              case EXEC:

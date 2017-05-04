@@ -94,7 +94,7 @@
          // Bindings local value has change
          if (this.init && this.binding && this.value !== this.binding.current && this.value !== this.prev) {
              const change = `${this.prev} → ${this.value}`;
-             COMPOSER.log('Binding', `${this.id}: Local value for ${this.bind} has changed calling exec. ${change}`);
+             COMPOSER.log('Binding', `${this.id}: Local value changed calling exec. ${change}`);
              this.ignore_cnt++;
              if (this.ignore_cnt > this.ignore) {
                  this.call_exec();
