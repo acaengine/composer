@@ -349,22 +349,21 @@
              if (this.requests[msg.id]) {
                  delete this.requests[msg.id];
              }
-             if (!meta) {
-                 return this.fail(msg, 'meta');
-             }
-             system = this.serv.get(meta.sys);
-             if (!system) {
-                 return this.fail(msg, 'system');
-             }
-             module = system.get(meta.mod, meta.index);
-             if (!module) {
-                 return this.fail(msg, 'module');
-             }
-             binding = module.get(meta.name);
-             if (!binding) {
-                 return this.fail(msg, 'binding');
-             } else {
-                 binding[msg.type](msg);
+             if (meta) {
+                 system = this.serv.get(meta.sys);
+                 if (!system) {
+                     return this.fail(msg, 'system');
+                 }
+                 module = system.get(meta.mod, meta.index);
+                 if (!module) {
+                     return this.fail(msg, 'module');
+                 }
+                 binding = module.get(meta.name);
+                 if (!binding) {
+                     return this.fail(msg, 'binding');
+                 } else {
+                     binding[msg.type](msg);
+                 }
              }
          } else if (msg.type === 'debug') {
              return true;
