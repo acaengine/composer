@@ -11,6 +11,7 @@
  import { ACA_AUTH_PROVIDERS } from './auth';
  import { DataStoreWorkerService } from './data-store-worker.service';
  import { DataStoreService } from './data-store.service';
+ import { ComposerDebugService } from './debug.service';
  import { Resources } from './resources';
  import { SystemsService } from './systems';
 
@@ -25,6 +26,7 @@
  // Export services for module providers
  export const SERVICES: any[] = [
      ...ACA_AUTH_PROVIDERS,
+     ComposerDebugService,
      SystemsService,
      Resources,
      DataStoreService,

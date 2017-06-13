@@ -13,6 +13,7 @@
 
  import { COMPOSER } from '../../settings';
  import { CommsService } from '../auth';
+ import { ComposerDebugService } from '../debug.service';
  import { COMMON } from './common';
  import { ResourceFactory } from './resource-factory.class';
 
@@ -24,7 +25,8 @@
      private auth_promise: any = null;
      private mock: boolean = false;
 
-     constructor(public http: CommsService, private http_unauth: Http) {
+     constructor(public http: CommsService, private http_unauth: Http, private debug: ComposerDebugService) {
+         debug.services.resources = this;
      }
 
      get is_ready() {
@@ -48,6 +50,13 @@
          const base_el = document.getElementsByTagName('base')[0];
          const base = base_el ? (base_el.href ? base_el.href : '/') : '/';
          const redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
+             // Make sure URL is set before processing authentication.
+         if (!this.url || this.url === '' || this.url.indexOf('http') < 0) {
+             setTimeout(() => {
+                 this.initAuth(resolve, reject);
+             }, 500);
+             return;
+         }
          this.get('Authority').get_authority().then((auth: any) => {
              COMPOSER.log(`Resources]`, `Authority loaded. Session: ${auth.session === true}`);
              if (typeof auth !== 'object') {
@@ -89,6 +98,7 @@
              refreshUri: options.oauth_tokens,
              redirectUri: options.redirect_uri,
              clientId: this.http.hash(options.redirect_uri),
+             login_local: options.login_local,
          });
          this.url = options.api_endpoint;
      }
@@ -224,6 +234,9 @@
              auth.get_authority = (auth_url?: string) => {
                  if (!auth_url) {
                      auth_url = this.url;
+                 }
+                 if (auth_url.indexOf('http') < 0) {
+
                  }
                  return (new Promise((auth_res, auth_rej) => {
                      let authority: any;

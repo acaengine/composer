@@ -11,6 +11,8 @@
  import { Injectable } from '@angular/core';
 
  import * as sha256 from 'fast-sha256';
+ import { Observable } from 'rxjs/Observable';
+
  import { COMPOSER } from '../../settings';
  import { DataStoreService } from '../data-store.service';
 
@@ -32,9 +34,14 @@
      public response_type: string;
      public refreshUri = '';
      public code: string;
+     public login_local: boolean = false;
+     public login_obs: any = null;
+     public simple: boolean = false;
+     private _login_obs: any = null;
      private debug: boolean = false;
      private _storage: string = 'local';
      private run_flow: boolean = false;
+     private needs_login: boolean = false;
 
      private access_token_promise: any = null;
      private refresh_token_promise: any = null;
@@ -43,6 +50,9 @@
      private auth_header_promise: any = null;
 
      constructor(private location: Location, private store: DataStoreService) {
+         this.login_obs = new Observable((observer) => {
+             this._login_obs = observer;
+         });
      }
 
     /**
@@ -74,6 +84,13 @@
          }, (err) => {
              return '';
          });
+     }
+
+     public needsLogin() {
+         setTimeout(() => {
+             this._login_obs.next(this.needs_login);
+         }, 200);
+         return this.login_obs;
      }
 
     /**
@@ -373,18 +390,25 @@
              this.store.local.setItem(`oauth_redirect`, here);
              this.run_flow = true;
              this.store.session.getItem(`${this.clientId}_login`).then((logged: string) => {
-                 if (logged === 'true') {
+                 if (logged === 'true' && url.indexOf('http') >= 0) {
                      COMPOSER.log('OAUTH', 'Logged in. Authorizing...');
                      this.store.session.removeItem(`${this.clientId}_login`);
                      location.href = url;
                  } else {
                      COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
-                     this.store.session.setItem(`${this.clientId}_login`, 'true');
-                     if (!this.loginRedirect || this.loginRedirect === '') {
-                         this.loginRedirect = location.origin + '/auth/login';
+                     this.needs_login = true;
+                     if (this.login_local) {
+                         this._login_obs.next(this.needs_login);
+                         this.run_flow = false;
+                     } else {
+                         this.store.session.setItem(`${this.clientId}_login`, 'true');
+                         if (!this.loginRedirect || this.loginRedirect === '' && location.origin.indexOf('http') >= 0) {
+                             this.loginRedirect = location.origin + '/auth/login';
+                         } else if (this.loginRedirect && this.loginRedirect !== '') {
+                             COMPOSER.log('OAUTH', `Login: ${this.loginRedirect}`);
+                             location.href = this.loginRedirect;
+                         }
                      }
-                     COMPOSER.log('OAUTH', `Login: ${this.loginRedirect}`);
-                     location.href = this.loginRedirect;
                  }
              });
          }, (err) => {
@@ -512,8 +536,7 @@
                          this.callEventIfExists(options);
                      })
                      .catch((reason: any) => {
-                         console.error('Error validating tokens');
-                         console.error(reason);
+                         COMPOSER.error('OAUTH', 'Error validating tokens', reason);
                      });
                  }
                  else {
@@ -551,22 +574,22 @@
              this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce: string) => {
 
                  if (claims.aud !== this.clientId) {
-                     console.warn('Wrong audience: ' + claims.aud);
+                     COMPOSER.log('OAUTH', 'Wrong audience: ' + claims.aud, null, 'warn');
                      return resolve(false);
                  }
 
                  if (this.issuer && claims.iss !== this.issuer) {
-                     console.warn('Wrong issuer: ' + claims.iss);
+                     COMPOSER.log('OAUTH', 'Wrong issuer: ' + claims.iss, null, 'warn');
                      return resolve(false);
                  }
 
                  if (claims.nonce !== savedNonce) {
-                     console.warn('Wrong nonce: ' + claims.nonce);
+                     COMPOSER.log('OAUTH', 'Wrong nonce: ' + claims.nonce, null, 'warn');
                      return resolve(false);
                  }
 
                  if (accessToken && !this.checkAtHash(accessToken, claims)) {
-                     console.warn('Wrong at_hash');
+                     COMPOSER.log('OAUTH', 'Wrong at_hash', null, 'warn');
                      return resolve(false);
                  }
 
@@ -579,8 +602,7 @@
                  const tenMinutesInMsec = 1000 * 60 * 10;
 
                  if (issuedAtMSec - tenMinutesInMsec >= now  || expiresAtMSec + tenMinutesInMsec <= now) {
-                     console.warn('Token has been expired');
-                     console.warn({
+                     COMPOSER.log('OAUTH', 'Token has been expired', {
                          now,
                          issuedAtMSec,
                          expiresAtMSec,

@@ -2,7 +2,7 @@
  * @Author: Alex Sorafumo
  * @Date:   2017-03-08 11:23:08
  * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-04 12:57:54
+ * @Last Modified time: 2017-05-12 14:30:34
  */
 
 import { Observable } from 'rxjs/Observable';
@@ -61,10 +61,11 @@ export class COMPOSER {
     public static log(type: string, msg: string, args?: any, out: string = 'debug', color?: string) {
         if (COMPOSER.data && COMPOSER.data.debug) {
             const clr = color ? color : '#009688';
+            const COLOURS = ['color: #0288D1', `color:${clr}`, 'color:rgba(0,0,0,0.87)'];
             if (args) {
-                console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, 'color: #0288D1', `color:${clr}`, 'color:rgba(0,0,0,0.87)', args);
+                console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, ...COLOURS, args);
             } else {
-                console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, 'color:#0288D1', `color:${clr}`, 'color:rgba(0,0,0,0.87)');
+                console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, ...COLOURS);
             }
         }
     }
@@ -74,7 +75,8 @@ export class COMPOSER {
     }
 
     public static version(version: string, build: string, out: any = 'debug') {
-        console[out](`%c[ACA][LIBRARY] %cComposer - Version: ${version} | Build: ${build}`, 'color: #F44336', 'color: rgba(0,0,0,0.87)');
+        const COLOURS = ['color: #f44336', `color: #9c27b0`, 'color:rgba(0,0,0,0.87)'];
+        console[out](`%c[ACA]%c[LIBRARY] %cComposer - Version: ${version} | Build: ${build}`, ...COLOURS);
     }
 }
 

@@ -366,10 +366,8 @@
                      meta: r,
                      value: val === undefined ? null : val,
                  })};
-                 console.log(this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`]);
                  if (!this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`]) {
                      this.watching[`${r.sys},${r.mod},${r.index - 1},${r.name}`] = true;
-                     console.log(`Watching ${r.sys},${r.mod},${r.index - 1},${r.name}`);
                      setTimeout(() => {
                          watch(this.systems[r.sys][r.mod][r.index - 1], r.name, (newval: any, oldval: any) => {
                              this.notifyChange(r, newval);

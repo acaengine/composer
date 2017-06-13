@@ -12,6 +12,7 @@
  import { System } from './classes';
 
  import { DataStoreService } from '../data-store.service';
+ import { ComposerDebugService } from '../debug.service';
  import { Resources } from '../resources';
  import { $WebSocket } from '../websocket';
  import { $WebSocketMock } from '../websocket.mock';
@@ -32,7 +33,8 @@
      private system_promises: any = {};
      private system_exists: any = {};
 
-     constructor(private r: Resources, private route: ActivatedRoute, private store: DataStoreService) {
+     constructor(private r: Resources, private route: ActivatedRoute, private store: DataStoreService, private debug: ComposerDebugService) {
+         this.debug.services.systems = this;
          store.local.getItem(`fixed_device`).then((value: string) => {
              this.fixed_device = (value === 'true');
          });

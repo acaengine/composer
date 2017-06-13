@@ -7,56 +7,57 @@
  * @Last modified time: 06/02/2017 12:47 PM
  */
 
- import { Location } from '@angular/common';
- import { Inject, Injectable, Injector, ReflectiveInjector, Renderer } from '@angular/core';
- import { Headers, Http } from '@angular/http';
- import { ActivatedRoute, Router } from '@angular/router';
- import { Observable } from 'rxjs/Observable';
+import { Location } from '@angular/common';
+import { Inject, Injectable, Injector, ReflectiveInjector, Renderer } from '@angular/core';
+import { Headers, Http } from '@angular/http';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable } from 'rxjs/Observable';
 
- import { Md5 } from 'ts-md5/dist/md5';
- import { COMPOSER } from '../../settings';
- import { DataStoreService } from '../data-store.service';
- import { MockHttp } from './mock-http';
- import { OAuthService } from './oauth2.service';
+import { Md5 } from 'ts-md5/dist/md5';
+import { COMPOSER } from '../../settings';
+import { DataStoreService } from '../data-store.service';
+import { MockHttp } from './mock-http';
+import { OAuthService } from './oauth2.service';
 
- const MAX_ERROR_COUNT = 5;
+const MAX_ERROR_COUNT = 5;
 
- @Injectable()
- export class CommsService {
-     private trust: boolean = false;
-     private sub: any;
-     private refresh = false;
-     private login_promise: Promise<any> = null;
-     private retry: any = {};
-     private debug: boolean = true;
-     private http: any = null;
-     private valid_params = [
-     'loginUrl', 'loginRedirect', 'refreshUrl', 'redirectUri', 'refreshUri',
-     'clientId', 'issuer', 'scope', 'oidc', 'logoutUrl',
-     ];
+@Injectable()
+export class CommsService {
+    private trust: boolean = false;
+    private sub: any;
+    private refresh = false;
+    private login_promise: Promise<any> = null;
+    private retry: any = {};
+    private debug: boolean = true;
+    private http: any = null;
+    private simple: boolean = false;
+    private valid_params = [
+        'loginUrl', 'loginRedirect', 'refreshUrl', 'redirectUri', 'refreshUri',
+        'clientId', 'issuer', 'scope', 'oidc', 'logoutUrl', 'login_local',
+    ];
 
-     constructor(private route: ActivatedRoute,
-                 private router: Router,
-                 private http_service: Http,
-                 private oAuthService: OAuthService,
-                 private store: DataStoreService,
-                 private loc: Location,
-                 private injector: Injector) {
-         this.http = this.http_service;
-         store.local.getItem('trust').then((value: string) => {
-             this.trust = (value === 'true');
-         });
-         this.sub = this.route.queryParams.subscribe( (params: any) => {
-             this.trust = params.trust === 'true' ? params.trust === 'true' : this.trust;
-             if (this.trust) {
-                 store.local.setItem('trust', 'true');
-             }
-             if (params.logout && params.logout === 'true') {
-                 this.oAuthService.logOut();
-             }
-         });
-         this.oAuthService.tryLogin().then(() => { return; }, () => { return; });
-     }
+    constructor(private route: ActivatedRoute,
+        private router: Router,
+        private http_service: Http,
+        private oAuthService: OAuthService,
+        private store: DataStoreService,
+        private loc: Location,
+        private injector: Injector) {
+        this.http = this.http_service;
+        store.local.getItem('trust').then((value: string) => {
+            this.trust = (value === 'true');
+        });
+        this.sub = this.route.queryParams.subscribe((params: any) => {
+            this.trust = params.trust === 'true' ? params.trust === 'true' : this.trust;
+            if (this.trust) {
+                store.local.setItem('trust', 'true');
+            }
+            if (params.logout && params.logout === 'true') {
+                this.oAuthService.logOut();
+            }
+        });
+        this.oAuthService.tryLogin().then(() => { return; }, () => { return; });
+    }
 
     /**
      * Initialises OAuth
@@ -71,22 +72,25 @@
      * @param  {string}  logout   Logout URL
      * @return {void}
      */
-     public setupOAuth(options: any) {
+    public setupOAuth(options: any) {
         const oauth = this.oAuthService;
         if (options) {
             for (const i in options) {
-                if (typeof options[i] === 'string' && this.valid_params.indexOf(i) >= 0) {
+                if (i !== undefined && i !== null && this.valid_params.indexOf(i) >= 0) {
                     oauth[i] = options[i];
                 }
             }
+            if (options.simple) {
+                this.simple = true;
+            }
         }
-     }
+    }
     /**
      * Changes the http service to respond with mock data
      * @param {boolean = true} enable Enables or disables mock data responses
      * @return {void}
      */
-     public mock(enable: boolean = true) {
+    public mock(enable: boolean = true) {
         if (enable && this.http instanceof Http) {
             const resolvedProviders = ReflectiveInjector.resolve([MockHttp]);
             const childInjector = ReflectiveInjector.fromResolvedProviders(resolvedProviders, this.injector);
@@ -96,19 +100,21 @@
         } else if (this.http instanceof MockHttp && this.http_service) {
             this.http = this.http_service;
         }
-     }
+    }
     /**
      * Attempt to login to the system
      * @return {void}
      */
-     public tryLogin() {
+    public tryLogin() {
         COMPOSER.log('COMMS', `Trying Login`);
-        if (this.oAuthService.code) {
-             this.login().then(() => {
-                 COMPOSER.log('COMMS', `Got Access Token.`);
-             });
-         }
-     }
+        this.login().then(() => {
+            COMPOSER.log('COMMS', `Got Access Token.`);
+        });
+    }
+
+    public needsLogin() {
+        return this.oAuthService.needsLogin();
+    }
 
     /**
      * Wrapper for Angular 2 HTTP GET with auth
@@ -116,23 +122,23 @@
      * @param  {any}    options Request Options
      * @return {Observable} Returns an observable which acts like the Http observable
      */
-     public get(url: string, options?: any) {
+    public get(url: string, options?: any) {
         return new Observable((observer: any) => {
             this.processOptions(url, null, options).then((req: any) => {
                 if (req.auth) {
                     this.http.get(req.url, req.options)
-                    .map((res: any) => res.json())
-                    .subscribe(
-                                (data: any) => observer.next(data),
-                                (err: any) => this.error(err, req, observer),
-                                () => observer.complete(),
-                                );
+                        .map((res: any) => res.json())
+                        .subscribe(
+                        (data: any) => observer.next(data),
+                        (err: any) => this.error(err, req, observer),
+                        () => observer.complete(),
+                    );
                 } else {
-                    this.error({status: 401, message: 'No auth token.'}, req, observer);
+                    this.error({ status: 401, message: 'No auth token.' }, req, observer);
                 }
             });
         });
-     }
+    }
 
     /**
      * Wrapper for Angular 2 HTTP POST with auth
@@ -141,24 +147,24 @@
      * @param  {any}    options (Optional)Request Options
      * @return {Observable} Returns an observable which acts like the Http observable
      */
-     public post(url: string, body?: any, options?: any) {
+    public post(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
             this.processOptions(url, body, options).then((req: any) => {
                 req.type = 'post';
                 if (req.auth) {
                     this.http.post(req.url, req.body, req.options)
-                    .map((res: any) => res.json())
-                    .subscribe(
-                                (data: any) => observer.next(data),
-                                (err: any) => this.error(err, req, observer),
-                                () => observer.complete(),
-                                );
+                        .map((res: any) => res.json())
+                        .subscribe(
+                        (data: any) => observer.next(data),
+                        (err: any) => this.error(err, req, observer),
+                        () => observer.complete(),
+                    );
                 } else {
-                    this.error({status: 401, message: 'No auth token.'}, req, observer);
+                    this.error({ status: 401, message: 'No auth token.' }, req, observer);
                 }
             });
         });
-     }
+    }
 
     /**
      * Wrapper for Angular 2 HTTP PUT with auth
@@ -167,24 +173,24 @@
      * @param  {any}    options (Optional)Request Options
      * @return {Observable} Returns an observable which acts like the Http observable
      */
-     public put(url: string, body?: any, options?: any) {
+    public put(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
             this.processOptions(url, body, options).then((req: any) => {
                 req.type = 'put';
                 if (req.auth) {
                     this.http.put(req.url, req.body, req.options)
-                    .map((res: any) => res.json())
-                    .subscribe(
-                                (data: any) => observer.next(data),
-                                (err: any) => this.error(err, req, observer),
-                                () => observer.complete(),
-                                );
+                        .map((res: any) => res.json())
+                        .subscribe(
+                        (data: any) => observer.next(data),
+                        (err: any) => this.error(err, req, observer),
+                        () => observer.complete(),
+                    );
                 } else {
-                    this.error({status: 401, message: 'No auth token.'}, req, observer);
+                    this.error({ status: 401, message: 'No auth token.' }, req, observer);
                 }
             });
         });
-     }
+    }
 
     /**
      * Wrapper for Angular 2 HTTP DELETE with auth
@@ -192,34 +198,34 @@
      * @param  {any}    options (Optional)Request Options
      * @return {Observable} Returns an observable which acts like the Http observable
      */
-     public delete(url: string, options?: any) {
+    public delete(url: string, options?: any) {
         return new Observable((observer: any) => {
             this.processOptions(url, null, options).then((req: any) => {
                 req.type = 'delete';
                 this.http.delete(req.url, req.options)
-                .map((res: any) => res.json())
-                .subscribe(
-                            (data: any) => observer.next(data),
-                            (err: any) => this.error(err, req, observer),
-                            () => observer.complete(),
-                            );
+                    .map((res: any) => res.json())
+                    .subscribe(
+                    (data: any) => observer.next(data),
+                    (err: any) => this.error(err, req, observer),
+                    () => observer.complete(),
+                );
             });
         });
-     }
+    }
     /**
      * Creates a MD5 hash of the given string
      * @param  {string} str String to hash
      * @return {string}     Returns a hash of the given string
      */
-     public hash(str: string) {
+    public hash(str: string) {
         return Md5.hashStr(str, false) as string;
-     }
+    }
 
     /**
      * Login to the system with the set details
      * @return {Promise<any>} Returns a promise which resolves with an access token
      */
-     public login() {
+    public login() {
         if (this.login_promise === null) {
             COMPOSER.log('COMMS', `Attempting login.`);
             this.login_promise = new Promise((resolve, reject) => {
@@ -227,36 +233,36 @@
             });
         }
         return this.login_promise;
-     }
+    }
 
-     public logout() {
-         this.oAuthService.logOut();
-     }
+    public logout() {
+        this.oAuthService.logOut();
+    }
     /**
      * Get access token
      * @return {string} Returns access token
      */
-     get token() {
-         return this.login();
-     }
+    get token() {
+        return this.login();
+    }
 
-     get hasToken() {
-         if (this.http instanceof MockHttp) {
-             return new Promise<boolean>((resolve) => {
-                 resolve(true);
-             });
-         } else {
-             return this.oAuthService.hasValidAccessToken();
-         }
-     }
+    get hasToken() {
+        if (this.http instanceof MockHttp) {
+            return new Promise<boolean>((resolve) => {
+                resolve(true);
+            });
+        } else {
+            return this.oAuthService.hasValidAccessToken();
+        }
+    }
 
     /**
      * Check whether or not the user is logged in
      * @return {[type]} [description]
      */
-     public isLoggedIn() {
-         return this.token ? true : (this.refresh ? null : false);
-     }
+    public isLoggedIn() {
+        return this.token ? true : (this.refresh ? null : false);
+    }
 
     /**
      * Refreshs access token
@@ -265,20 +271,18 @@
      * @param  {number}
      * @return {void}
      */
-     public refreshToken(resolve: any, reject: any, retries: number = 1) {
-         const oauth: any = this.oAuthService;
-         this.refresh = true;
-         oauth.refresh_url.then((url: any) => {
-             let tokens: any;
-             this.http.post(url, '')
-             .map((res: any) => res.json())
-             .subscribe(
+    public refreshToken(resolve: any, reject: any, retries: number = 1) {
+        const oauth: any = this.oAuthService;
+        this.refresh = true;
+        oauth.refresh_url.then((url: any) => {
+            let tokens: any;
+            this.http.post(url, '')
+                .map((res: any) => res.json())
+                .subscribe(
                 (data: any) => tokens = data,
                 (err: any) => {
-                    const err_codes = [0, 400, 401, 403];
                     // Try refresh with root client ID
-                    if (err && (err_codes.indexOf(err.status)
-                        || (err.status === 0 && err.ok === false))
+                    if (err && err.status === 401
                         && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
 
                         COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
@@ -294,6 +298,9 @@
                                 }, 500 * retries);
                             });
                         });
+                    } else if (err.status === 0) {
+                        COMPOSER.error('COMMS', `Refresh failed with code 0. Headers may be malformed or missing CORS.`);
+                        this.processLoginError(err, reject);
                     } else {
                         this.processLoginError(err, reject);
                     }
@@ -303,52 +310,52 @@
                     setTimeout(() => { this.loginDone(); }, 100);
                 },
             );
-         });
-     }
+        });
+    }
 
     /**
      * Sets whether the user has logged in or not
      * @param  {boolean} status Logged in status
      * @return {void}
      */
-     public setLoginStatus(status: boolean) {
-         const oauth: any = this.oAuthService;
-         if (status === true) {
-             this.store.session.setItem(`${oauth.clientId}_login`, 'true');
-         } else {
-             this.store.session.removeItem(`${oauth.clientId}_login`);
-         }
-     }
+    public setLoginStatus(status: boolean) {
+        const oauth: any = this.oAuthService;
+        if (status === true) {
+            this.store.session.setItem(`${oauth.clientId}_login`, 'true');
+        } else {
+            this.store.session.removeItem(`${oauth.clientId}_login`);
+        }
+    }
     /**
      * Removes all authentication related keys from storage
      * @return {void}
      */
-     public clearStore() {
-         const oauth: any = this.oAuthService;
-         oauth.clearAuth();
-     }
+    public clearStore() {
+        const oauth: any = this.oAuthService;
+        oauth.clearAuth();
+    }
     /**
      * Checks if user is authorised
      * @param  {any}    cb_fn Callback function which is passed the response
      * @return {void}
      */
-     public checkAuth(cb_fn: any) {
-         COMPOSER.log('COMMS', `Checking Auth.`);
-         if (this.login_promise === null) {
-             const parts: any = this.oAuthService.loginUrl.split('/');
-             const uri: any = parts.splice(0, 3).join('/');
-             this.oAuthService.authorizationHeader().then((token: string) => {
-                 const headers = new Headers({ Authorization: (token ? token : '') });
-                 this.http.get(uri + '/auth/oauth/token/info', { headers }).subscribe(
-                      (data: any) => cb_fn(data),
-                      (err: any) => this.processLoginError(err, () => { return; }),
-                      () => { return; },
-                      );
-             });
-         }
-     }
+    public checkAuth(cb_fn: any) {
+        COMPOSER.log('COMMS', `Checking Auth.`);
+        if (this.login_promise === null) {
+            const parts: any = this.oAuthService.loginUrl.split('/');
+            const uri: any = parts.splice(0, 3).join('/');
+            this.oAuthService.authorizationHeader().then((token: string) => {
+                const headers = new Headers({ Authorization: (token ? token : '') });
+                this.http.get(uri + '/auth/oauth/token/info', { headers }).subscribe(
+                    (data: any) => cb_fn(data),
+                    (err: any) => this.processLoginError(err, () => { return; }),
+                    () => { return; },
+                );
+            });
+        }
+    }
 
-     private performLogin(resolve: any, reject: any) {
+    private performLogin(resolve: any, reject: any) {
         if (this.http instanceof MockHttp) {
             this.login_promise = null;
             return resolve('mock_token');
@@ -388,7 +395,7 @@
                                         COMPOSER.log('COMMS', `Refresh token found. Refreshing access token...`);
                                         // Perform refresh
                                         if (oauth.clientId === '') {
-                                            resolve({ message : 'OAuth not setup, retrying after 100ms'});
+                                            resolve({ message: 'OAuth not setup, retrying after 100ms' });
                                             setTimeout(() => {
                                                 this.loginDone();
                                                 this.login();
@@ -436,16 +443,16 @@
                 });
             }
         });
-     }
+    }
 
     /**
      * Called when login is completed
      * @return {void}
      */
-     private loginDone() {
+    private loginDone() {
         this.cleanUrl();
         this.login_promise = null;
-     }
+    }
 
     /**
      * Handles errors when attempting to login
@@ -453,11 +460,11 @@
      * @param  {any}    reject Login Promise reject function
      * @return {void}
      */
-     private processLoginError(err: any, reject: any) {
+    private processLoginError(err: any, reject: any) {
         const oauth: any = this.oAuthService;
         this.storeError('login', err);
         // Clear storage
-        if (err.status === 400 || err.status === 401) {
+        if (err.status === 401) {
             COMPOSER.log('COMMS', `Error with credentials. Getting new credentials...`);
             this.clearStore();
             this.oAuthService.code = undefined;
@@ -467,7 +474,7 @@
             setTimeout(() => { location.reload(); }, 5000);
             setTimeout(() => { this.loginDone(); }, 100);
         }
-     }
+    }
 
     /**
      * Stores last couple errors in localStorage for debugging purposes
@@ -475,7 +482,7 @@
      * @param  {any}     error Error to store
      * @return {void}
      */
-     private storeError(type: string, error: any) {
+    private storeError(type: string, error: any) {
         const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
         const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'NOV', 'DEC'];
         const date = new Date();
@@ -508,14 +515,14 @@
             }
             this.store.local.setItem(`${type}_error`, JSON.stringify(error_list));
         });
-     }
+    }
     /**
      * Replaces old tokens with new
      * @param  {any}    data    Object contain new tokens and expiry
      * @param  {any}    resolve Login resolve function
      * @return {void}
      */
-     private updateToken(data: any, resolve: any) {
+    private updateToken(data: any, resolve: any) {
         const oauth: any = this.oAuthService;
         if (data.access_token) {
             this.store.local.setItem(`${oauth.clientId}_access_token`, data.access_token);
@@ -531,27 +538,27 @@
             resolve();
         }
         setTimeout(() => { this.loginDone(); }, 100);
-     }
+    }
     /**
      * Clean up URL after logging in so that the ugly hash/query is not displayed
      * @return {void}
      */
-     private cleanUrl() {
-         const path = this.loc.path(false);
-         if (location.search.indexOf('access_token') >= 0 || location.search.indexOf('code') >= 0) {
-             this.loc.go(path, '');
-             setTimeout(() => {
-                 this.store.local.removeItem('oauth_redirect');
-                 this.store.local.removeItem('oauth_finished');
-             }, 5000);
-         } else if (path.indexOf('?') >= 0 && (path.indexOf('access_token') >= 0 || path.indexOf('code') >= 0)) {
-             this.loc.go(path.split('?')[0], '');
-             setTimeout(() => {
-                 this.store.local.removeItem('oauth_redirect');
-                 this.store.local.removeItem('oauth_finished');
-             }, 5000);
-         }
-     }
+    private cleanUrl() {
+        const path = this.loc.path(false);
+        if (location.search.indexOf('access_token') >= 0 || location.search.indexOf('code') >= 0) {
+            this.loc.go(path, '');
+            setTimeout(() => {
+                this.store.local.removeItem('oauth_redirect');
+                this.store.local.removeItem('oauth_finished');
+            }, 5000);
+        } else if (path.indexOf('?') >= 0 && (path.indexOf('access_token') >= 0 || path.indexOf('code') >= 0)) {
+            this.loc.go(path.split('?')[0], '');
+            setTimeout(() => {
+                this.store.local.removeItem('oauth_redirect');
+                this.store.local.removeItem('oauth_finished');
+            }, 5000);
+        }
+    }
 
     /**
      * Process HTTP options
@@ -560,45 +567,45 @@
      * @param  {any}    options Request Options
      * @return {any} Returns the details for the request
      */
-     private processOptions(url: string, body?: any, options?: any) {
-         const oauth = this.oAuthService;
-         return this.oAuthService.authorizationHeader().then((auth_header: string) => {
-             const headers = new Headers({ Authorization: auth_header });
-             if (options && options.headers) {
-                 if (options.headers.values) {
-                     const h = options.headers.values();
-                     const k = options.headers.keys();
-                     for (const i in h) {
-                         if (k[i].toLowerCase() !== 'authorization') {
-                             headers.append(k[i], h[i][0]);
-                         }
-                     }
-                 } else {
-                     const keys = Object.keys(options.headers);
-                     for (const key of keys) {
-                         if (key.toLowerCase() !== 'authorization') {
-                             headers.append(key, options.headers[key]);
-                         }
-                     }
-                 }
-             }
-             // Store request info for retry if needed.
-             const req: any = {
-                 type: 'get',
-                 body,
-                 url,
-                 auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
-             };
-             if (!req.options) {
-                 req.options = {
-                     headers,
-                 };
-             } else if (!req.options.headers) {
-                 req.options.headers = headers;
-             }
-             return req;
-         });
-     }
+    private processOptions(url: string, body?: any, options?: any) {
+        const oauth = this.oAuthService;
+        return this.oAuthService.authorizationHeader().then((auth_header: string) => {
+            const headers = new Headers({ Authorization: auth_header });
+            if (options && options.headers) {
+                if (options.headers.values) {
+                    const h = options.headers.values();
+                    const k = options.headers.keys();
+                    for (const i in h) {
+                        if (k[i] && k[i].toLowerCase() !== 'authorization') {
+                            headers.append(k[i], h[i][0]);
+                        }
+                    }
+                } else {
+                    const keys = Object.keys(options.headers);
+                    for (const key of keys) {
+                        if (key.toLowerCase() !== 'authorization') {
+                            headers.append(key, options.headers[key]);
+                        }
+                    }
+                }
+            }
+            // Store request info for retry if needed.
+            const req: any = {
+                type: 'get',
+                body,
+                url,
+                auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
+            };
+            if (!req.options) {
+                req.options = {
+                    headers,
+                };
+            } else if (!req.options.headers) {
+                req.options.headers = headers;
+            }
+            return req;
+        });
+    }
 
     /**
      * Handler for HTTP request errors
@@ -607,44 +614,44 @@
      * @param  {any}    obs Request observable
      * @return {void}
      */
-     private error(err: any, req: any, obs: any) {
+    private error(err: any, req: any, obs: any) {
         const hash = this.hash(req.url + req.body);
         if (!this.retry[hash]) {
             this.retry[hash] = 0;
         }
-        if ((err.status === 401 || (err.status === 0 && err.ok === false)) && this.retry[hash] < 10) {
+        if (err.status === 401 && this.retry[hash] < 10) {
             // Re-authenticate if authentication error.
             setTimeout(() => {
                 this.login()
-                .then((res: any) => {
-                    this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
-                    setTimeout(() => {
-                        this.refresh = false;
-                        if (req.type === 'get' || req.type === 'delete') {
-                            this[req.type](req.url, req.options).subscribe(
-                                (data: any) => obs.next(data),
-                                (retry_err: any) => obs.error(retry_err),
-                                () => { obs.complete(); this.retry[hash] = 0; },
+                    .then((res: any) => {
+                        this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
+                        setTimeout(() => {
+                            this.refresh = false;
+                            if (req.type === 'get' || req.type === 'delete') {
+                                this[req.type](req.url, req.options).subscribe(
+                                    (data: any) => obs.next(data),
+                                    (retry_err: any) => obs.error(retry_err),
+                                    () => { obs.complete(); this.retry[hash] = 0; },
                                 );
-                        } else {
-                            this[req.type](req.url, req.body, req.options).subscribe(
-                              (data: any) => obs.next(data),
-                              (retry_err: any) => obs.error(retry_err),
-                              () => { obs.complete(); this.retry[hash] = 0; },
-                              );
-                        }
-                    }, 500 * this.retry[hash]);
-                }, (retry_err) => {
-                    COMPOSER.error('COMMS', `Error logging in.`, retry_err);
-                    this.clearStore();
-                    location.reload();
-                    this.retry[hash] = 0;
-                });
+                            } else {
+                                this[req.type](req.url, req.body, req.options).subscribe(
+                                    (data: any) => obs.next(data),
+                                    (retry_err: any) => obs.error(retry_err),
+                                    () => { obs.complete(); this.retry[hash] = 0; },
+                                );
+                            }
+                        }, 500 * this.retry[hash]);
+                    }, (retry_err) => {
+                        COMPOSER.error('COMMS', `Error logging in.`, retry_err);
+                        this.clearStore();
+                        location.reload();
+                        this.retry[hash] = 0;
+                    });
             }, 200);
         } else { // Return error
-            COMPOSER.log('COMMS', `Error processing request.`, err);
+            COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
             obs.error(err);
             this.retry[hash] = 0;
         }
-     }
- }
+    }
+}
