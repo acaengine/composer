@@ -40,7 +40,7 @@
      * @return {void}
      */
      public initAuth(resolve: any, reject: any) {
-         COMPOSER.log('Resources', `Loading Authority...`);
+         COMPOSER.log('RESRC', `Loading Authority...`);
          if (this.mock) {
              this.authLoaded = true;
              return resolve();
@@ -58,7 +58,7 @@
              return;
          }
          this.get('Authority').get_authority().then((auth: any) => {
-             COMPOSER.log(`Resources]`, `Authority loaded. Session: ${auth.session === true}`);
+             COMPOSER.log(`RESRC`, `Authority loaded. Session: ${auth.session === true}`);
              if (typeof auth !== 'object') {
                  reject({
                      message: 'Auth details no valid.',
@@ -79,7 +79,7 @@
                  resolve();
              }, 200);
          }, (err: any) => {
-             COMPOSER.error('Resources', 'Error getting authority.', err);
+             COMPOSER.error('RESRC', 'Error getting authority.', err);
              this.http.setupOAuth({
                  loginRedirect: `${uri}/auth/login`,
              });
@@ -271,7 +271,7 @@
      */
      public checkAuth() {
          this.http.checkAuth(() => {
-             COMPOSER.log('Resources', 'Refreshed Auth');
+             COMPOSER.log('RESRC', 'Refreshed Auth');
          });
      }
     /**
@@ -298,7 +298,7 @@
      */
      public get(name: string) {
          if (!this.authLoaded) {
-             COMPOSER.log(`Resources`, `Not ready to perform API requests.`, null, 'warn');
+             COMPOSER.log(`RESRC`, `Not ready to perform API requests.`, null, 'warn');
          }
          return this.factories && this.factories[name] ? this.factories[name] : null;
      }

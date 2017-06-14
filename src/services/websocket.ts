@@ -304,6 +304,7 @@ export class WebSocketInterface {
     private onclose(evt: any) {
         this.connected = false;
         COMPOSER.log('WS', 'Websocket closed');
+        this.connect_promise = null;
         this.io = null;
         this.stopKeepAlive();
     }
