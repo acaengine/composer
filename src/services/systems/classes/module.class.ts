@@ -36,23 +36,29 @@ export class Module {
      */
     public bind(prop: string, cb_fn?: () => void, force: boolean = false) {
         const val = this.get(prop);
-        if (val.bindings <= 0 || force) {
-            const success = this.service.io.bind(this.parent.id, this.id, this.index, prop);
-            if (success) {
-                if (!force) {
-                    val.bindings++;
-                }
+        setTimeout(() => {
+            if (val.bindings > 0) {
+                val.bindings++;
                 val.add_cb_fn(cb_fn);
-                return () => { val.unbind(); };
-            } else {
-                return null;
+                val.bound();
             }
-        } else {
-            val.bindings++;
-            val.add_cb_fn(cb_fn);
-            val.bound();
-            return () => { val.unbind(); };
-        }
+        }, 500);
+        return new Promise<any>((resolve) => {
+            if (val.bindings <= 0 || force) {
+                this.service.io.bind(this.parent.id, this.id, this.index, prop)
+                    .then((data) => {
+                        if (!force) {
+                            val.bindings++;
+                        }
+                        val.add_cb_fn(cb_fn);
+                        resolve(() => { val.unbind(); });
+                    }, (err) => {
+                        resolve(null);
+                    });
+            } else {
+                resolve(() => { val.unbind(); });
+            }
+        });
     }
 
     /**
@@ -105,8 +111,13 @@ export class Module {
     public unbind(prop: string) {
         const val = this.get(prop);
         val.bindings--;
-        if (val.bindings <= 0) {
-            const id = this.service.io.unbind(this.parent.id, this.id, this.index, prop);
+        if (val.bindings <= 1) {
+            this.service.io.unbind(this.parent.id, this.id, this.index, prop)
+                .then((data) => {
+                    return;
+                }, (err) => {
+                    val.bindings++;
+                });
         }
     }
 

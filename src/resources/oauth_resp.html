@@ -10,7 +10,7 @@
         var run_on_load = function() {
             var origin = window.location.origin;
             if(window != window.top && window != window.parent ) {
-                console.log('Not main window/tab.');
+                console.log('[ACA][OAUTH] Not main window/tab.');
                 var message = 'error';
                 if (window.location.hash.indexOf('access_token') !== -1) {
                     message = '{"token":"' + window.location.hash.replace(/^.*access_token=([^&]+).*$/, '$1') +
@@ -22,17 +22,15 @@
                     // Standards based browsers
                     parent.postMessage(message, origin);
                 } catch(e) {
-                    console.error(e);
+                    console.error('[ACA][OAUTH]', e);
                 }
             } else {
-                console.log('Main Window/Tab');
+                console.log('[ACA][OAUTH] Main Window/Tab');
                 var data = window.location.hash ? window.location.hash : window.location.search;
                 var loc = localStorage.getItem('oauth_redirect');
-                console.log(loc);
                 if(loc){
-                    console.log('Redirecting to ' + loc);
+                    console.log('[ACA][OAUTH] Redirecting to ' + loc);
                     if(loc.indexOf('?') >= 0) loc = loc.split('?')[0];
-                    console.log(data);
                     var oauth_data = [];
                     if(data.indexOf('#') >= 0) {
                             // Remove hash if data is a hash

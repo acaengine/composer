@@ -88,7 +88,15 @@ export class WebSocketInterface {
      * @return {number}   Returns the id of the request
      */
     public bind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
-        return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
+        return new Promise<any>((resolve, reject) => {
+            this.sendRequest(BIND, sys_id, mod_id, i, name, null)
+                .then((id) => {
+                    this.requests[id] = {
+                        resolve,
+                        reject,
+                    };
+                });
+        });
     }
 
     /**
@@ -101,7 +109,15 @@ export class WebSocketInterface {
      * @return {number}   Returns the id of the request
      */
     public unbind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
-        return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
+        return new Promise<any>((resolve, reject) => {
+            this.sendRequest(UNBIND, sys_id, mod_id, i, name, null)
+                .then((id) => {
+                    this.requests[id] = {
+                        resolve,
+                        reject,
+                    };
+                });
+        });
     }
 
     /**
@@ -115,11 +131,13 @@ export class WebSocketInterface {
      */
     public exec(sys_id: string, mod_id: string, i: number, fn: any, args: any) {
         return new Promise<any>((resolve, reject) => {
-            const id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
-            this.requests[id] = {
-                resolve,
-                reject,
-            };
+            this.sendRequest(EXEC, sys_id, mod_id, i, fn, args)
+                .then((id) => {
+                    this.requests[id] = {
+                        resolve,
+                        reject,
+                    };
+                });
         });
     }
 
@@ -336,7 +354,7 @@ export class WebSocketInterface {
                 meta_list = `${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
             }
             if (msg.type === ERROR) {
-                COMPOSER.error('WS', `[COMPOSER][WS] Received error(${msg.id}). ${msg.msg}`);
+                COMPOSER.error('WS', `Received error(${msg.id}). ${msg.msg}`);
             } else if (msg.type === NOTIFY) {
                 COMPOSER.log(`WS`, `Received notify. ${meta_list} →`, msg.value);
             } else {
@@ -402,47 +420,51 @@ export class WebSocketInterface {
      * @return {any} Returns the id of the request made through the websocket.
      */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []): any {
-        if (!this.io || this.io.readyState !== this.io.OPEN) {
-            if (!WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]) {
-                WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
-            }
-            return this.connect().then(() => {
-                setTimeout(() => {
-                    return this.sendRequest(type, system, mod, index, name, args);
-                }, 200);
-                WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
-            }, (err: any) => {
-                const error = err ? err.message : 'No error message';
-                COMPOSER.log('WS', `Failed to connect(${type}, ${name}). ${error}`);
-                WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]++;
-                if (WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] > 10) {
-                    return -1;
+        return new Promise<any>((resolve) => {
+            if (!this.io || this.io.readyState !== this.io.OPEN) {
+                if (!WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]) {
+                    WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
                 }
-                setTimeout(() => {
-                    return this.sendRequest(type, system, mod, index, name, args);
-                }, 500 * WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]);
-            });
-        }
-        this.req_id += 1;
-        if (!(args instanceof Array)) {
-            args = [args];
-        }
-        const request = {
-            id: this.req_id,
-            cmd: type,
-            sys: system,
-            mod,
-            index,
-            name,
-            args,
-        };
-        COMPOSER.log('WS', `Sent ${type} request(${request.id}). ${system}, ${mod}, ${index}, ${name}`, args);
-        if (args !== null) {
-            request.args = args;
-        }
-        this.io.send(JSON.stringify(request));
-
-        return this.req_id;
+                this.connect().then(() => {
+                    setTimeout(() => {
+                        this.sendRequest(type, system, mod, index, name, args)
+                            .then((id) => { resolve(id); });
+                    }, 200);
+                    WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
+                }, (err: any) => {
+                    const error = err ? err.message : 'No error message';
+                    COMPOSER.log('WS', `Failed to connect(${type}, ${name}). ${error}`);
+                    WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]++;
+                    if (WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] > 10) {
+                        resolve(-1);
+                    }
+                    setTimeout(() => {
+                        this.sendRequest(type, system, mod, index, name, args)
+                            .then((id) => { resolve(id); });
+                    }, 500 * WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]);
+                });
+                return;
+            }
+            this.req_id += 1;
+            if (!(args instanceof Array)) {
+                args = [args];
+            }
+            const request = {
+                id: this.req_id,
+                cmd: type,
+                sys: system,
+                mod,
+                index,
+                name,
+                args,
+            };
+            COMPOSER.log('WS', `Sent ${type} request(${request.id}). ${system}, ${mod}, ${index}, ${name}`, args);
+            if (args !== null) {
+                request.args = args;
+            }
+            this.io.send(JSON.stringify(request));
+            resolve(request.id);
+        });
     }
 
 }

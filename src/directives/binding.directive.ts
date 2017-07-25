@@ -85,7 +85,7 @@ export class Binding {
             this.getBinding();
         }
         // Execute function has changed
-        if (this.init && this.prev_exec !== this.exec && this.bind && this.bind !== '') {
+        if (this.init && this.exec && this.prev_exec && this.prev_exec !== this.exec && this.bind && this.bind !== '') {
             if (this.ignore <= 0) {
                 COMPOSER.log('Binding', `${this.id}: Execute function changed. ${this.prev_exec} → ${this.exec}`);
                 this.call_exec();
@@ -111,6 +111,7 @@ export class Binding {
             setTimeout(() => {
                 this.prev = this.value;
                 this.init = true;
+                this.prev_exec = this.exec;
             }, 100);
         }
     }
@@ -233,17 +234,19 @@ export class Binding {
      * @return {void}
      */
     private cleanModule() {
-        const mod = this.mod.split('_');
-        const index = mod.pop();
-        if (isNaN(+index)) {
-            mod.push(index);
-            if (!this.index || this.index <= 0) {
-                this.index = 1;
+        if (this.mod) {
+            const mod = this.mod.split('_');
+            const index = mod.pop();
+            if (isNaN(+index)) {
+                mod.push(index);
+                if (!this.index || this.index <= 0) {
+                    this.index = 1;
+                }
+            } else {
+                this.index = +index;
             }
-        } else {
-            this.index = +index;
+            this.module_id = mod.join('_');
         }
-        this.module_id = mod.join('_');
     }
 
     /**
@@ -307,19 +310,21 @@ export class Binding {
             this.unbind();
         }
         this.binding = this.module.get(this.bind);
-        this.unbind = this.module.bind(this.bind, (curr: any, prev: any) => {
+        this.module.bind(this.bind, (curr: any, prev: any) => {
             // Changes to local value
             this.valueChange.emit(curr);
+        }).then((unbind) => {
+            this.unbind = unbind;
+            this.value = this.binding.current;
+            this.prev = this.value;
+            const msg = `${this.id}: Binding to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
+            COMPOSER.log('Binding', msg);
+            if (this.unbind === null) {
+                setTimeout(() => {
+                    this.getBinding();
+                }, 200);
+            }
         });
-        this.value = this.binding.current;
-        this.prev = this.value;
-        const msg = `${this.id}: Binding to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
-        COMPOSER.log('Binding', msg);
-        if (this.unbind === null) {
-            setTimeout(() => {
-                this.getBinding();
-            }, 200);
-        }
     }
 
 }

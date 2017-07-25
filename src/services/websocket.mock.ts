@@ -107,7 +107,15 @@
      * @return {number}   Returns the id of the request
      */
      public bind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
-         return this.sendRequest(BIND, sys_id, mod_id, i, name, null);
+        return new Promise<any>((resolve, reject) => {
+            this.sendRequest(BIND, sys_id, mod_id, i, name, null)
+                .then((id) => {
+                    this.requests[id] = {
+                        resolve,
+                        reject,
+                    };
+                });
+        });
      }
 
     /**
@@ -120,7 +128,15 @@
      * @return {number}   Returns the id of the request
      */
      public unbind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
-         return this.sendRequest(UNBIND, sys_id, mod_id, i, name, null);
+        return new Promise<any>((resolve, reject) => {
+            this.sendRequest(UNBIND, sys_id, mod_id, i, name, null)
+                .then((id) => {
+                    this.requests[id] = {
+                        resolve,
+                        reject,
+                    };
+                });
+        });
      }
 
     /**
@@ -206,7 +222,9 @@
          return;
         /*
         if (this.io === null || this.io.readyState === this.io.CLOSED) {
-            if(COMPOSER.get('debug')) console.debug('[COMPOSER][WS(M)] Reconnecting...');
+            if(COMPOSER.get('debug')) {
+                COMPOSER.log('WS(M)' 'Reconnecting...');
+            }
             this.connect();
             this.reconnected = true;
         }
@@ -294,34 +312,38 @@
      * @return {any} Returns the id of the request made through the websocket.
      */
      private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any[] = []): any {
-         if (!this.connected) {
-             COMPOSER.log('WS(M)', 'Not connected to websocket. Attempting to connect to websocket');
-             return this.connect().then(() => {
-                 setTimeout(() => {
-                     return this.sendRequest(type, system, mod, index, name, args);
-                 }, 200);
-             }, () => -1);
-         }
-         this.req_id += 1;
-         if (!(args instanceof Array)) {
-             args = [args];
-         }
-         const request = {
-             id:     this.req_id,
-             cmd:    type,
-             sys:    system,
-             mod,
-             index,
-             name,
-             args,
-         };
-         COMPOSER.log('WS(M)', `Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
-         if (args !== null) { request.args = args; }
-         setTimeout(() => {
-             this.respondTo(type, request);
-         }, 200);
+         return new Promise<number>((resolve) => {
+            if (!this.connected) {
+                COMPOSER.log('WS(M)', 'Not connected to websocket. Attempting to connect to websocket');
+                return this.connect().then(() => {
+                    setTimeout(() => {
+                        this.sendRequest(type, system, mod, index, name, args).then((id) => {
+                            resolve(id);
+                        });
+                    }, 200);
+                }, () => -1);
+            }
+            this.req_id += 1;
+            if (!(args instanceof Array)) {
+                args = [args];
+            }
+            const request = {
+                id:     this.req_id,
+                cmd:    type,
+                sys:    system,
+                mod,
+                index,
+                name,
+                args,
+            };
+            COMPOSER.log('WS(M)', `Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
+            if (args !== null) { request.args = args; }
+            setTimeout(() => {
+                this.respondTo(type, request);
+            }, 200);
 
-         return this.req_id;
+            resolve(this.req_id);
+         })
      }
     /**
      * Imitates a status variable change on the server
