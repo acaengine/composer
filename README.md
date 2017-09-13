@@ -73,7 +73,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import { RouterModule } from '@angular/router';
 import { WorkerAppModule, WORKER_APP_LOCATION_PROVIDERS } from '@angular/platform-webworker';
-import { ACA_COMPOSER_MODULE, DataStoreService, DataStoreWorkerService } from '@aca-1/a2-composer';
+import { ACA_COMPOSER_MODULE, DataStoreService, DataStoreWorkerService } from '@acaprojects/a2-composer';
 
 @NgModule({
   bootstrap: [ AppComponent ],
