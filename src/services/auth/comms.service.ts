@@ -619,7 +619,8 @@ export class CommsService {
         if (!this.retry[hash]) {
             this.retry[hash] = 0;
         }
-        if (err.status === 401 && this.retry[hash] < 10) {
+        COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}.`);
+        if ((!err || err.status === 401) && this.retry[hash] < 5) {
             // Re-authenticate if authentication error.
             setTimeout(() => {
                 this.login()
@@ -640,14 +641,23 @@ export class CommsService {
                                     () => { obs.complete(); this.retry[hash] = 0; },
                                 );
                             }
-                        }, 500 * this.retry[hash]);
+                        }, 300 * this.retry[hash]);
                     }, (retry_err) => {
                         COMPOSER.error('COMMS', `Error logging in.`, retry_err);
                         this.clearStore();
-                        location.reload();
+                        setTimeout(() => {
+                            location.reload();
+                        }, 200);
                         this.retry[hash] = 0;
                     });
             }, 200);
+        } else if ((!err || err.status === 401)) {
+            COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
+            this.clearStore();
+            setTimeout(() => {
+                location.reload();
+            }, 200);
+            this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
             obs.error(err);

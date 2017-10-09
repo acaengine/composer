@@ -10,7 +10,7 @@ import { COMPOSER } from '../../../settings';
 export class MockRequestHandler {
     private handlers: any = {};
 
-    public register(url: string, data: any, fn?: (handler) => any) {
+    public register(url: string, data: any, fn?: (handler: any) => any) {
         const parts = url.split('/');
         const params: string[] = [];
         for (const i of parts) {
@@ -26,6 +26,14 @@ export class MockRequestHandler {
             fn,
         };
         COMPOSER.log(`HTTP(M)`, `Registered handler for url "${url}"`);
+    }
+
+    public unregister(url: string) {
+        if (this.handlers[url]) {
+            this.handlers[url] = null;
+            delete this.handlers[url];
+            COMPOSER.log(`HTTP(M)`, `Unregistered handler for url "${url}"`);
+        }
     }
 
     public response(method: string, url: string, fragment?: any) {
@@ -44,7 +52,7 @@ export class MockRequestHandler {
                     resp = handler.data;
                 }
                 COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, resp);
-                return resp;
+                return resp || {};
             } else {
                 const error = {
                     status: 404,
@@ -80,7 +88,7 @@ export class MockRequestHandler {
             if (this.handlers.hasOwnProperty(h) &&
                 this.handlers[h].route_params &&
                 this.handlers[h].route_params.length > 0) {
-                const handler = this.handlers[h];
+                const handler: any = this.handlers[h];
                 let count = 0;
                 for (let i = 0; i < handler.parts.length; i++) {
                     const p = handler.parts[i];

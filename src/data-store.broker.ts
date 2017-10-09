@@ -33,6 +33,16 @@ export class DataStoreBroker {
             DataStoreBroker.broker.registerMethod('localStorage_removeItem', [PRIMITIVE], (key: string) => {
                 return new Promise<any>((res) => res(localStorage.removeItem(key)));
             }, PRIMITIVE);
+            // Register LocalStorage keys function
+            DataStoreBroker.broker.registerMethod('localStorage_keys', [PRIMITIVE], (key: string) => {
+                return new Promise<any>((res) => {
+                    const keys: string[] = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        keys.push(localStorage.key(i));
+                    }
+                    res(keys);
+                });
+            }, PRIMITIVE);
         }
     }
 
@@ -47,9 +57,15 @@ export class DataStoreBroker {
                (key: string, value: string) => {
                 return new Promise<any>((res) => res(sessionStorage.setItem(key, value)));
             }, PRIMITIVE);
-            // Register SessionStorage removeItem function
-            DataStoreBroker.broker.registerMethod('sessionStorage_removeItem', [PRIMITIVE], (key: string) => {
-                return new Promise<any>((res) => res(sessionStorage.removeItem(key)));
+            // Register SessionStorage keys function
+            DataStoreBroker.broker.registerMethod('sessionStorage_keys', [PRIMITIVE], (key: string) => {
+                return new Promise<any>((res) => {
+                    const keys: string[] = [];
+                    for (let i = 0; i < sessionStorage.length; i++) {
+                        keys.push(sessionStorage.key(i));
+                    }
+                    res(keys);
+                });
             }, PRIMITIVE);
         }
     }

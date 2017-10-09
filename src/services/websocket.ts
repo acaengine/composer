@@ -32,6 +32,7 @@ export class WebSocketInterface {
     private end_point: string; //
     private serv: any; // Parent service
     private req_id = 0;
+    private session_id: string = '';
     private uri: string;
     private connected = false; // Is Websocker connected
     private keepAliveInterval: any;
@@ -43,6 +44,7 @@ export class WebSocketInterface {
     private fixed: boolean = false;
 
     constructor(srv: any, auth: any, fixed: boolean = false, host?: string, port?: string) {
+        this.session_id = Math.floor(Math.random() * 89999 + 10000).toString();
         if (!host) {
             host = location.hostname;
         }
@@ -73,7 +75,7 @@ export class WebSocketInterface {
         }
         this.auth = auth;
         const prot = (protocol === 'https:' ? 'wss://' : 'ws://');
-        const use_port = (port === '80' || port === '443' ? '' : (':' + port));
+        const use_port = (port === '80' || port === '443' || !port ? '' : (':' + port));
         this.end_point = prot + host + use_port;
         this.uri = this.end_point + '/control/websocket';
     }
@@ -257,9 +259,6 @@ export class WebSocketInterface {
                         };
                     }
                 }
-                if (!this.connect_check) {
-                    this.connect_check = setInterval(() => { this.reconnect(); }, RECONNECT_TIMER);
-                }
             });
         }
         return this.connect_promise;
@@ -270,7 +269,7 @@ export class WebSocketInterface {
      * @return {void}
      */
     private reconnect() {
-        if (this.io === null || this.io.readyState === this.io.CLOSED) {
+        if (this.io === null || this.io.readyState === this.io.CLOSED && !this.connect_promise) {
             COMPOSER.log('WS', 'Reconnecting websocket...');
             this.connect().then(() => {
                 this.serv.rebind();
@@ -312,6 +311,9 @@ export class WebSocketInterface {
             this.serv.rebind();
         }
         this.reconnected = false;
+        if (!this.connect_check) {
+            this.connect_check = setInterval(() => { this.reconnect(); }, RECONNECT_TIMER);
+        }
     }
 
     /**
@@ -450,7 +452,7 @@ export class WebSocketInterface {
                 args = [args];
             }
             const request = {
-                id: this.req_id,
+                id: `${this.session_id}_${this.req_id}`,
                 cmd: type,
                 sys: system,
                 mod,

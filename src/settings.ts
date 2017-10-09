@@ -63,9 +63,17 @@ export class COMPOSER {
             const clr = color ? color : '#009688';
             const COLOURS = ['color: #0288D1', `color:${clr}`, 'color:rgba(0,0,0,0.87)'];
             if (args) {
-                console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, ...COLOURS, args);
+                if (COMPOSER.hasColours()) {
+                    console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, ...COLOURS, args);
+                } else {
+                    console[out](`[COMPOSER][${type}] ${msg}`, args);
+                }
             } else {
-                console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, ...COLOURS);
+                if (COMPOSER.hasColours()) {
+                    console[out](`%c[COMPOSER]%c[${type}] %c${msg}`, ...COLOURS);
+                } else {
+                    console[out](`[COMPOSER][${type}] ${msg}`);
+                }
             }
         }
     }
@@ -76,8 +84,22 @@ export class COMPOSER {
 
     public static version(version: string, build: string, out: any = 'debug') {
         const COLOURS = ['color: #f44336', `color: #9c27b0`, 'color:rgba(0,0,0,0.87)'];
-        console[out](`%c[ACA]%c[LIBRARY] %cComposer - Version: ${version} | Build: ${build}`, ...COLOURS);
+        if (COMPOSER.hasColours()) {
+            console[out](`%c[ACA]%c[LIBRARY] %cComposer - Version: ${version} | Build: ${build}`, ...COLOURS);
+        } else {
+            console[out](`[ACA][LIBRARY] Composer - Version: ${version} | Build: ${build}`);
+        }
     }
+
+    private static hasColours() {
+        const doc = document as any;
+        return !(doc.documentMode || /Edge/.test(navigator.userAgent));
+    }
+
+    constructor() {
+        throw new Error('This class is static');
+    }
+
 }
 
 setTimeout(() => {

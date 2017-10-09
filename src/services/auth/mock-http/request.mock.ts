@@ -33,7 +33,8 @@
          return new Observable((observer) => {
              setTimeout(() => {
                  const res = MOCK_REQ_HANDLER.response(this.method, this.url, this.fragments);
-                 if (res.status === 400 || res.status === 404) {
+                 console.log(this.method, this.url, res);
+                 if (!res || res.status === 400 || res.status === 404) {
                      observer.error(res);
                  } else {
                      observer.next(res);

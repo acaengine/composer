@@ -56,7 +56,12 @@ export class DataStoreWorkerService extends DataStoreService {
 
     protected keys(type: string) {
         return new Promise<any>((resolve, reject) => {
-            resolve([]);
+            if (this.broker) {
+                const exec = `${type === 'local' ? 'localStorage' : 'sessionStorage'}_keys`;
+                this.execOnUI(exec, []).then((result: string) => {
+                    resolve(result);
+                });
+            }
         });
     }
 
