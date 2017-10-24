@@ -11,7 +11,7 @@ import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
 
 import * as sha256 from 'fast-sha256';
-import { Observable } from 'rxjs/Observable';
+import { Subject } from 'rxjs';
 
 import { COMPOSER } from '../../settings';
 import { DataStoreService } from '../data-store.service';
@@ -35,9 +35,8 @@ export class OAuthService {
     public refreshUri = '';
     public code: string;
     public login_local: boolean = false;
-    public login_obs: any = null;
+    public login_obs: Subject<boolean>;
     public simple: boolean = false;
-    private _login_obs: any = null;
     private debug: boolean = false;
     private _storage: string = 'local';
     private run_flow: boolean = false;
@@ -50,9 +49,7 @@ export class OAuthService {
     private auth_header_promise: any = null;
 
     constructor(private location: Location, private store: DataStoreService) {
-        this.login_obs = new Observable((observer) => {
-            this._login_obs = observer;
-        });
+        this.login_obs = new Subject<boolean>();
     }
 
     /**
@@ -88,7 +85,7 @@ export class OAuthService {
 
     public needsLogin() {
         setTimeout(() => {
-            this._login_obs.next(this.needs_login);
+            this.login_obs.next(this.needs_login);
         }, 200);
         return this.login_obs;
     }
@@ -401,7 +398,7 @@ export class OAuthService {
                     COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
                     this.needs_login = true;
                     if (this.login_local) {
-                        this._login_obs.next(this.needs_login);
+                        this.login_obs.next(this.needs_login);
                         this.run_flow = false;
                     } else {
                         this.store.session.setItem(`${this.clientId}_login`, 'true');

@@ -11,7 +11,7 @@ import { Location } from '@angular/common';
 import { Inject, Injectable, Injector, ReflectiveInjector, Renderer } from '@angular/core';
 import { Headers, Http } from '@angular/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
+import { Observable, Subject } from 'rxjs';
 
 import { Md5 } from 'ts-md5/dist/md5';
 import { COMPOSER } from '../../settings';
