@@ -6,7 +6,6 @@
  */
 
 import { Inject, Injectable, PlatformRef, ReflectiveInjector } from '@angular/core';
-import { ClientMessageBrokerFactory, FnArg, PRIMITIVE, UiArguments } from '@angular/platform-webworker';
 
 @Injectable()
 export class DataStoreService {

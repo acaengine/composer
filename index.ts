@@ -7,4 +7,4 @@
  * @Last modified time: 25/01/2017 8:14 AM
  */
 
- export * from './_build';
+ export * from './_build/composer.module';

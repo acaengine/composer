@@ -9,12 +9,27 @@ import { Observable } from 'rxjs/Observable';
 
 export class COMPOSER {
     public static var_list: string[] = ['debug'];
+
     public static data: any = {};
     public static obs: any = {};
     public static _obs: any = {};
 
+    public static init() {
+        setTimeout(() => {
+            COMPOSER.loadSettings();
+            COMPOSER.timer = setInterval(() => {
+                COMPOSER.load_count++;
+                COMPOSER.loadSettings();
+                if (COMPOSER.load_count > 10) {
+                    clearInterval(COMPOSER.timer);
+                    COMPOSER.timer = null;
+                }
+            }, 1000);
+        }, 50);
+    }
+
     public static get(name: string) {
-        return this.data[name];
+        return this.data[name] || null;
     }
 
     public static observe(var_name: string) {
@@ -85,11 +100,14 @@ export class COMPOSER {
     public static version(version: string, build: string, out: any = 'debug') {
         const COLOURS = ['color: #f44336', `color: #9c27b0`, 'color:rgba(0,0,0,0.87)'];
         if (COMPOSER.hasColours()) {
-            console[out](`%c[ACA]%c[LIBRARY] %cComposer - Version: ${version} | Build: ${build}`, ...COLOURS);
+            console[out](`%c[ACA]%c[LIBRARY] %cComposer - v${version} | b${build}`, ...COLOURS);
         } else {
-            console[out](`[ACA][LIBRARY] Composer - Version: ${version} | Build: ${build}`);
+            console[out](`[ACA][LIBRARY] Composer - v${version} | b${build}`);
         }
     }
+
+    private static timer: any = null;
+    private static load_count: number = 0;
 
     private static hasColours() {
         const doc = document as any;
@@ -102,9 +120,4 @@ export class COMPOSER {
 
 }
 
-setTimeout(() => {
-    COMPOSER.loadSettings();
-    setInterval(() => {
-        COMPOSER.loadSettings();
-    }, 1000);
-}, 50);
+COMPOSER.init();

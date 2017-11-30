@@ -7,7 +7,11 @@
  * @Last modified time: 25/01/2017 1:36 PM
  */
 
- import { watch, unwatch } from 'watch-object';
+ import * as WatchObject from 'watch-object';
+
+ const watcher = WatchObject;
+ const watch = watcher.watch;
+ const unwatch = watcher.unwatch;
 
  const BIND   = 'bind';
  const UNBIND = 'unbind';

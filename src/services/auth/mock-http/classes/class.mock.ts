@@ -5,8 +5,6 @@
  * @Last Modified time: 2017-05-02 11:14:23
  */
 
- import * as faker from 'faker';
-
  const CHAR_LIST = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV';
 
  export class MockClass {
@@ -14,7 +12,7 @@
      public name: string = '';
 
      constructor() {
-         this.name = faker.commerce.department() + ' ' + faker.company.bsNoun();
+         this.name = 'Bob' + Math.floor(Math.random() * 89999 + 10000);
      }
 
      public match(value: any, field?: string) {

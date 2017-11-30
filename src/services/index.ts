@@ -9,7 +9,7 @@
 
  // Import all services
  import { ACA_AUTH_PROVIDERS } from './auth';
- import { DataStoreWorkerService } from './data-store-worker.service';
+ // import { DataStoreWorkerService } from './data-store-worker.service';
  import { DataStoreService } from './data-store.service';
  import { ComposerDebugService } from './debug.service';
  import { Resources } from './resources';
@@ -19,7 +19,7 @@
  export * from './auth';
  export * from './systems';
  export * from './data-store.service';
- export * from './data-store-worker.service';
+ // export * from './data-store-worker.service';
 
  declare const WorkerGlobalScope: any;
 

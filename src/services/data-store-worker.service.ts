@@ -4,9 +4,9 @@
  * @Last Modified by:   Alex Sorafumo
  * @Last Modified time: 2017-05-02 11:30:53
  */
-
+/*
 import { Injectable } from '@angular/core';
-import { ClientMessageBrokerFactory, FnArg, PRIMITIVE, UiArguments } from '@angular/platform-webworker';
+import { ClientMessageBrokerFactory, FnArg, SerializerTypes, UiArguments } from '@angular/platform-webworker';
 
 import { DataStoreService } from './data-store.service';
 
@@ -70,10 +70,10 @@ export class DataStoreWorkerService extends DataStoreService {
             if (this.broker) {
                 const argments = [];
                 for (const arg of args) {
-                    argments.push(new FnArg(arg, PRIMITIVE));
+                    argments.push(new FnArg(arg, SerializerTypes.PRIMITIVE));
                 }
                 const method = new UiArguments(fn, argments);
-                this.broker.runOnService(method, PRIMITIVE).then((result: string) => {
+                this.broker.runOnService(method, SerializerTypes.PRIMITIVE).then((result: string) => {
                     resolve(result);
                 });
             } else {
