@@ -6,7 +6,10 @@
     "lib": {
         "entryFile": "src/public_api.ts",
         "externals": {
-            "moment": "moment"
+            "moment": "moment",
+            "watch-object": "watch-object",
+            "ts-md5": "ts-md5",
+            "fast-sha256": "fast-sha256"
         }
     }
 }
