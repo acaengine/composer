@@ -8,7 +8,7 @@
  */
 
 import { Location } from '@angular/common';
-import { Inject, Injectable, Injector, Renderer } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject } from 'rxjs';
@@ -16,7 +16,7 @@ import { Observable, Subject } from 'rxjs';
 import { Md5 } from 'ts-md5/dist/md5';
 import { COMPOSER } from '../../settings';
 import { DataStoreService } from '../data-store.service';
-import { MockHttp } from './mock-http';
+import { MockHttp } from './mock-http/http.mock';
 import { OAuthService } from './oauth2.service';
 
 const MAX_ERROR_COUNT = 5;
@@ -36,13 +36,15 @@ export class CommsService {
         'clientId', 'issuer', 'scope', 'oidc', 'logoutUrl', 'login_local',
     ];
 
-    constructor(private route: ActivatedRoute,
+    constructor(
+        private route: ActivatedRoute,
         private router: Router,
         private http_service: HttpClient,
         private oAuthService: OAuthService,
         private store: DataStoreService,
         private loc: Location,
-        private injector: Injector) {
+        private injector: Injector
+    ) {
         this.http = this.http_service;
         store.local.getItem('trust').then((value: string) => {
             this.trust = (value === 'true');
@@ -56,7 +58,7 @@ export class CommsService {
                 this.oAuthService.logOut();
             }
         });
-        this.oAuthService.tryLogin().then(() => { return; }, () => { return; });
+        this.oAuthService.tryLogin().then(() => null, () => null);
     }
 
     /**
@@ -112,7 +114,7 @@ export class CommsService {
     }
 
     public needsLogin() {
-        return this.oAuthService.needsLogin();
+        // return this.oAuthService.needsLogin();
     }
 
     /**
@@ -224,7 +226,7 @@ export class CommsService {
         if (this.login_promise === null) {
             COMPOSER.log('COMMS', `Attempting login.`);
             this.login_promise = new Promise((resolve, reject) => {
-                this.performLogin(resolve, reject);
+                // this.performLogin(resolve, reject);
             });
         }
         return this.login_promise;
@@ -242,13 +244,14 @@ export class CommsService {
     }
 
     get hasToken() {
-        if (this.http instanceof MockHttp) {
-            return new Promise<boolean>((resolve) => {
+        return new Promise((resolve, reject) => {
+            if (this.http instanceof MockHttp) {
                 resolve(true);
-            });
-        } else {
-            return this.oAuthService.hasValidAccessToken();
-        }
+            } else {
+                this.oAuthService.hasValidAccessToken()
+                    .then(() => resolve(true), () => resolve(false));
+            }
+        });
     }
 
     /**
@@ -563,35 +566,32 @@ export class CommsService {
      * @return {any} Returns the details for the request
      */
     private processOptions(url: string, body?: any, options?: any) {
-        const oauth = this.oAuthService;
-        return this.oAuthService.authorizationHeader().then((auth_header: string) => {
+        return new Promise((resolve, reject) => {
+            const oauth = this.oAuthService;
             const headers = new HttpHeaders();
-            headers.set('Authorization', auth_header);
-            if (options && options.headers) {
-                if (options.headers instanceof HttpHeaders) {
-                    const keys = options.headers.keys();
-                    for (const k of keys) {
-                        if (k && k.toLowerCase() !== 'authorization') {
-                            headers.set(k, options.headers.get(k));
+            this.oAuthService.authorizationHeader().then((auth_header: string) => {
+                headers.set('Authorization', auth_header);
+                if (options && options.headers) {
+                    if (options.headers instanceof HttpHeaders) {
+                        const keys = options.headers.keys();
+                        for (const k of keys) {
+                            if (k && k.toLowerCase() !== 'authorization') {
+                                headers.set(k, options.headers.get(k));
+                            }
                         }
                     }
                 }
-            }
-            // Store request info for retry if needed.
-            const req: any = {
-                type: 'get',
-                body,
-                url,
-                auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
-            };
-            if (!req.options) {
-                req.options = {
-                    headers,
+                // Store request info for retry if needed.
+                const req: any = {
+                    type: 'get',
+                    body,
+                    url,
+                    auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
                 };
-            } else if (!req.options.headers) {
-                req.options.headers = headers;
-            }
-            return req;
+                if (!req.options) { req.options = { headers }; }
+                else if (!req.options.headers) { req.options.headers = headers; }
+                resolve(req);
+            });
         });
     }
 

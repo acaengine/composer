@@ -4,9 +4,8 @@
     "dest": "dist",
     "workingDirectory": ".ng_build",
     "lib": {
-        "entryFile": "src/public_api.ts",
+        "entryFile": "lib/src/public_api.ts",
         "externals": {
-            "moment": "moment",
             "watch-object": "watch-object",
             "ts-md5": "ts-md5",
             "fast-sha256": "fast-sha256"

@@ -7,7 +7,7 @@
  * @Last modified time: 06/02/2017 11:28 AM
  */
 
-import { APP_BASE_HREF, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { NgModule, ModuleWithProviders } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
 // import { ClientMessageBrokerFactory, WorkerAppModule } from '@angular/platform-webworker';
@@ -50,8 +50,8 @@ import { COMPOSER } from './settings';
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private version: string = '0.7.0';
-    private build: string = '2017-10-29.v1';
+    private version: string = '0.7.2';
+    private build: string = '2017-12-15.v1';
 
     constructor() {
         if (!ComposerModule.init) {

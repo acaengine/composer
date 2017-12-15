@@ -52,7 +52,15 @@ export class MockRequestHandler {
                     resp = handler.data;
                 }
                 COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, resp);
-                return resp || {};
+                if (!resp) {
+                    resp = {
+                        status: 404,
+                        code: 404,
+                        message: 'Requested resource was not found.',
+                        data: {},
+                    };
+                }
+                return resp;
             } else {
                 const error = {
                     status: 404,

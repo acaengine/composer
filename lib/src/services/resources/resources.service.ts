@@ -13,7 +13,6 @@
 
  import { COMPOSER } from '../../settings';
  import { CommsService } from '../auth/comms.service';
- import { ComposerDebugService } from '../debug.service';
  import { COMMON } from './common';
  import { ResourceFactory } from './resource-factory.class';
 
@@ -25,13 +24,9 @@
      private auth_promise: any = null;
      private mock: boolean = false;
 
-     constructor(public http: CommsService, private http_unauth: HttpClient, private debug: ComposerDebugService) {
-         debug.services.resources = this;
-     }
+     constructor(public http: CommsService, private http_unauth: HttpClient) { }
 
-     get is_ready() {
-         return this.http.hasToken;
-     }
+     get is_ready() { return this.http.hasToken; }
 
     /**
      * Initialises authentication details and sets up OAuth

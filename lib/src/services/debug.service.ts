@@ -1,26 +1,28 @@
 /*
 * @Author: Alex Sorafumo
 * @Date:   2017-05-12 14:08:53
-* @Last Modified by:   Alex Sorafumo
-* @Last Modified time: 2017-05-12 15:19:49
+ * @Last Modified by: Alex Sorafumo
+ * @Last Modified time: 2017-12-15 09:30:32
 */
 
 import { Injectable } from '@angular/core';
 
 import { COMPOSER } from '../settings';
-import { CommsService } from './auth';
-import { SystemsService } from './systems';
+import { CommsService } from './auth/comms.service';
+import { SystemsService } from './systems/systems.service';
+import { ResourcesService } from './resources/resources.service';
 
 @Injectable()
 export class ComposerDebugService {
     public services: any = {};
 
-    constructor() {
+    constructor(private systems: SystemsService, private resources: ResourcesService, private comms: CommsService) {
+        this.services.systems = systems;
+        this.services.resources = resources;
+        this.services.comms = comms;
         COMPOSER.log('DEBUG', 'Injected');
         let win = self as any;
-        if (!win.$aca) {
-            win.$aca = {};
-        }
+        if (!win.$aca) { win.$aca = {}; }
         win.$aca.composer = this;
     }
 

@@ -1,11 +1,11 @@
 /*
  * @Author: Alex Sorafumo
  * @Date:   2017-03-09 09:05:57
- * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 11:23:04
+ * @Last Modified by: Alex Sorafumo
+ * @Last Modified time: 2017-12-15 09:33:25
  */
 
-import { Inject, Injectable, PlatformRef, ReflectiveInjector } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 @Injectable()
 export class DataStoreService {
@@ -115,13 +115,8 @@ export class DataStoreService {
         };
     }
 
-    get local() {
-        return this.store.local;
-    }
-
-    get session() {
-        return this.store.session;
-    }
+    get local() { return this.store.local; }
+    get session() { return this.store.session; }
 
     protected getItem(type: string, key: string): Promise<string> {
         return new Promise<string>((resolve) => {

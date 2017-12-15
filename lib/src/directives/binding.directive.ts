@@ -7,7 +7,7 @@
  * @Last modified time: 03/02/2017 1:08 PM
  */
 
-import { Directive, ElementRef, EventEmitter, HostListener, Input, Output, Renderer2, Inject, forwardRef } from '@angular/core';
+import { Directive, ElementRef, EventEmitter, HostListener, Input, Output, Renderer2 } from '@angular/core';
 
 import { COMPOSER } from '../settings';
 import { SystemsService } from '../services/systems/systems.service';

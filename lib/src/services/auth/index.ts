@@ -8,12 +8,12 @@
  */
 
  import { CommsService } from './comms.service';
- import { MockHttp } from './mock-http';
+ import { MockHttp } from './mock-http/http.mock';
  import { OAuthService } from './oauth2.service';
 
  export * from './comms.service';
  export * from './mock-http';
 
  export let ACA_AUTH_PROVIDERS = [
-     CommsService, OAuthService,
+     CommsService, OAuthService, MockHttp
  ];

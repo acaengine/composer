@@ -7,29 +7,34 @@
  * @Last modified time: 15/12/2016 11:41 AM
  */
 
- // Import all services
- import { ACA_AUTH_PROVIDERS } from './auth';
- // import { DataStoreWorkerService } from './data-store-worker.service';
- import { DataStoreService } from './data-store.service';
- import { ComposerDebugService } from './debug.service';
- import { ResourcesService } from './resources';
- import { SystemsService } from './systems';
+// Import all services
+import { CommsService } from './auth/comms.service';
+import { OAuthService } from './auth/oauth2.service';
+import { MockHttp } from './auth/mock-http/http.mock';
+// import { DataStoreWorkerService } from './data-store-worker.service';
+import { DataStoreService } from './data-store.service';
+import { ComposerDebugService } from './debug.service';
+import { ResourcesService } from './resources/resources.service';
+import { SystemsService } from './systems/systems.service';
 
- // Export all services
- export * from './auth';
- export * from './systems';
- export * from './resources';
- export * from './data-store.service';
- export * from './debug.service';
- // export * from './data-store-worker.service';
+// Export all services
+export * from './auth';
+export * from './systems/systems.service';
+export * from './resources/resources.service';
+export * from './data-store.service';
+export * from './debug.service';
+// export * from './data-store-worker.service';
 
- declare const WorkerGlobalScope: any;
+declare const WorkerGlobalScope: any;
 
- // Export services for module providers
- export const SERVICES: any[] = [
-     ...ACA_AUTH_PROVIDERS,
-     ComposerDebugService,
-     SystemsService,
-     ResourcesService,
-     DataStoreService,
- ];
+// Export services for module providers
+export const SERVICES: any[] = [
+    CommsService,
+    OAuthService,
+    MockHttp,
+    //
+    ComposerDebugService,
+    SystemsService,
+    ResourcesService,
+    DataStoreService,
+];

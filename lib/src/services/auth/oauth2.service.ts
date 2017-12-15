@@ -11,7 +11,7 @@ import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
 
 import * as sha256 from 'fast-sha256';
-import { Subject } from 'rxjs';
+import { Subject } from 'rxjs/Subject';
 
 import { COMPOSER } from '../../settings';
 import { DataStoreService } from '../data-store.service';
@@ -66,9 +66,7 @@ export class OAuthService {
      * @return {string} Returns the generated login URL
      */
     get login_url() {
-        return this.createLoginUrl('').then((url) => {
-            return url;
-        });
+        return this.createLoginUrl('').then((url) => url);
     }
 
     /**
@@ -76,17 +74,11 @@ export class OAuthService {
      * @return {string} Returns the generated refresh URL
      */
     get refresh_url() {
-        return this.createRefreshUrl('').then((url) => {
-            return url;
-        }, (err) => {
-            return '';
-        });
+        return this.createRefreshUrl('').then((url) => url, (err) => '');
     }
 
     public needsLogin() {
-        setTimeout(() => {
-            this.login_obs.next(this.needs_login);
-        }, 200);
+        setTimeout(() => this.login_obs.next(this.needs_login), 200);
         return this.login_obs;
     }
 
@@ -97,7 +89,7 @@ export class OAuthService {
      */
     public tryLogin(options?: any) {
         return new Promise((resolve, reject) => {
-            this.attemptLogin(options, resolve, reject);
+            this.attemptLogin(options).then((i) => resolve(i), (e) => reject(e));
         });
     }
 
@@ -116,9 +108,7 @@ export class OAuthService {
     public getIdentityClaims() {
         const claims = this.store[this._storage].getItem(`${this.clientId}_id_token_claims_obj`)
             .then((res: string) => res);
-        if (!claims) {
-            return null;
-        }
+        if (!claims) { return null; }
         return JSON.parse(claims);
     }
 
@@ -238,9 +228,7 @@ export class OAuthService {
             this.auth_header_promise = new Promise<string>((resolve) => {
                 this.getAccessToken().then((token: string) => {
                     resolve(`Bearer ${token}`);
-                    setTimeout(() => {
-                        this.auth_header_promise = null;
-                    }, 1000);
+                    setTimeout(() => { this.auth_header_promise = null; }, 1000);
                 });
             });
         }
@@ -302,11 +290,8 @@ export class OAuthService {
 
         return this.createAndSaveNonce().then((nonce: any) => {
 
-            if (state) {
-                state = nonce + ';' + state;
-            } else {
-                state = nonce;
-            }
+            if (state) { state = nonce + ';' + state; }
+            else { state = nonce; }
 
             let response_type = this.response_type ? this.response_type : 'token';
 
@@ -436,128 +421,112 @@ export class OAuthService {
      * @param  {any}    reject  Promise reject
      * @return {void}
      */
-    private attemptLogin(options: any, resolve: any, reject: any) {
-        if (this.clientId && this.clientId !== '') {
-            options = options || {};
+    private attemptLogin(options: any, tries: number = 0) {
+        return new Promise((resolve, reject) => {
+            if (tries > 10) { return resolve(); }
+            if (this.clientId && this.clientId !== '') {
+                options = options || {};
 
-            let parts = this.getFragment();
-            if (Object.keys(parts).length <= 1) {
-                this.store.session.getItem('OAUTH.params').then((item: string) => {
-                    if (item) {
-                        parts = JSON.parse(item);
-                    }
-                    this.store.session.removeItem('OAUTH.params');
-                    this.processLogin(parts, options, resolve, reject);
-                });
+                let parts = this.getFragment();
+                if (Object.keys(parts).length <= 1) {
+                    this.store.session.getItem('OAUTH.params').then((item: string) => {
+                        if (item) {
+                            parts = JSON.parse(item);
+                        }
+                        this.store.session.removeItem('OAUTH.params');
+                        this.processLogin(parts, options).then((i) => resolve(i), (e) => reject(e));
+                    });
+                } else {
+                    this.processLogin(parts, options).then((i) => resolve(i), (e) => reject(e));
+                }
             } else {
-                this.processLogin(parts, options, resolve, reject);
+                setTimeout(() => {
+                    this.attemptLogin(options, ++tries).then((i) => resolve(i), (e) => reject(e));
+                }, 200);
             }
-        } else {
-            setTimeout(() => {
-                this.attemptLogin(options, resolve, reject);
-            }, 200);
-        }
+        });
     }
 
-    private processLogin(parts: any, options: any, resolve: any, reject: any) {
-        const accessToken = parts.access_token;
-        const idToken = parts.id_token;
-        const state = parts.state;
-        const code = parts.code;
-        const refreshToken = parts.refreshToken;
-        COMPOSER.log('OAUTH', `State: ${state}`);
-        COMPOSER.log('OAUTH', `Access: ${accessToken} | Refresh: ${accessToken}`);
+    private processLogin(parts: any, options: any) {
+        return new Promise((resolve, reject) => {
+            const accessToken = parts.access_token;
+            const idToken = parts.id_token;
+            const state = parts.state;
+            const code = parts.code;
+            const refreshToken = parts.refreshToken;
+            COMPOSER.log('OAUTH', `State: ${state}`);
+            COMPOSER.log('OAUTH', `Access: ${accessToken} | Refresh: ${accessToken}`);
 
-        const oidcSuccess = false;
-        let oauthSuccess = false;
+            const oidcSuccess = false;
+            let oauthSuccess = false;
 
-        if ((!accessToken && !code && !refreshToken) || !state) {
-            return resolve(false);
-        }
-        if (this.oidc && !idToken) {
-            return resolve(false);
-        }
+            if ((!accessToken && !code && !refreshToken) || !state) { return resolve(false); }
+            if (this.oidc && !idToken) { return resolve(false); }
 
-        if (code) {
-            this.code = code;
-        }
-        if (refreshToken) {
-            this.store[this._storage].setItem(`${this.clientId}_refresh_token`, refreshToken);
-        }
+            if (code) { this.code = code; }
+            if (refreshToken) {
+                this.store[this._storage].setItem(`${this.clientId}_refresh_token`, refreshToken);
+            }
 
-        this.store[this._storage].getItem(`${this.clientId}_nonce`)
-            .then((savedNonce: string) => {
-                const stateParts = state.split(';');
-                const nonceInState = stateParts[0];
-                if (savedNonce === nonceInState) {
-                    if (accessToken) {
-                        this.store[this._storage].setItem(`${this.clientId}_access_token`, accessToken);
-                    }
-
-                    const expiresIn = parts.expires_in;
-
-                    if (expiresIn) {
-                        const expiresInMilliSeconds = parseInt(expiresIn, 10) * 1000;
-                        const now = new Date();
-                        const expiresAt = now.getTime() + expiresInMilliSeconds;
-                        this.store[this._storage].setItem(`${this.clientId}_expires_at`, '' + expiresAt);
-                    }
-                    if (stateParts.length > 1) {
-                        this.state = stateParts[1];
-                    }
-
-                    oauthSuccess = true;
-
-                }
-
-                if (!oauthSuccess) {
-                    return resolve(false);
-                }
-
-                if (!this.oidc && options.onTokenReceived) {
-                    options.onTokenReceived({ accessToken });
-                }
-
-                if (this.oidc) {
-                    this.processIdToken(idToken, accessToken).then((success: string) => {
-                        if (!success) {
-                            return resolve(false);
+            this.store[this._storage].getItem(`${this.clientId}_nonce`)
+                .then((savedNonce: string) => {
+                    const stateParts = state.split(';');
+                    const nonceInState = stateParts[0];
+                    if (savedNonce === nonceInState) {
+                        if (accessToken) {
+                            this.store[this._storage].setItem(`${this.clientId}_access_token`, accessToken);
                         }
-                    });
-                }
 
-                if (options.validationHandler) {
+                        const expiresIn = parts.expires_in;
 
-                    const validationParams = { accessToken, idToken };
+                        if (expiresIn) {
+                            const expiresInMilliSeconds = parseInt(expiresIn, 10) * 1000;
+                            const now = new Date();
+                            const expiresAt = now.getTime() + expiresInMilliSeconds;
+                            this.store[this._storage].setItem(`${this.clientId}_expires_at`, '' + expiresAt);
+                        }
+                        if (stateParts.length > 1) { this.state = stateParts[1]; }
+                        oauthSuccess = true;
+                    }
 
-                    options
-                        .validationHandler(validationParams)
-                        .then(() => {
-                            this.callEventIfExists(options);
-                        })
-                        .catch((reason: any) => {
-                            COMPOSER.error('OAUTH', 'Error validating tokens', reason);
+                    if (!oauthSuccess) { return resolve(false); }
+                    if (!this.oidc && options.onTokenReceived) {
+                        options.onTokenReceived({ accessToken });
+                    }
+
+                    if (this.oidc) {
+                        this.processIdToken(idToken, accessToken).then((success: string) => {
+                            if (!success) {
+                                return resolve(false);
+                            }
                         });
-                }
-                else {
-                    this.callEventIfExists(options);
-                }
+                    }
 
-                // NEXT VERSION: Notify parent-window (iframe-refresh)
-                /*
-                let win = window;
-                if (win.parent && win.parent.onOAuthCallback) {
-                    win.parent.onOAuthCallback(this.state);
-                }
-                */
-                // Clean up after token has been received
-                this.store[this._storage].removeItem('oauth_redirect');
-                this.store[this._storage].setItem('oauth_finished', 'true');
-                this.location.go(this.location.path(), '');
-                return resolve(true);
-            },
-        );
+                    if (options.validationHandler) {
+                        const validationParams = { accessToken, idToken };
+                        options.validationHandler(validationParams)
+                            .then(() => this.callEventIfExists(options))
+                            .catch((reason: any) => {
+                                COMPOSER.error('OAUTH', 'Error validating tokens', reason);
+                            });
+                    } else {
+                        this.callEventIfExists(options);
+                    }
+                    // NEXT VERSION: Notify parent-window (iframe-refresh)
+                    /*
+                    let win = window;
+                    if (win.parent && win.parent.onOAuthCallback) {
+                        win.parent.onOAuthCallback(this.state);
+                    }
+                    */
 
+                    // Clean up after token has been received
+                    this.store[this._storage].removeItem('oauth_redirect');
+                    this.store[this._storage].setItem('oauth_finished', 'true');
+                    this.location.replaceState(this.location.path());
+                    return resolve(true);
+                });
+        });
     }
     /**
      * Process tokens
@@ -637,9 +606,7 @@ export class OAuthService {
         return this.createNonce().then((nonce: any) => {
             this.store[this._storage].setItem(`${this.clientId}_nonce`, nonce);
             return nonce;
-        }, (err) => {
-            return '';
-        });
+        }, (err) => '');
 
     }
 
@@ -653,8 +620,7 @@ export class OAuthService {
 
             if (this.rngUrl) {
                 throw new Error('createNonce with rng-web-api has not been implemented so far');
-            }
-            else {
+            } else {
                 let text = '';
                 const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -672,13 +638,12 @@ export class OAuthService {
      */
     private getFragment() {
         const path = this.location.path();
-        if (location.hash.indexOf('#') === 0 && location.hash.indexOf(path) < 0) {
+        if (location.hash.includes('#') && !location.hash.includes(path)) {
             return this.parseQueryString(location.hash.substr(1));
-        } else if (location.search.indexOf('?') === 0) {
+        } else if (location.search.includes('?')) {
             return this.parseQueryString(location.search.substr(1));
-        } else {
-            return {};
         }
+        return {};
     }
 
     /**
