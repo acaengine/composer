@@ -95,10 +95,9 @@ export class CommsService {
     public mock(enable: boolean = true) {
         if (enable && this.http instanceof HttpClient) {
             const childInjector = Injector.create([{ provide: MockHttp, deps: [] }], this.injector);
-
             const http: MockHttp = childInjector.get(MockHttp);
             this.http = http;
-        } else if (this.http instanceof MockHttp && this.http_service) {
+        } else if (!enable && this.http instanceof MockHttp && this.http_service) {
             this.http = this.http_service;
         }
     }
@@ -226,7 +225,7 @@ export class CommsService {
         if (this.login_promise === null) {
             COMPOSER.log('COMMS', `Attempting login.`);
             this.login_promise = new Promise((resolve, reject) => {
-                // this.performLogin(resolve, reject);
+                this.performLogin(resolve, reject);
             });
         }
         return this.login_promise;
@@ -568,25 +567,26 @@ export class CommsService {
     private processOptions(url: string, body?: any, options?: any) {
         return new Promise((resolve, reject) => {
             const oauth = this.oAuthService;
-            const headers = new HttpHeaders();
+            let headers: HttpHeaders = new HttpHeaders();
             this.oAuthService.authorizationHeader().then((auth_header: string) => {
-                headers.set('Authorization', auth_header);
+                headers = headers.set('Authorization', auth_header);
                 if (options && options.headers) {
                     if (options.headers instanceof HttpHeaders) {
                         const keys = options.headers.keys();
                         for (const k of keys) {
                             if (k && k.toLowerCase() !== 'authorization') {
-                                headers.set(k, options.headers.get(k));
+                                headers = headers.set(k, options.headers.get(k));
                             }
                         }
                     }
                 }
                 // Store request info for retry if needed.
+                console.log('Auth Header:', auth_header);
                 const req: any = {
                     type: 'get',
                     body,
                     url,
-                    auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
+                    auth: ((auth_header !== '' && !auth_header.includes('Bearer nul')) || this.http instanceof MockHttp),
                 };
                 if (!req.options) { req.options = { headers }; }
                 else if (!req.options.headers) { req.options.headers = headers; }
@@ -607,7 +607,7 @@ export class CommsService {
         if (!this.retry[hash]) {
             this.retry[hash] = 0;
         }
-        COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}.`);
+        COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}. ${err ? err.message : ''}`);
         if ((!err || err.status === 401) && this.retry[hash] < 5) {
             // Re-authenticate if authentication error.
             setTimeout(() => {
@@ -633,18 +633,14 @@ export class CommsService {
                     }, (retry_err) => {
                         COMPOSER.error('COMMS', `Error logging in.`, retry_err);
                         this.clearStore();
-                        setTimeout(() => {
-                            location.reload();
-                        }, 200);
+                        setTimeout(() => location.reload(), 200);
                         this.retry[hash] = 0;
                     });
             }, 200);
-        } else if ((!err || err.status === 401)) {
+        } else if (!err || err.status === 401) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
             this.clearStore();
-            setTimeout(() => {
-                location.reload();
-            }, 200);
+            setTimeout(() => location.reload(), 200);
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);

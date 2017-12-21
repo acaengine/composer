@@ -17,8 +17,7 @@ import { MockRequest } from './request.mock';
 @Injectable()
 export class MockHttp {
 
-    constructor() {
-    }
+    public type = 'MockHttp';
 
     public get(url: string, options: any) {
         COMPOSER.log(`HTTP(M)`, `GET Request made to url "${url}"`);

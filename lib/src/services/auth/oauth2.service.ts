@@ -228,7 +228,11 @@ export class OAuthService {
             this.auth_header_promise = new Promise<string>((resolve) => {
                 this.getAccessToken().then((token: string) => {
                     resolve(`Bearer ${token}`);
-                    setTimeout(() => { this.auth_header_promise = null; }, 1000);
+                    if (token) {
+                        setTimeout(() => this.auth_header_promise = null, 1000);
+                    } else {
+                        this.auth_header_promise = null;
+                    }
                 });
             });
         }
@@ -455,7 +459,7 @@ export class OAuthService {
             const code = parts.code;
             const refreshToken = parts.refreshToken;
             COMPOSER.log('OAUTH', `State: ${state}`);
-            COMPOSER.log('OAUTH', `Access: ${accessToken} | Refresh: ${accessToken}`);
+            COMPOSER.log('OAUTH', `Access: ${accessToken}`);
 
             const oidcSuccess = false;
             let oauthSuccess = false;
@@ -465,6 +469,7 @@ export class OAuthService {
 
             if (code) { this.code = code; }
             if (refreshToken) {
+                COMPOSER.log('OAUTH', `Refresh: ${refreshToken}`);
                 this.store[this._storage].setItem(`${this.clientId}_refresh_token`, refreshToken);
             }
 
