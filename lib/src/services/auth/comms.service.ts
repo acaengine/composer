@@ -112,12 +112,12 @@ export class CommsService {
         });
     }
 
-    public needsLogin() {
-        // return this.oAuthService.needsLogin();
+    public needsLogin(next: (state: any) => void) {
+        return this.oAuthService.needsLogin(next);
     }
 
     /**
-     * Wrapper for Angular 2 HTTP GET with auth
+     * Wrapper for Angular HTTP GET with auth
      * @param  {string} url     Request URL
      * @param  {any}    options Request Options
      * @return {Observable} Returns an observable which acts like the Http observable
@@ -140,7 +140,7 @@ export class CommsService {
     }
 
     /**
-     * Wrapper for Angular 2 HTTP POST with auth
+     * Wrapper for Angular HTTP POST with auth
      * @param  {string} url     Request URL
      * @param  {any}    body    (Optional)Request Body
      * @param  {any}    options (Optional)Request Options
@@ -165,7 +165,7 @@ export class CommsService {
     }
 
     /**
-     * Wrapper for Angular 2 HTTP PUT with auth
+     * Wrapper for Angular HTTP PUT with auth
      * @param  {string} url     Request URL
      * @param  {any}    body    (Optional)Request Body
      * @param  {any}    options (Optional)Request Options
@@ -190,7 +190,7 @@ export class CommsService {
     }
 
     /**
-     * Wrapper for Angular 2 HTTP DELETE with auth
+     * Wrapper for Angular HTTP DELETE with auth
      * @param  {string} url     Request URL
      * @param  {any}    options (Optional)Request Options
      * @return {Observable} Returns an observable which acts like the Http observable
@@ -359,11 +359,10 @@ export class CommsService {
         }
         const oauth: any = this.oAuthService;
         if (!oauth || !oauth.clientId || oauth.clientId === '') {
-            setTimeout(() => {
-                this.performLogin(resolve, reject);
-            }, 500);
-            return;
+            COMPOSER.log('COMMS', `OAuth is not initialised.`);
+            return setTimeout(() => this.performLogin(resolve, reject), 500);
         }
+        COMPOSER.log('COMMS', `Checking for valid access token.`);
         oauth.hasValidAccessToken().then((valid: boolean) => {
             if (valid) {
                 COMPOSER.log('COMMS', `Valid access token availiable.`);

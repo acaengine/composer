@@ -11,10 +11,10 @@ import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
 
 import * as sha256 from 'fast-sha256';
-import { Subject } from 'rxjs/Subject';
 
 import { COMPOSER } from '../../settings';
 import { DataStoreService } from '../data-store.service';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class OAuthService {
@@ -35,7 +35,6 @@ export class OAuthService {
     public refreshUri = '';
     public code: string;
     public login_local: boolean = false;
-    public login_obs: Subject<boolean>;
     public simple: boolean = false;
     private debug: boolean = false;
     private _storage: string = 'local';
@@ -47,9 +46,14 @@ export class OAuthService {
     private valid_access_token_promise: any = null;
     private valid_id_token_promise: any = null;
     private auth_header_promise: any = null;
+    private subjects: any = {};
+    private observers: any = {};
 
     constructor(private location: Location, private store: DataStoreService) {
-        this.login_obs = new Subject<boolean>();
+        if (!this.subjects.login) {
+            this.subjects.login = new BehaviorSubject(this.needs_login);
+            this.observers.login = this.subjects.login.asObservable();
+        }
     }
 
     /**
@@ -77,9 +81,12 @@ export class OAuthService {
         return this.createRefreshUrl('').then((url) => url, (err) => '');
     }
 
-    public needsLogin() {
-        setTimeout(() => this.login_obs.next(this.needs_login), 200);
-        return this.login_obs;
+    public needsLogin(next: (state: any) => void) {
+        if (!this.subjects.login) {
+            this.subjects.login = new BehaviorSubject(this.needs_login);
+            this.observers.login = this.subjects.login.asObservable();
+        }
+        return this.observers.login.subscribe(next);
     }
 
     /**
@@ -387,7 +394,7 @@ export class OAuthService {
                     COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
                     this.needs_login = true;
                     if (this.login_local) {
-                        this.login_obs.next(this.needs_login);
+                        this.subjects.login.next(this.needs_login);
                         this.run_flow = false;
                     } else {
                         this.store.session.setItem(`${this.clientId}_login`, 'true');

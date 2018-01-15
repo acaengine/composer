@@ -110,7 +110,7 @@
      * @return {void}
      */
      public unbind() {
-         COMPOSER.log('VAR', `Unbound binding. ${this.bindings-1} remaining.`);
+         COMPOSER.log('VAR', `Unbound binding(${this.parent.parent.id, this.parent.parent.id, this.id}). ${this.bindings-1} remaining.`);
          if (this.bindings <= 1) {
              this.parent.unbind(this.id);
          }

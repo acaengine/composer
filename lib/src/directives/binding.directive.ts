@@ -270,9 +270,7 @@ export class BindingDirective {
      * @return {void}
      */
     private getSystem() {
-        if (!this.service) {
-            return;
-        }
+        if (!this.service) { return; }
         if (typeof this.sys === 'string') {
             this.system = this.service.get(this.sys);
         } else {
@@ -285,9 +283,7 @@ export class BindingDirective {
      * @return {void}
      */
     private getModule() {
-        if (!this.system) {
-            return;
-        }
+        if (!this.system) { return; }
         if (typeof this.module_id === 'string') {
             this.module = this.system.get(this.module_id, !this.index && this.index !== 0 ? 1 : +this.index);
         } else {
@@ -305,7 +301,7 @@ export class BindingDirective {
         if (!this.bind || this.bind === '' || !this.module) {
             return;
         }
-        if (this.unbind !== undefined && this.unbind !== null) {
+        if (this.unbind instanceof Function) {
             this.unbind();
         }
         this.binding = this.module.get(this.bind);
