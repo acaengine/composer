@@ -78,7 +78,7 @@ export class CommsService {
         const oauth = this.oAuthService;
         if (options) {
             for (const i in options) {
-                if (i !== undefined && i !== null && this.valid_params.indexOf(i) >= 0) {
+                if (i && this.valid_params.indexOf(i) >= 0) {
                     oauth[i] = options[i];
                 }
             }

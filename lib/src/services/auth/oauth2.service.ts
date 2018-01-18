@@ -392,9 +392,8 @@ export class OAuthService {
                     location.href = url;
                 } else {
                     COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
-                    this.needs_login = true;
                     if (this.login_local) {
-                        this.subjects.login.next(this.needs_login);
+                        this.subjects.login.next(true);
                         this.run_flow = false;
                     } else {
                         this.store.session.setItem(`${this.clientId}_login`, 'true');
