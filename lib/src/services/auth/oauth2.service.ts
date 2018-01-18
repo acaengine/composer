@@ -397,12 +397,11 @@ export class OAuthService {
                         this.run_flow = false;
                     } else {
                         this.store.session.setItem(`${this.clientId}_login`, 'true');
-                        if (!this.loginRedirect || this.loginRedirect === '' && location.origin.indexOf('http') >= 0) {
-                            this.loginRedirect = location.origin + '/auth/login';
-                        } else if (this.loginRedirect && this.loginRedirect !== '') {
-                            COMPOSER.log('OAUTH', `Login: ${this.loginRedirect}`);
-                            location.href = this.loginRedirect;
+                        if (!this.loginRedirect && location.origin.indexOf('http') >= 0) {
+                            this.loginRedirect =`/login?continue=${this.redirectUri}`;
                         }
+                        COMPOSER.log('OAUTH', `Login: ${this.loginRedirect}`);
+                        location.href = this.loginRedirect;
                     }
                 }
             });

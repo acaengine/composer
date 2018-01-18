@@ -1,6 +1,6 @@
 {
     "name": "@acaprojects/ngx-composer",
-    "version": "0.7.4",
+    "version": "0.7.5",
     "repository": "https://github.com/acaprojects/ngx-composer.git",
     "author": "Alex Sorafumo <alex@yuion.net>",
     "license": "MIT",

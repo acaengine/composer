@@ -43,11 +43,9 @@ export class ResourcesService {
         const parts = this.url.split('/');
         const uri = parts.splice(0, 3).join('/');
         const base_el = document.getElementsByTagName('base')[0];
-        const base = base_el ? (base_el.href ? base_el.href : '/') : '/';
-        const redirect = base.indexOf(location.origin) < 0 ? (location.origin + base) : base;
-        // Make sure URL is set before processing authentication.
-        if (!this.url || this.url === '' || this.url.indexOf('http') < 0) {
-            return setTimeout(() => this.initAuth(resolve, reject), 500);
+        let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
+        if (base === '.') {
+            base = location.pathname;
         }
         this.get('Authority').get_authority().then((auth: any) => {
             COMPOSER.log(`RESRC`, `Authority loaded. Session: ${auth.session === true}`);
@@ -57,16 +55,13 @@ export class ResourcesService {
             let url = encodeURIComponent(location.href);
             url = auth.login_url.replace('{{url}}', url);
             this.http.setupOAuth({
-                loginRedirect: (url[0] === '/' ? (uri + url) : url),
+                loginRedirect: (uri && location.origin.indexOf(uri) === 0 ? `${url}` : ((uri || '') + url)),
             });
             if (auth.session) {
                 this.http.setLoginStatus(auth.session);
             }
             this.authLoaded = true;
-            setTimeout(() => {
-                this.http.tryLogin();
-                resolve();
-            }, 200);
+            setTimeout(() => resolve(this.http.tryLogin()), 200);
         }, (err: any) => {
             COMPOSER.error('RESRC', 'Error getting authority.', err);
             this.http.setupOAuth({
