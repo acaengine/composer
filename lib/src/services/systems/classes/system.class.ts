@@ -12,7 +12,7 @@
      public id: string;
      public service: any;
      public parent: any;
-     public modules: Module[] = [];
+     public modules: any = {};
      public exists = true;
 
      constructor(srv: object, sys_id: string) {
@@ -22,25 +22,24 @@
      }
     /**
      * Gets the module with the given id and index
-     * @param  {string}      mod_id Module name
+     * @param  {string}      id Module name
      * @param  {number = 1}  index Index of module in system
      * @return {Module} Returns the module with the given id and index
      */
-     public get(mod_id: string, index: number = 1) {
-         let module: any = null;
-         // Check if system already exists
-         for (let i = 0; i < this.modules.length; i++) {
-             if (this.modules[i].id === mod_id && this.modules[i].index === index) {
-                 module = this.modules[i];
-             }
-         }
-         if (module === null) {
-             // System not stored create new one.
-             module = new Module(this.service, this, mod_id, index);
-             this.modules.push(module);
-         }
-         return module;
-     }
+    public get(id: string, index: number | string = 1) {
+        if (id.indexOf('_') >= 0) {
+            const parts = id.split('_');
+            id = parts[0];
+            index = parts[1];
+        }
+        const name = `${id}_${index}`;
+        if (this.modules[name]) {
+            return this.modules[name];
+        }
+        const module = new Module(this.service, this, id, +index);
+        this.modules[name] = module;
+        return module;
+    }
     /**
      * Rebinds all bound status variables on existing modules in the system
      * @return {void}

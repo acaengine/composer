@@ -580,7 +580,6 @@ export class CommsService {
                     }
                 }
                 // Store request info for retry if needed.
-                console.log('Auth Header:', auth_header);
                 const req: any = {
                     type: 'get',
                     body,

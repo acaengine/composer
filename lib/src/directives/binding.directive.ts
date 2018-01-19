@@ -8,6 +8,7 @@
  */
 
 import { Directive, ElementRef, EventEmitter, HostListener, Input, Output, Renderer2 } from '@angular/core';
+import { ChangeDetectorRef, OnChanges, OnDestroy, OnInit } from '@angular/core';
 
 import { COMPOSER } from '../settings';
 import { SystemsService } from '../services/systems/systems.service';
@@ -15,21 +16,21 @@ import { SystemsService } from '../services/systems/systems.service';
 
 @Directive({
     selector: '[binding]',
-    providers: [],
 })
-export class BindingDirective {
+export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     // Bindables
     @Input() public bind: string; // Name of the status variable to bind to
     @Input() public sys: string; // Name of the system to connect to
     @Input() public mod: string; // Name of the module to connect to
     @Input() public index: number; // Index of the named module in the system
     @Input() public value: any; // Value of the status variable bound to
-    @Output() public valueChange = new EventEmitter(); // Emits changes to the value variable
     @Input() public exec: string; // Name of the function to execute on the module when value changes
     @Input() public params: any; // Parameters to pass to the called function on module
     @Input() public ignore: number = 0; // Number of execute requests to ignore
-    @Input() public ignoreChange = new EventEmitter(); // Emits when ignores occur
 
+    @Output() public valueChange = new EventEmitter(); // Emits changes to the value variable
+    @Output() public ignoreChange = new EventEmitter(); // Emits when ignores occur
+    // Input Event Emitters
     @Output() public ontap = new EventEmitter();
     @Output() public onpress = new EventEmitter();
     @Output() public onrelease = new EventEmitter();
@@ -40,15 +41,12 @@ export class BindingDirective {
     private system: any;
     private module: any;
     private binding: any;
-    private prev: any = null;
-    private prev_exec: any = null;
     private unbind: () => void;
     private i: number = 0;
-    private ignore_cnt: number = 0;
     private init: boolean = false;
     private debug: boolean = false;
 
-    constructor(private el: ElementRef, private service: SystemsService, private renderer: Renderer2) {
+    constructor(private el: ElementRef, private service: SystemsService, private renderer: Renderer2, private _cdr: ChangeDetectorRef) {
         this.id = (Math.floor(Math.random() * 899999) + 100000).toString();
         this.renderer.addClass(this.el.nativeElement, `binding-directive-${this.id}`);
     }
@@ -59,65 +57,54 @@ export class BindingDirective {
 
     public ngOnChanges(changes: any) {
         if (!this.service.is_setup) { // Do not update bindings until systems service is ready
-            setTimeout(() => {
-                this.ngOnChanges(changes);
-            }, 500);
-            return;
+            return setTimeout(() => this.ngOnChanges(changes), 500);
         }
         // System changes
         if (changes.sys && this.hasChanged('system')) {
             this.cleanModule();
             this.getSystem();
-            this.getModule();
-            this.getBinding();
         } else if (changes.mod) {  // Module changes
             this.cleanModule();
             if (this.hasChanged('module')) {  // Module changes
                 this.getModule();
-                this.getBinding();
             }
         } else if (changes.index) { // Index changed
             this.cleanModule();
             this.getModule();
-            this.getBinding();
         } else if (changes.bind) { // Variable to bind changes
             this.getBinding();
         }
-        // Execute function has changed
-        if (this.init && this.exec && this.prev_exec && this.prev_exec !== this.exec && this.bind && this.bind !== '') {
-            if (this.ignore <= 0) {
-                COMPOSER.log('Binding', `${this.id}: Execute function changed. ${this.prev_exec} → ${this.exec}`);
-                this.call_exec();
-            } else {
-                this.ignore--;
-                this.ignoreChange.emit(this.ignore);
+        if (this.init) {
+            const old_value = this.binding ? this.binding.value() : (changes.value ? changes.value.previous : null);
+            const change_in_value = this.value !== (old_value);
+                // Bindings local value has change
+            if (this.binding && change_in_value) {
+                this.binding.setValue(this.value, true);
             }
-        }
-        // Bindings local value has change
-        if (this.init && this.binding && this.value !== this.binding.current && this.value !== this.prev) {
-            const change = `${this.prev} → ${this.value}`;
-            COMPOSER.log('Binding', `${this.id}: Local value changed calling exec. ${change}`);
-            if (this.ignore <= 0) {
-                this.call_exec();
-            } else {
-                this.prev = this.value;
-                this.ignore--;
-                this.ignoreChange.emit(this.ignore);
+                // Execute function has changed
+            if (changes.exec || change_in_value) {
+                this.call(changes.exec ? changes.exec.previous : '');
             }
-        }
-        // Initialized local binding value
-        if (!this.init) {
-            setTimeout(() => {
-                this.prev = this.value;
-                this.init = true;
-                this.prev_exec = this.exec;
-            }, 100);
+        } else if (!this.init) {
+            // Initialized local binding value
+            setTimeout(() => this.init = true, 100);
         }
     }
 
     public ngOnDestroy() {
         if (this.unbind) {
             this.unbind();
+            this.unbind = null;
+        }
+    }
+
+    public call(old?: string) {
+        if (this.ignore <= 0) {
+            COMPOSER.log('BIND(D)', `${this.id}: Execute function changed. ${old} → ${this.exec}`);
+            this.call_exec();
+        } else {
+            this.ignore--;
+            this.ignoreChange.emit(this.ignore);
         }
     }
 
@@ -128,22 +115,17 @@ export class BindingDirective {
      * @return {void}
      */
     public call_exec(exec?: string) {
-        if (!this || !this.module || this.exec === undefined || (!this.binding && (!this.exec || this.exec === ''))) {
-            return;
-        }
-        if (this.exec === null || this.exec === '') {
+        if (this.binding && (this.exec === null || this.exec === '')) {
             this.exec = this.binding.id;
         }
-        // Update binding
-        this.prev_exec = this.exec;
-        this.prev = this.value;
+        if (!this.module || !this.exec) {
+            return;
+        }
         const bind_info = `${this.sys}, ${this.mod}, ${this.bind}`;
-        COMPOSER.log('Binding', `${this.id}: Calling exec from directive ${this.id}: ${bind_info}`);
+        COMPOSER.log('BIND(D)', `${this.id}: Calling exec from directive: ${bind_info}`);
         // Update value to value set by user
-        const binding = this.binding ? this.binding.id : '';
-        const params = this.params || (!this.bind || this.bind === '') ? this.params : this.value;
-        this.module.exec(this.exec, binding, params)
-            .then((res: any) => { return; }, (err: any) => { return; });
+        const params = this.params ? this.params : this.value;
+        this.module.exec(this.exec, params).then((res: any) => null, (err: any) => null);
     }
 
     private ngOnDestory() {
@@ -153,6 +135,13 @@ export class BindingDirective {
         }
     }
 
+    private emit(e, emitter) {
+        if (e) {
+            e.exec = (exec?: string) => { this.call_exec(exec); };
+        }
+        emitter.emit(e);
+    }
+
     /**
      * () => void call when the element that this is attached to is tapped
      * emits a ontap event
@@ -160,12 +149,7 @@ export class BindingDirective {
      * @return {void}
      */
     @HostListener('tap', ['$event'])
-    private onClick(e: any) {
-        if (e) {
-            e.exec = (exec?: string) => { this.call_exec(exec); };
-        }
-        this.ontap.emit(e);
-    }
+    private onClick(e: any) { this.emit(e, this.ontap); }
 
     /**
      * () => void call when the element that this is attached emits a mouseup/touchend
@@ -174,12 +158,7 @@ export class BindingDirective {
      * @return {void}
      */
     @HostListener('pressup', ['$event'])
-    private onRelease(e: any) {
-        if (e) {
-            e.exec = (exec?: string) => { this.call_exec(exec); };
-        }
-        this.onrelease.emit(e);
-    }
+    private onRelease(e: any) { this.emit(e, this.onrelease); }
 
     /**
      * () => void call when the element that this is attached to is tapped
@@ -188,12 +167,7 @@ export class BindingDirective {
      * @return {void}
      */
     @HostListener('press', ['$event'])
-    private onPress(e: any) {
-        if (e) {
-            e.exec = (exec?: string) => { this.call_exec(exec); };
-        }
-        this.onpress.emit(e);
-    }
+    private onPress(e: any) { this.emit(e, this.onpress); }
 
     /**
      * Checks if the element is exists on the page and binds/unbinds from the
@@ -276,6 +250,7 @@ export class BindingDirective {
         } else {
             this.system = this.sys;
         }
+        this.getModule();
     }
 
     /**
@@ -289,37 +264,35 @@ export class BindingDirective {
         } else {
             this.module = this.module_id;
         }
-        if (this.module) {
-            this.binding = this.module.get(this.bind);
-        }
+        this.getBinding();
     }
     /**
      * Gets the status variable from the module and binds to it.
      * @return {void}
      */
     private getBinding() {
-        if (!this.bind || this.bind === '' || !this.module) {
-            return;
-        }
+        if (!this.bind || !this.module) { return; }
         if (this.unbind instanceof Function) {
             this.unbind();
+            this.unbind = null;
         }
         this.binding = this.module.get(this.bind);
-        this.module.bind(this.bind, (curr: any, prev: any) => {
-            // Changes to local value
-            this.valueChange.emit(curr);
+        this.module.bind(this.bind, (change: any) => {
+            setTimeout(() => {
+                    // Changes to local value
+                this.value = this.binding.value();
+                this.valueChange.emit(this.value);
+                this._cdr.markForCheck();
+            }, 10);
         }).then((unbind) => {
             this.unbind = unbind;
             this.value = this.binding.current;
-            this.prev = this.value;
-            const msg = `${this.id}: Binding to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
-            COMPOSER.log('Binding', msg);
+            const msg = `${this.id}: Bound to '${this.bind}' on ${this.sys}, ${this.module.id} ${this.module.index}`;
+            COMPOSER.log('BIND(D)', msg);
             if (this.unbind === null) {
-                setTimeout(() => {
-                    this.getBinding();
-                }, 200);
+                setTimeout(() => this.getBinding(), 200);
             }
-        });
+        }, () => null);
     }
 
 }

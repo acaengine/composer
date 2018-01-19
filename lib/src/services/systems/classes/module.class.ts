@@ -14,7 +14,7 @@ export class Module {
     public id: string;         // Module name
     public parent: any;        // Module's system
     public index: number = 0;  // Module Index
-    public status_variables: StatusVariable[] = [];
+    public status_variables: any = {};
     public debugger: any;
     private _debug: boolean = false;
     private service: any;       // Systems Service
@@ -34,31 +34,9 @@ export class Module {
      * @param  {() => void} cb_fn Function that is called when the binding value changes
      * @return {() => void} Returns a function that can be called to unbind to the status variable
      */
-    public bind(prop: string, cb_fn?: () => void, force: boolean = false) {
-        const val = this.get(prop);
-        setTimeout(() => {
-            if (val.bindings > 0) {
-                val.bindings++;
-                val.add_cb_fn(cb_fn);
-                val.bound();
-            }
-        }, 500);
-        return new Promise<any>((resolve) => {
-            if (val.bindings <= 0 || force) {
-                this.service.io.bind(this.parent.id, this.id, this.index, prop)
-                    .then((data) => {
-                        if (!force) {
-                            val.bindings++;
-                        }
-                        val.add_cb_fn(cb_fn);
-                        resolve(() => { val.unbind(); });
-                    }, (err) => {
-                        resolve(null);
-                    });
-            } else {
-                resolve(() => { val.unbind(); });
-            }
-        });
+    public bind(prop: string, next: (change: boolean) => void) {
+        const variable = this.get(prop);
+        return variable.bind(next);
     }
 
     /**
@@ -68,39 +46,12 @@ export class Module {
      * @param  {any}    args  Arguments to pass to the function
      * @return {Promise<any>|string} Returns a exec promise or an error message
      */
-    public exec(fn: string, prop: string, args: any) {
-        const now = (new Date()).getTime();
-        if (prop && prop !== '') {
-            const ids = {
-                system_id: this.parent.id,
-                module_name: this.id,
-                module_index: this.index,
-                name: prop,
-            };
-            const sv = this.get(prop);
-            if (sv.bindings <= 0) {
-                COMPOSER.error('Module', `Variable "${prop}"" not bound!`);
-                return new Promise((resolve, reject) => {
-                    resolve({
-                        type: 'error',
-                        message: `Error: Variable not bound!, ${fn}, ${prop}`,
-                        args,
-                    });
-                });
-            } else {
-                return new Promise((resolve, reject) => {
-                    sv.execs.push({
-                        prop,
-                        fn,
-                        value: args,
-                        resolve,
-                        reject,
-                    });
-                });
-            }
-        } else {
-            return this.service.io.exec(this.parent.id, this.id, this.index, fn, args);
-        }
+    public exec(fn: string, args: any) {
+        return new Promise((resolve, reject) => {
+            const system = this.parent;
+            this.service.io.exec(system.id, this.id, this.index, fn, args)
+                .then((result) => resolve(result), (err) => reject(err));
+        });
     }
 
     /**
@@ -109,16 +60,8 @@ export class Module {
      * @return {void}
      */
     public unbind(prop: string) {
-        const val = this.get(prop);
-        val.bindings--;
-        if (val.bindings <= 1) {
-            this.service.io.unbind(this.parent.id, this.id, this.index, prop)
-                .then((data) => {
-                    return;
-                }, (err) => {
-                    val.bindings++;
-                });
-        }
+        const variable = this.get(prop);
+        variable.unbind();
     }
 
     public debug() {
@@ -134,13 +77,11 @@ export class Module {
      * @return {StatusVariable} Returns the status variable with the give name
      */
     public get(prop: string) {
-        for (const variable of this.status_variables) {
-            if (variable.id === prop) {
-                return variable;
-            }
+        if (this.status_variables[prop]) {
+            return this.status_variables[prop];
         }
         const s_var = new StatusVariable(this.service, this, prop, 0);
-        this.status_variables.push(s_var);
+        this.status_variables[prop] = s_var;
         return s_var;
     }
 
@@ -149,9 +90,9 @@ export class Module {
      * @return {void}
      */
     public rebind() {
-        for (const variable of this.status_variables) {
-            if (variable.bindings > 0) {
-                this.bind(variable.id, null, true);
+        for (const id in this.status_variables) {
+            if (this.status_variables.hasOwnProperty(id)) {
+                this.status_variables[id].rebind();
             }
         }
     }

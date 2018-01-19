@@ -89,7 +89,6 @@ export class MockRequestHandler {
         if (this.handlers[url]) {
             return this.handlers[url];
         }
-        console.log(this.handlers);
         const parts = url.split('/');
             // Search for match in handlers with URL parameters.
         for (const h in this.handlers) {

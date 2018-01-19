@@ -5,175 +5,193 @@
  * @Last Modified time: 2017-05-02 11:09:19
  */
 
- import { Observable } from 'rxjs/Observable';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
- import { COMPOSER } from '../../../settings';
+import { COMPOSER } from '../../../settings';
+import { setTimeout } from 'timers';
 
- const EXEC_LIMIT = 10;
- const EXEC_TIME_DELAY = 100;
+const EXEC_LIMIT = 10;
+const EXEC_TIME_DELAY = 100;
 
- export class StatusVariable {
-     public id: string;             // Name of status variable
-     public parent: any;            // Module connected to status variable
-     public previous: any = null;   // Previous value
-     public current: any = null;    // Current value
-     public bindings: number = 0;   // Binding count
-     public exec_active = false;
-     public execs: any[] = [];
-     public value: any = {};
-     public cb_fn: () => void;
-     public local_change = false;
-     private service: any;           // System service
-     private callbacks: any[] = [];  // Execute Callbacks
-     private obs: any = null;
-     private view: any = null;
+export class StatusVariable {
+    public id: string;             // Name of status variable
+    public parent: any;            // Module connected to status variable
+    public model: any = {};
+    private service: any;           // System service
+    private promises: any = {};
+    private timers: any = {};
+    private subjects: any = {};
+    private observers: any = {};
 
-     constructor(srv: object, parent: any, name: string, init_val: any) {
-         this.id = name;
-         this.previous = init_val;
-         this.current = init_val;
-         this.service = srv;
-         this.parent = parent;
-         this.value = {
-             system_id: this.parent.parent.id,
-             module_name: this.parent.id,
-             module_index: this.parent.index,
-             name: this.id,
-         };
-         setInterval(() => {
-             this.exec();
-         }, 1000 / EXEC_LIMIT);
-     }
-    /**
-     * Hook for getting changes to the status variable
-     * @return {Observable} Returns an observerable that post changes to the status variable
-     */
-     get observe() {
-         if (!this.obs) {
-             return this.bound();
-         } else {
-             return this.obs;
-         }
-     }
+    constructor(srv: object, parent: any, name: string, init_val?: any) {
+        this.id = name;
+        this.service = srv;
+        this.parent = parent;
+        this.model = {
+            system_id: this.parent.parent.id,
+            module_name: this.parent.id,
+            module_index: this.parent.index,
+            name: this.id,
+        };
+            // Create behavior subject for binding count
+        this.subjects.bindings = new BehaviorSubject(0);
+        this.observers.bindings = this.subjects.bindings.asObservable();
+            // Create behavior subject for status variable value
+        this.subjects.value = new BehaviorSubject<any>(init_val || null);
+        this.observers.value = this.subjects.value.asObservable();
+            // Create behavior subject for previous status variable value
+        this.subjects.previous = new BehaviorSubject<any>(null);
+        this.observers.previous = this.subjects.previous.asObservable();
+            // Create behavior subject for previous status variable value
+        this.subjects.changed = new BehaviorSubject(false);
+        this.observers.changed = this.subjects.changed.asObservable();
+    }
 
-     public bound() {
-         const mod = `${this.parent.id} ${this.parent.index}`;
-         const msg = `Bound to ${this.id} on ${mod} in ${this.parent.parent.id}, Value:`;
-         COMPOSER.log('BIND', msg, this.current);
-         if (!this.obs) {
-             this.obs = new Observable((observer: any) => {
-                 let val = this.current;
-                 this.view = observer;
-                 setInterval(() => {
-                     if (this.bindings === 0) {
-                         observer.complete();
-                         this.obs = null;
-                         this.view = null;
-                     }
-                     if (this.current !== val) {
-                         val = this.current;
-                         observer.next(this.current);
+    get current() {
+        return this.value();
+    }
 
-                     }
-                 }, 100);
-             });
-         }
-         setTimeout(() => {
-             if (this.view) {
-                 this.view.next(this.current);
-             }
-             this.callback();
-         }, 200);
-         return this.obs;
-     }
-    /**
-     * Execute the next function in the stack
-     * @return {void}
-     */
-     public exec() {
-         if (this.execs.length > 0) {
-             const mod = this.parent;
-             const e = this.execs[this.execs.length - 1];
-             if (this.current !== e.value) {
-                 this.service.io.exec(mod.parent.id, mod.id, mod.index, e.fn, e.value)
-                 .then((data) => { e.resolve(data); }, (err) => { e.reject(err); });
-             }
-             this.execs = [];
-         }
-     }
+    public setValue(value: any, local: boolean = false) {
+        const previous = this.value('previous');
+        this.subjects.previous.next(this.value());
+        this.subjects.value.next(value);
+        if (!local) {
+            this.subjects.changed.next(!this.value('change'));
+        } else if (previous !== value) {
+            COMPOSER.log('STATUS', `Local value changed calling exec(${this.binding}). ${previous} → ${value}`);
+            this.exec();
+        }
+    }
 
-     public update(params: any) {
-         return;
-     }
+    get binding() {
+        const module = this.parent;
+        const system = module.parent;
+        return `${system.id}, ${module.id} ${module.index}, ${this.id}`
+    }
+
+    public count() {
+        return this.value('bindings');
+    }
+
+    public bind(next: (value: any) => void) {
+        return new Promise((resolve, reject) => {
+            const mod = `${this.parent.id} ${this.parent.index}`;
+            const msg = `Binding to ${this.id} on ${this.parent.parent.id}, ${mod}`;
+            COMPOSER.log('STATUS', msg);
+            if (this.value('bindings') <= 0) {
+                const module = this.parent;
+                const system = module.parent;
+                this.service.io.bind(system.id, module.id, module.index, this.id).then(() => {
+                    COMPOSER.log('STATUS', `Bound to ${this.id} on ${this.parent.parent.id}, ${mod}`, this.value());
+                    resolve(() => { this.unbind() });
+                }, (err) => {
+                    COMPOSER.error('STATUS', 'Binding to status variable failed.', err);
+                    reject(err);
+                });
+            }
+            this.subjects.bindings.next(this.value('bindings') + 1);
+            this.listen('changed', next);
+        });
+    }
+
+    public rebind() {
+        const module = this.parent;
+        const system = module.parent;
+        COMPOSER.log('STATUS', `Rebinding to ${this.id} on ${system.id}, ${module.id} ${module.index}`);
+        if (this.value('bindings') <= 0) {
+            this.service.io.bind(system.id, module.id, module.index, this.id).then(() => {
+                COMPOSER.log('STATUS', `Rebound to ${this.id} on ${system.id}, ${module.id} ${module.index}`, this.value());
+            }, (err) => COMPOSER.error('STATUS', 'Binding to status variable failed.', err));
+        }
+    }
+
+    public listen(name: string, next: (value: any) => void) {
+        if (this.subjects[name]) {
+            return this.observers[name].subscribe(next);
+        }
+        return null;
+    }
+
+    public value(name: string = 'value') {
+        if (this.subjects[name]) {
+            return this.subjects[name].getValue();
+        }
+        return null;
+    }
+
+    public update(params: any) {
+        return;
+    }
     /**
      * Unbind from this variable
      * @return {void}
      */
-     public unbind() {
-         COMPOSER.log('VAR', `Unbound binding(${this.parent.parent.id, this.parent.parent.id, this.id}). ${this.bindings-1} remaining.`);
-         if (this.bindings <= 1) {
-             this.parent.unbind(this.id);
-         }
-     }
+    public unbind() {
+        const count = this.value('bindings');
+        if (count === 1) {
+            const module = this.parent;
+            const system = module.parent;
+            this.service.io.unbind(system.id, module.id, module.index, this.id).then(() => {
+                this.subjects.bindings.next(0);
+                COMPOSER.log('STATUS', `Unbound binding(${this.binding}). 0 remaining.`);
+            }, (err) => COMPOSER.error('VAR', 'Unbinding from status variable failed.', err));
+        } else if (count > 1) {
+            this.subjects.bindings.next(count - 1);
+            COMPOSER.log('STATUS', `Unbound binding(${this.binding}). ${count - 1} remaining.`);
+        }
+    }
 
     /**
-     * Adds a new callback function to the collection
-     * @param  {() => void} cb_fn Function to add to the binding
-     * @return {void}
-     */
-     public add_cb_fn(cb_fn: () => void) {
-         if (cb_fn !== undefined || cb_fn !== null) {
-             this.callbacks.push(cb_fn);
-         }
-     }
-    /**
-     * Called when an execute returns successful
+     * Called when an execute returns success
      * @param  {any}  msg Message returned by the server
      * @return {void}
      */
-     private success(msg: any) {
-         if (msg.meta.cmd === 'exec') {
-             this.previous = this.current;
-             this.current = msg.meta.args;
-             this.local_change = true;
-             this.exec_active = false;
-             // Execute call backs
-             this.callback();
-             // Execute next function in the stack
-             this.exec();
-         }
-     }
+    public success(msg: any) {
+        return;
+    }
 
     /**
      * Called when an execute returns error
      * @param  {any}  msg Message returned by the server
      * @return {void}
      */
-     private error(msg: any) {
-         return;
-     }
+    public error(msg: any) {
+        return;
+    }
 
     /**
      * Called when an status variable is updated on the server side
      * @param  {any}  msg Message returned by the server
      * @return {void}
      */
-     private notify(msg: any) {
-         this.local_change = false;
-         this.previous = this.current;
-         this.current = msg.value;
-         this.callback();
-     }
+    public notify(msg: any) {
+        this.setValue(msg.value);
+    }
 
-    /**
-     * Calls the callback for each binding
-     * @return {void}
-     */
-     private callback() {
-         for (const cb of this.callbacks) {
-             if (cb instanceof Function) {
-                 cb(this.current, this.previous);
-             }
-         }
-     }
- }
+    private exec() {
+        if (!this.promises.exec) {
+            this.promises.exec = new Promise((resolve, reject) => {
+                const count = this.value('bindings');
+                if (count > 0) {
+                    const module = this.parent;
+                    const system = module.parent;
+                    this.service.io.exec(system.id, module.id, module.index, this.id, this.value())
+                        .then(() => {
+                            this.promises.exec = null;
+                            resolve();
+                        }, (err) => {
+                            this.promises.exec = null;
+                            reject(err);
+                        });
+                }
+            });
+        } else {
+            if (this.timers.exec) {
+                clearTimeout(this.timers.exec);
+                this.timers.exec = null;
+            }
+            this.timers.exec = setTimeout(() => this.exec(), EXEC_TIME_DELAY);
+        }
+        return this.promises.exec;
+    }
+}
