@@ -74,7 +74,6 @@ export class SystemsService {
                  delete this.io;
              }
              this.io = new $WebSocketMock(this, this.r, this.fixed_device);
-
              this.io.setup(this.r, host, port, prot);
              return this.r.init(options.api_endpoint, true).then(() => true, (err) => false);
          } else {

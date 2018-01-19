@@ -9,43 +9,24 @@
 
 import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import * as sha256 from 'fast-sha256';
 
 import { COMPOSER } from '../../settings';
 import { DataStoreService } from '../data-store.service';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class OAuthService {
-
-    public clientId = '';
-    public redirectUri = '';
-    public loginUrl = '';
-    public loginRedirect = '';
-    public scope = '';
-    public rngUrl = '';
-    public oidc = false;
-    public options: any;
-    public state = '';
-    public issuer = '';
+    public model: any = {}
     public validationHandler: any;
-    public logoutUrl = '';
-    public response_type: string;
-    public refreshUri = '';
-    public code: string;
-    public login_local: boolean = false;
-    public simple: boolean = false;
+
     private debug: boolean = false;
     private _storage: string = 'local';
     private run_flow: boolean = false;
     private needs_login: boolean = false;
 
-    private access_token_promise: any = null;
-    private refresh_token_promise: any = null;
-    private valid_access_token_promise: any = null;
-    private valid_id_token_promise: any = null;
-    private auth_header_promise: any = null;
+    private promises: any = {};
     private subjects: any = {};
     private observers: any = {};
 
@@ -113,7 +94,7 @@ export class OAuthService {
      * @return {string} Returns the identity claims
      */
     public getIdentityClaims() {
-        const claims = this.store[this._storage].getItem(`${this.clientId}_id_token_claims_obj`)
+        const claims = this.store[this._storage].getItem(`${this.model.client_id}_id_token_claims_obj`)
             .then((res: string) => res);
         if (!claims) { return null; }
         return JSON.parse(claims);
@@ -124,7 +105,7 @@ export class OAuthService {
      * @return {string} Returns the id token
      */
     public getIdToken() {
-        return this.store[this._storage].getItem(`${this.clientId}_id_token`).then((res: string) => res);
+        return this.store[this._storage].getItem(`${this.model.client_id}_id_token`).then((res: string) => res);
     }
 
     /**
@@ -132,44 +113,44 @@ export class OAuthService {
      * @return {string} Returns the access token
      */
     public getAccessToken() {
-        if (!this.access_token_promise) {
-            this.access_token_promise = new Promise((resolve) => {
-                this.store[this._storage].getItem(`${this.clientId}_access_token`).then((token: string) => {
+        if (!this.promises.access_token) {
+            this.promises.access_token = new Promise((resolve) => {
+                this.store[this._storage].getItem(`${this.model.client_id}_access_token`).then((token: string) => {
                     if (!token) {
                         this.store[this._storage].getItem(`accessToken`).then((token_local: string) => {
                             resolve(token_local);
-                            this.access_token_promise = null;
+                            this.promises.access_token = null;
                         });
                     } else {
                         resolve(token);
-                        this.access_token_promise = null;
+                        this.promises.access_token = null;
                     }
                 });
             });
         }
-        return this.access_token_promise;
+        return this.promises.access_token;
     }
     /**
      * Get the access token from storage
      * @return {string} Returns the access token
      */
     public getRefreshToken() {
-        if (!this.refresh_token_promise) {
-            this.refresh_token_promise = new Promise((resolve) => {
-                this.store[this._storage].getItem(`${this.clientId}_refresh_token`).then((token: string) => {
+        if (!this.promises.refresh_token) {
+            this.promises.refresh_token = new Promise((resolve) => {
+                this.store[this._storage].getItem(`${this.model.client_id}_refresh_token`).then((token: string) => {
                     if (!token) {
                         this.store[this._storage].getItem(`refreshToken`).then((token_local: string) => {
                             resolve(token_local);
-                            this.refresh_token_promise = null;
+                            this.promises.refresh_token = null;
                         });
                     } else {
                         resolve(token);
-                        this.refresh_token_promise = null;
+                        this.promises.refresh_token = null;
                     }
                 });
             });
         }
-        return this.refresh_token_promise;
+        return this.promises.refresh_token;
     }
 
     /**
@@ -177,12 +158,12 @@ export class OAuthService {
      * @return {boolean} Returns the expiry state of the access token
      */
     public hasValidAccessToken() {
-        if (!this.valid_access_token_promise) {
-            this.valid_access_token_promise = new Promise<boolean>((resolve, reject) => {
+        if (!this.promises.valid_access_token) {
+            this.promises.valid_access_token = new Promise<boolean>((resolve, reject) => {
                 this.getAccessToken().then((token: string) => {
-                    this.store[this._storage].getItem(`${this.clientId}_expires_at`).then((expiresAt: string) => {
+                    this.store[this._storage].getItem(`${this.model.client_id}_expires_at`).then((expiresAt: string) => {
                         setTimeout(() => {
-                            this.valid_access_token_promise = null;
+                            this.promises.valid_access_token = null;
                         }, 10);
                         if (!expiresAt) {
                             this.store[this._storage].getItem(`accessExpiry`).then((expiresAt_local: string) => {
@@ -203,14 +184,14 @@ export class OAuthService {
                 });
             });
         }
-        return this.valid_access_token_promise;
+        return this.promises.valid_access_token;
     }
 
     public hasValidIdToken() {
-        if (!this.valid_id_token_promise) {
-            this.valid_id_token_promise = new Promise<boolean>((resolve, reject) => {
+        if (!this.promises.id_token) {
+            this.promises.id_token = new Promise<boolean>((resolve, reject) => {
                 if (this.getIdToken) {
-                    this.store[this._storage].getItem(`${this.clientId}_id_token_expires_at`)
+                    this.store[this._storage].getItem(`${this.model.client_id}_id_token_expires_at`)
                         .then((expiresAt: string) => {
                             const now = new Date();
                             if (expiresAt && parseInt(expiresAt, 10) < now.getTime()) {
@@ -231,19 +212,19 @@ export class OAuthService {
      * @return {string} Returns authorisation header
      */
     public authorizationHeader() {
-        if (!this.auth_header_promise) {
-            this.auth_header_promise = new Promise<string>((resolve) => {
+        if (!this.promises.auth_header) {
+            this.promises.auth_header = new Promise<string>((resolve) => {
                 this.getAccessToken().then((token: string) => {
                     resolve(`Bearer ${token}`);
                     if (token) {
-                        setTimeout(() => this.auth_header_promise = null, 1000);
+                        setTimeout(() => this.promises.auth_header = null, 1000);
                     } else {
-                        this.auth_header_promise = null;
+                        this.promises.auth_header = null;
                     }
                 });
             });
         }
-        return this.auth_header_promise;
+        return this.promises.auth_header;
     }
 
     /**
@@ -254,16 +235,16 @@ export class OAuthService {
         COMPOSER.log('OAUTH', 'Logging out. Clear access tokens...');
         const id_token = this.getIdToken();
         this.clearAuth();
-        if (!this.logoutUrl) {
+        if (!this.model.logout_url) {
             setTimeout(() => {
                 this.location.replaceState(this.location.path(), '');
             }, 100);
             return;
         }
 
-        const logoutUrl = this.logoutUrl.replace(/\{\{id_token\}\}/, id_token);
+        const logout_url = this.model.logout_url.replace(/\{\{id_token\}\}/, id_token);
         COMPOSER.log('OAUTH', 'Redirecting to logout URL...');
-        location.href = logoutUrl;
+        location.href = logout_url;
     }
     /**
      * Removes any auth related details from storage
@@ -304,25 +285,25 @@ export class OAuthService {
             if (state) { state = nonce + ';' + state; }
             else { state = nonce; }
 
-            let response_type = this.response_type ? this.response_type : 'token';
+            let response_type = this.model.response_type ? this.model.response_type : 'token';
 
-            if (this.oidc) {
+            if (this.model.oidc) {
                 response_type = 'id_token+' + response_type;
             }
 
-            let url = this.loginUrl
-                + (this.loginUrl.indexOf('?') < 0 ? '?' : '&') + 'response_type='
+            let url = this.model.login_url
+                + (this.model.login_url.indexOf('?') < 0 ? '?' : '&') + 'response_type='
                 + encodeURIComponent(response_type)
                 + '&client_id='
-                + encodeURIComponent(this.clientId)
-                + '&state='
+                + encodeURIComponent(this.model.client_id)
+                + '&model.state='
                 + encodeURIComponent(state)
                 + '&redirect_uri='
-                + encodeURIComponent(this.redirectUri)
-                + '&scope='
-                + encodeURIComponent(this.scope);
+                + encodeURIComponent(this.model.redirect_uri)
+                + '&model.scope='
+                + encodeURIComponent(this.model.scope);
 
-            if (this.oidc) {
+            if (this.model.oidc) {
                 url += '&nonce=' + encodeURIComponent(nonce);
             }
 
@@ -338,12 +319,12 @@ export class OAuthService {
         if (typeof state === 'undefined') { state = ''; }
 
         return this.createAndSaveNonce().then((nonce: any) => {
-            let url = this.refreshUri
+            let url = this.model.refresh_uri
                 + '?client_id='
-                + encodeURIComponent(this.clientId)
+                + encodeURIComponent(this.model.client_id)
                 + '&redirect_uri='
-                + encodeURIComponent(this.redirectUri);
-            return this.store[this._storage].getItem(`${this.clientId}_refresh_token`)
+                + encodeURIComponent(this.model.redirect_uri);
+            return this.store[this._storage].getItem(`${this.model.client_id}_refresh_token`)
                 .then((refresh_token: string) => {
                     if (!refresh_token) {
                         return this.store[this._storage].getItem(`refreshToken`).then((refresh_token_local: string) => {
@@ -352,7 +333,7 @@ export class OAuthService {
                                 url += `&grant_type=${encodeURIComponent('refresh_token')}`;
                                 return url;
                             } else {
-                                url += `&code=${encodeURIComponent(this.code)}&`;
+                                url += `&code=${encodeURIComponent(this.model.code)}&`;
                                 url += `grant_type=${encodeURIComponent('authorization_code')}`;
                                 return url;
                             }
@@ -372,7 +353,7 @@ export class OAuthService {
      * @return {void}
      */
     private initImplicitFlow(additionalState: string = '') {
-        if (!this.clientId || this.clientId === '' || this.run_flow) {
+        if (!this.model.client_id || this.model.client_id === '' || this.run_flow) {
             return;
         }
         this.createLoginUrl(additionalState).then((url) => {
@@ -385,23 +366,23 @@ export class OAuthService {
             const here = path;
             this.store.local.setItem(`oauth_redirect`, here);
             this.run_flow = true;
-            this.store.session.getItem(`${this.clientId}_login`).then((logged: string) => {
+            this.store.session.getItem(`${this.model.client_id}_login`).then((logged: string) => {
                 if (logged === 'true' && url.indexOf('http') >= 0) {
                     COMPOSER.log('OAUTH', 'Logged in. Authorizing...');
-                    this.store.session.removeItem(`${this.clientId}_login`);
+                    this.store.session.removeItem(`${this.model.client_id}_login`);
                     location.href = url;
                 } else {
                     COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
-                    if (this.login_local) {
+                    if (this.model.login_local) {
                         this.subjects.login.next(true);
                         this.run_flow = false;
                     } else {
-                        this.store.session.setItem(`${this.clientId}_login`, 'true');
-                        if (!this.loginRedirect && location.origin.indexOf('http') >= 0) {
-                            this.loginRedirect =`/login?continue=${this.redirectUri}`;
+                        this.store.session.setItem(`${this.model.client_id}_login`, 'true');
+                        if (!this.model.login_redirect && location.origin.indexOf('http') >= 0) {
+                            this.model.login_redirect =`/login?continue=${location.href}`;
                         }
-                        COMPOSER.log('OAUTH', `Login: ${this.loginRedirect}`);
-                        location.href = this.loginRedirect;
+                        COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
+                        location.href = this.model.login_redirect;
                     }
                 }
             });
@@ -411,13 +392,12 @@ export class OAuthService {
     }
 
     private callEventIfExists(options: any) {
-        const that = this;
         if (options.onTokenReceived) {
             const tokenParams = {
-                idClaims: that.getIdentityClaims(),
-                idToken: that.getIdToken(),
-                accessToken: that.getAccessToken(),
-                state: that.state,
+                idClaims: this.getIdentityClaims(),
+                idToken: this.getIdToken(),
+                accessToken: this.getAccessToken(),
+                state: this.model.state,
             };
             options.onTokenReceived(tokenParams);
         }
@@ -433,7 +413,7 @@ export class OAuthService {
     private attemptLogin(options: any, tries: number = 0) {
         return new Promise((resolve, reject) => {
             if (tries > 10) { return resolve(); }
-            if (this.clientId && this.clientId !== '') {
+            if (this.model.client_id && this.model.client_id !== '') {
                 options = options || {};
 
                 let parts = this.getFragment();
@@ -449,9 +429,7 @@ export class OAuthService {
                     this.processLogin(parts, options).then((i) => resolve(i), (e) => reject(e));
                 }
             } else {
-                setTimeout(() => {
-                    this.attemptLogin(options, ++tries).then((i) => resolve(i), (e) => reject(e));
-                }, 200);
+                setTimeout(() => this.attemptLogin(options, ++tries).then((i) => resolve(i), (e) => reject(e)), 200);
             }
         });
     }
@@ -470,21 +448,21 @@ export class OAuthService {
             let oauthSuccess = false;
 
             if ((!accessToken && !code && !refreshToken) || !state) { return resolve(false); }
-            if (this.oidc && !idToken) { return resolve(false); }
+            if (this.model.oidc && !idToken) { return resolve(false); }
 
-            if (code) { this.code = code; }
+            if (code) { this.model.code = code; }
             if (refreshToken) {
                 COMPOSER.log('OAUTH', `Refresh: ${refreshToken}`);
-                this.store[this._storage].setItem(`${this.clientId}_refresh_token`, refreshToken);
+                this.store[this._storage].setItem(`${this.model.client_id}_refresh_token`, refreshToken);
             }
 
-            this.store[this._storage].getItem(`${this.clientId}_nonce`)
+            this.store[this._storage].getItem(`${this.model.client_id}_nonce`)
                 .then((savedNonce: string) => {
                     const stateParts = state.split(';');
                     const nonceInState = stateParts[0];
                     if (savedNonce === nonceInState) {
                         if (accessToken) {
-                            this.store[this._storage].setItem(`${this.clientId}_access_token`, accessToken);
+                            this.store[this._storage].setItem(`${this.model.client_id}_access_token`, accessToken);
                         }
 
                         const expiresIn = parts.expires_in;
@@ -493,18 +471,18 @@ export class OAuthService {
                             const expiresInMilliSeconds = parseInt(expiresIn, 10) * 1000;
                             const now = new Date();
                             const expiresAt = now.getTime() + expiresInMilliSeconds;
-                            this.store[this._storage].setItem(`${this.clientId}_expires_at`, '' + expiresAt);
+                            this.store[this._storage].setItem(`${this.model.client_id}_expires_at`, '' + expiresAt);
                         }
-                        if (stateParts.length > 1) { this.state = stateParts[1]; }
+                        if (stateParts.length > 1) { this.model.state = stateParts[1]; }
                         oauthSuccess = true;
                     }
 
                     if (!oauthSuccess) { return resolve(false); }
-                    if (!this.oidc && options.onTokenReceived) {
+                    if (!this.model.oidc && options.onTokenReceived) {
                         options.onTokenReceived({ accessToken });
                     }
 
-                    if (this.oidc) {
+                    if (this.model.oidc) {
                         this.processIdToken(idToken, accessToken).then((success: string) => {
                             if (!success) {
                                 return resolve(false);
@@ -526,7 +504,7 @@ export class OAuthService {
                     /*
                     let win = window;
                     if (win.parent && win.parent.onOAuthCallback) {
-                        win.parent.onOAuthCallback(this.state);
+                        win.parent.onOAuthCallback(this.model.state);
                     }
                     */
 
@@ -550,15 +528,15 @@ export class OAuthService {
             const claimsBase64 = this.padBase64(tokenParts[1]);
             const claimsJson = ''; // Base64.decode(claimsBase64);
             const claims = JSON.parse(claimsJson);
-            this.store[this._storage].getItem(`${this.clientId}_nonce`).then((savedNonce: string) => {
+            this.store[this._storage].getItem(`${this.model.client_id}_nonce`).then((savedNonce: string) => {
 
-                if (claims.aud !== this.clientId) {
+                if (claims.aud !== this.model.client_id) {
                     COMPOSER.log('OAUTH', 'Wrong audience: ' + claims.aud, null, 'warn');
                     return resolve(false);
                 }
 
-                if (this.issuer && claims.iss !== this.issuer) {
-                    COMPOSER.log('OAUTH', 'Wrong issuer: ' + claims.iss, null, 'warn');
+                if (this.model.issuer && claims.iss !== this.model.issuer) {
+                    COMPOSER.log('OAUTH', 'Wrong model.issuer: ' + claims.iss, null, 'warn');
                     return resolve(false);
                 }
 
@@ -589,9 +567,9 @@ export class OAuthService {
                     return resolve(false);
                 }
 
-                this.store[this._storage].setItem(`${this.clientId}_id_token`, idToken);
-                this.store[this._storage].setItem(`${this.clientId}_id_token_claims_obj`, claimsJson);
-                this.store[this._storage].setItem(`${this.clientId}_id_token_expires_at`, '' + expiresAtMSec);
+                this.store[this._storage].setItem(`${this.model.client_id}_id_token`, idToken);
+                this.store[this._storage].setItem(`${this.model.client_id}_id_token_claims_obj`, claimsJson);
+                this.store[this._storage].setItem(`${this.model.client_id}_id_token_expires_at`, '' + expiresAtMSec);
 
                 if (this.validationHandler) {
                     this.validationHandler(idToken);
@@ -614,7 +592,7 @@ export class OAuthService {
      */
     private createAndSaveNonce() {
         return this.createNonce().then((nonce: any) => {
-            this.store[this._storage].setItem(`${this.clientId}_nonce`, nonce);
+            this.store[this._storage].setItem(`${this.model.client_id}_nonce`, nonce);
             return nonce;
         }, (err) => '');
 
@@ -628,7 +606,7 @@ export class OAuthService {
 
         return new Promise<string>((resolve, reject) => {
 
-            if (this.rngUrl) {
+            if (this.model.rng_url) {
                 throw new Error('createNonce with rng-web-api has not been implemented so far');
             } else {
                 let text = '';
@@ -648,9 +626,9 @@ export class OAuthService {
      */
     private getFragment() {
         const path = this.location.path();
-        if (location.hash.includes('#') && !location.hash.includes(path)) {
+        if (location.hash.indexOf('#') >= 0 && location.hash.indexOf(path) < 0) {
             return this.parseQueryString(location.hash.substr(1));
-        } else if (location.search.includes('?')) {
+        } else if (location.search.indexOf('?') >= 0) {
             return this.parseQueryString(location.search.substr(1));
         }
         return {};

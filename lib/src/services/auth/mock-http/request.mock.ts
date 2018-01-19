@@ -33,15 +33,12 @@
          return new Observable((observer) => {
              setTimeout(() => {
                  const res = MOCK_REQ_HANDLER.response(this.method, this.url, this.fragments);
-                 console.log(this.method, this.url, res);
                  if (!res || res.status === 400 || res.status === 404) {
                      observer.error(res);
                  } else {
                      observer.next(res);
                  }
-                 setTimeout(() => {
-                     observer.complete();
-                 }, 200);
+                 setTimeout(() => observer.complete(), 200);
              }, 200);
          }).subscribe(data, error, complete);
      }

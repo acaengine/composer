@@ -183,6 +183,8 @@ export class StatusVariable {
                             this.promises.exec = null;
                             reject(err);
                         });
+                } else {
+                    this.promises.exec = null;
                 }
             });
         } else {

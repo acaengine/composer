@@ -32,8 +32,8 @@ export class CommsService {
     private http: any = null;
     private simple: boolean = false;
     private valid_params = [
-        'loginUrl', 'loginRedirect', 'refreshUrl', 'redirectUri', 'refreshUri',
-        'clientId', 'issuer', 'scope', 'oidc', 'logoutUrl', 'login_local',
+        'login_url', 'login_redirect', 'refresh_url', 'redirect_uri', 'refresh_uri',
+        'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local',
     ];
 
     constructor(
@@ -79,7 +79,7 @@ export class CommsService {
         if (options) {
             for (const i in options) {
                 if (i && this.valid_params.indexOf(i) >= 0) {
-                    oauth[i] = options[i];
+                    oauth.model[i] = options[i];
                 }
             }
             if (options.simple) {
@@ -338,7 +338,7 @@ export class CommsService {
     public checkAuth(cb_fn: any) {
         COMPOSER.log('COMMS', `Checking Auth.`);
         if (this.login_promise === null) {
-            const parts: any = this.oAuthService.loginUrl.split('/');
+            const parts: any = this.oAuthService.model.login_url.split('/');
             const uri: any = parts.splice(0, 3).join('/');
             this.oAuthService.authorizationHeader().then((token: string) => {
                 const headers = new HttpHeaders();
@@ -358,7 +358,7 @@ export class CommsService {
             return resolve('mock_token');
         }
         const oauth: any = this.oAuthService;
-        if (!oauth || !oauth.clientId || oauth.clientId === '') {
+        if (!oauth || !oauth.model.client_id || oauth.model.client_id  === '') {
             COMPOSER.log('COMMS', `OAuth is not initialised.`);
             return setTimeout(() => this.performLogin(resolve, reject), 500);
         }
@@ -387,7 +387,7 @@ export class CommsService {
                                 COMPOSER.log('COMMS', `Device is trusted`);
                                 oauth.response_type = 'code';
                                 this.store.local.getItem(`${oauth.clientId}_refresh_token`).then((refresh: string) => {
-                                    if (refresh || oauth.code) { // Refresh token exists
+                                    if (refresh || oauth.model.code) { // Refresh token exists
                                         COMPOSER.log('COMMS', `Refresh token found. Refreshing access token...`);
                                         // Perform refresh
                                         if (oauth.clientId === '') {
@@ -463,7 +463,7 @@ export class CommsService {
         if (err.status === 401) {
             COMPOSER.log('COMMS', `Error with credentials. Getting new credentials...`);
             this.clearStore();
-            this.oAuthService.code = undefined;
+            this.oAuthService.model.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
             this.login().then(() => { return; }, (login_err) => { reject(login_err); });
         } else {

@@ -78,10 +78,10 @@ export class ResourcesService {
      */
     public setup(options: any) {
         this.http.setupOAuth({
-            loginUrl: options.oauth_server,
-            refreshUri: options.oauth_tokens,
-            redirectUri: options.redirect_uri,
-            clientId: this.http.hash(options.redirect_uri),
+            login_url: options.oauth_server,
+            refresh_uri: options.oauth_tokens,
+            redirect_uri: options.redirect_uri,
+            client_id: this.http.hash(options.redirect_uri),
             login_local: options.login_local,
             scope: options.scope
         });
