@@ -271,10 +271,7 @@ export class WebSocketInterface {
     private reconnect() {
         if (this.io === null || this.io.readyState === this.io.CLOSED && !this.connect_promise) {
             COMPOSER.log('WS', 'Reconnecting websocket...');
-            this.connect().then(() => {
-                this.serv.rebind();
-                return;
-            }, () => { return; });
+            this.connect().then(() => this.serv ? this.serv.rebind() : '', () => null);
             this.reconnected = true;
         }
     }
@@ -307,7 +304,7 @@ export class WebSocketInterface {
         this.connect_promise = null;
         this.startKeepAlive();
         // Rebind the connected systems modules
-        if (this.reconnected) {
+        if (this.reconnected && this.serv) {
             this.serv.rebind();
         }
         this.reconnected = false;

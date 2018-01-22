@@ -121,10 +121,10 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
         if (!this.module || !this.exec) {
             return;
         }
-        const bind_info = `${this.sys}, ${this.mod}, ${this.bind}`;
+        const bind_info = `${this.sys}, ${this.mod}, ${this.bind || 'No binding'}`;
         COMPOSER.log('BIND(D)', `${this.id}: Calling exec from directive: ${bind_info}`);
         // Update value to value set by user
-        const params = this.params ? this.params : this.value;
+        const params = this.params ? this.params : (this.bind ? this.value : null);
         this.module.exec(this.exec, params).then((res: any) => null, (err: any) => null);
     }
 

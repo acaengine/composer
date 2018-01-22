@@ -82,7 +82,7 @@ export class MockWebSocketInterface {
         COMPOSER.log('WS(M)', 'Connected');
         this.startKeepAlive();
         // Rebind the connected systems modules
-        if (this.reconnected) {
+        if (this.reconnected && this.serv) {
             this.serv.rebind();
         }
         this.reconnected = false;

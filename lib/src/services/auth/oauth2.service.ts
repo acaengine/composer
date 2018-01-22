@@ -117,7 +117,7 @@ export class OAuthService {
             this.promises.access_token = new Promise((resolve) => {
                 this.store[this._storage].getItem(`${this.model.client_id}_access_token`).then((token: string) => {
                     if (!token) {
-                        this.store[this._storage].getItem(`accessToken`).then((token_local: string) => {
+                        this.store[this._storage].getItem(`access_token`).then((token_local: string) => {
                             resolve(token_local);
                             this.promises.access_token = null;
                         });
@@ -139,7 +139,7 @@ export class OAuthService {
             this.promises.refresh_token = new Promise((resolve) => {
                 this.store[this._storage].getItem(`${this.model.client_id}_refresh_token`).then((token: string) => {
                     if (!token) {
-                        this.store[this._storage].getItem(`refreshToken`).then((token_local: string) => {
+                        this.store[this._storage].getItem(`refresh_token`).then((token_local: string) => {
                             resolve(token_local);
                             this.promises.refresh_token = null;
                         });
@@ -275,36 +275,25 @@ export class OAuthService {
      * @param  {any}    state OAuth State
      * @return {string} Returns a generated login URL
      */
-    private createLoginUrl(state: any) {
-        const that = this;
-
-        if (typeof state === 'undefined') { state = ''; }
-
+    private createLoginUrl(state?: any) {
+        if (!state) { state = ''; }
         return this.createAndSaveNonce().then((nonce: any) => {
-
             if (state) { state = nonce + ';' + state; }
             else { state = nonce; }
-
             let response_type = this.model.response_type ? this.model.response_type : 'token';
-
             if (this.model.oidc) {
                 response_type = 'id_token+' + response_type;
             }
-
-            let url = this.model.login_url
-                + (this.model.login_url.indexOf('?') < 0 ? '?' : '&') + 'response_type='
-                + encodeURIComponent(response_type)
-                + '&client_id='
-                + encodeURIComponent(this.model.client_id)
-                + '&model.state='
-                + encodeURIComponent(state)
-                + '&redirect_uri='
-                + encodeURIComponent(this.model.redirect_uri)
-                + '&model.scope='
-                + encodeURIComponent(this.model.scope);
+            const query = this.model.login_url.indexOf('?') < 0
+            let url = this.model.login_url + (query ? '?' : '&')
+                + `response_type=${encodeURIComponent(response_type)}`
+                + `&client_id=${encodeURIComponent(this.model.client_id)}`
+                + `&state=${encodeURIComponent(state)}`
+                + `&redirect_uri=${encodeURIComponent(this.model.redirect_uri)}`
+                + `&scope=${encodeURIComponent(this.model.scope)}`;
 
             if (this.model.oidc) {
-                url += '&nonce=' + encodeURIComponent(nonce);
+                url += `&nonce=${encodeURIComponent(nonce)}`;
             }
 
             return url;
@@ -327,7 +316,7 @@ export class OAuthService {
             return this.store[this._storage].getItem(`${this.model.client_id}_refresh_token`)
                 .then((refresh_token: string) => {
                     if (!refresh_token) {
-                        return this.store[this._storage].getItem(`refreshToken`).then((refresh_token_local: string) => {
+                        return this.store[this._storage].getItem(`refresh_token`).then((refresh_token_local: string) => {
                             if (refresh_token_local) {
                                 url += `&refresh_token=${encodeURIComponent(refresh_token_local)}`;
                                 url += `&grant_type=${encodeURIComponent('refresh_token')}`;
@@ -379,7 +368,7 @@ export class OAuthService {
                     } else {
                         this.store.session.setItem(`${this.model.client_id}_login`, 'true');
                         if (!this.model.login_redirect && location.origin.indexOf('http') >= 0) {
-                            this.model.login_redirect =`/login?continue=${location.href}`;
+                            this.model.login_redirect = `/login?continue=${location.href}`;
                         }
                         COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
                         location.href = this.model.login_redirect;
@@ -396,7 +385,7 @@ export class OAuthService {
             const tokenParams = {
                 idClaims: this.getIdentityClaims(),
                 idToken: this.getIdToken(),
-                accessToken: this.getAccessToken(),
+                access_token: this.getAccessToken(),
                 state: this.model.state,
             };
             options.onTokenReceived(tokenParams);
@@ -436,93 +425,93 @@ export class OAuthService {
 
     private processLogin(parts: any, options: any) {
         return new Promise((resolve, reject) => {
-            const accessToken = parts.access_token;
+            console.log('Parts:', parts);
+            const access_token = parts.access_token;
             const idToken = parts.id_token;
             const state = parts.state;
             const code = parts.code;
-            const refreshToken = parts.refreshToken;
+            const refresh_token = parts.refresh_token;
             COMPOSER.log('OAUTH', `State: ${state}`);
-            COMPOSER.log('OAUTH', `Access: ${accessToken}`);
+            COMPOSER.log('OAUTH', `Access: ${access_token}`);
 
             const oidcSuccess = false;
             let oauthSuccess = false;
 
-            if ((!accessToken && !code && !refreshToken) || !state) { return resolve(false); }
+            if ((!access_token && !code && !refresh_token) || !state) { return resolve(false); }
             if (this.model.oidc && !idToken) { return resolve(false); }
 
             if (code) { this.model.code = code; }
-            if (refreshToken) {
-                COMPOSER.log('OAUTH', `Refresh: ${refreshToken}`);
-                this.store[this._storage].setItem(`${this.model.client_id}_refresh_token`, refreshToken);
+            if (refresh_token) {
+                COMPOSER.log('OAUTH', `Refresh: ${refresh_token}`);
+                this.store[this._storage].setItem(`${this.model.client_id}_refresh_token`, refresh_token);
             }
 
-            this.store[this._storage].getItem(`${this.model.client_id}_nonce`)
-                .then((savedNonce: string) => {
-                    const stateParts = state.split(';');
-                    const nonceInState = stateParts[0];
-                    if (savedNonce === nonceInState) {
-                        if (accessToken) {
-                            this.store[this._storage].setItem(`${this.model.client_id}_access_token`, accessToken);
-                        }
-
-                        const expiresIn = parts.expires_in;
-
-                        if (expiresIn) {
-                            const expiresInMilliSeconds = parseInt(expiresIn, 10) * 1000;
-                            const now = new Date();
-                            const expiresAt = now.getTime() + expiresInMilliSeconds;
-                            this.store[this._storage].setItem(`${this.model.client_id}_expires_at`, '' + expiresAt);
-                        }
-                        if (stateParts.length > 1) { this.model.state = stateParts[1]; }
-                        oauthSuccess = true;
+            this.store[this._storage].getItem(`${this.model.client_id}_nonce`).then((savedNonce: string) => {
+                const stateParts = state.split(';');
+                const nonceInState = stateParts[0];
+                if (savedNonce === nonceInState) {
+                    if (access_token) {
+                        this.store[this._storage].setItem(`${this.model.client_id}_access_token`, access_token);
                     }
 
-                    if (!oauthSuccess) { return resolve(false); }
-                    if (!this.model.oidc && options.onTokenReceived) {
-                        options.onTokenReceived({ accessToken });
-                    }
+                    const expiresIn = parts.expires_in;
 
-                    if (this.model.oidc) {
-                        this.processIdToken(idToken, accessToken).then((success: string) => {
-                            if (!success) {
-                                return resolve(false);
-                            }
+                    if (expiresIn) {
+                        const expiresInMilliSeconds = parseInt(expiresIn, 10) * 1000;
+                        const now = new Date();
+                        const expiresAt = now.getTime() + expiresInMilliSeconds;
+                        this.store[this._storage].setItem(`${this.model.client_id}_expires_at`, '' + expiresAt);
+                    }
+                    if (stateParts.length > 1) { this.model.state = stateParts[1]; }
+                    oauthSuccess = true;
+                }
+
+                if (!oauthSuccess) { return resolve(false); }
+                if (!this.model.oidc && options.onTokenReceived) {
+                    options.onTokenReceived({ access_token });
+                }
+
+                if (this.model.oidc) {
+                    this.processIdToken(idToken, access_token).then((success: string) => {
+                        if (!success) {
+                            return resolve(false);
+                        }
+                    });
+                }
+
+                if (options.validationHandler) {
+                    const validationParams = { access_token, idToken };
+                    options.validationHandler(validationParams)
+                        .then(() => this.callEventIfExists(options))
+                        .catch((reason: any) => {
+                            COMPOSER.error('OAUTH', 'Error validating tokens', reason);
                         });
-                    }
+                } else {
+                    this.callEventIfExists(options);
+                }
+                // NEXT VERSION: Notify parent-window (iframe-refresh)
+                /*
+                let win = window;
+                if (win.parent && win.parent.onOAuthCallback) {
+                    win.parent.onOAuthCallback(this.model.state);
+                }
+                */
 
-                    if (options.validationHandler) {
-                        const validationParams = { accessToken, idToken };
-                        options.validationHandler(validationParams)
-                            .then(() => this.callEventIfExists(options))
-                            .catch((reason: any) => {
-                                COMPOSER.error('OAUTH', 'Error validating tokens', reason);
-                            });
-                    } else {
-                        this.callEventIfExists(options);
-                    }
-                    // NEXT VERSION: Notify parent-window (iframe-refresh)
-                    /*
-                    let win = window;
-                    if (win.parent && win.parent.onOAuthCallback) {
-                        win.parent.onOAuthCallback(this.model.state);
-                    }
-                    */
-
-                    // Clean up after token has been received
-                    this.store[this._storage].removeItem('oauth_redirect');
-                    this.store[this._storage].setItem('oauth_finished', 'true');
-                    this.location.replaceState(this.location.path());
-                    return resolve(true);
-                });
+                // Clean up after token has been received
+                this.store[this._storage].removeItem('oauth_redirect');
+                this.store[this._storage].setItem('oauth_finished', 'true');
+                this.location.replaceState(this.location.path());
+                return resolve(true);
+            });
         });
     }
     /**
      * Process tokens
      * @param  {any}    idToken     ID Token
-     * @param  {any}    accessToken Access Token
+     * @param  {any}    access_token Access Token
      * @return {boolean} Returns success of processing id token
      */
-    private processIdToken(idToken: any, accessToken: any) {
+    private processIdToken(idToken: any, access_token: any) {
         return new Promise((resolve) => {
             const tokenParts = idToken.split('.');
             const claimsBase64 = this.padBase64(tokenParts[1]);
@@ -545,7 +534,7 @@ export class OAuthService {
                     return resolve(false);
                 }
 
-                if (accessToken && !this.checkAtHash(accessToken, claims)) {
+                if (access_token && !this.checkAtHash(access_token, claims)) {
                     COMPOSER.log('OAUTH', 'Wrong at_hash', null, 'warn');
                     return resolve(false);
                 }
@@ -682,15 +671,15 @@ export class OAuthService {
 
     /**
      * Checks if claims and tokens correctly in hash
-     * @param  {any}    accessToken Access Token
+     * @param  {any}    access_token Access Token
      * @param  {any}    idClaims    ID Claims
      * @return {boolean} Returns claims and tokens correctly in hash
      */
-    private checkAtHash(accessToken: any, idClaims: any) {
-        if (!accessToken || !idClaims || !idClaims.at_hash) {
+    private checkAtHash(access_token: any, idClaims: any) {
+        if (!access_token || !idClaims || !idClaims.at_hash) {
             return true;
         }
-        const tokenHash: any[] = []; // toByteArrayFunc(sha256.hash(accessToken));
+        const tokenHash: any[] = []; // toByteArrayFunc(sha256.hash(access_token));
         const leftMostHalf = tokenHash.slice(0, (tokenHash.length / 2));
         const tokenHashBase64 = ''; // fromByteArrayFunc(leftMostHalf);
         const atHash = tokenHashBase64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
