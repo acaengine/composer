@@ -366,18 +366,21 @@ export class OAuthService {
                         this.subjects.login.next(true);
                         this.run_flow = false;
                     } else {
-                        this.store.session.setItem(`${this.model.client_id}_login`, 'true');
                         if (!this.model.login_redirect && location.origin.indexOf('http') >= 0) {
                             this.model.login_redirect = `/login?continue=${location.href}`;
                         }
-                        COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
-                        location.href = this.model.login_redirect;
+                        if (this.model.authority_loaded) {
+                            this.store.session.setItem(`${this.model.client_id}_login`, 'true');
+                            COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
+                            location.href = this.model.login_redirect;
+                        } else {
+                            COMPOSER.log('OAUTH', `Authority hasn't loaded yet.`);
+                            this.run_flow = false;
+                        }
                     }
                 }
             });
-        }, (err) => {
-            return;
-        });
+        }, (err) => null);
     }
 
     private callEventIfExists(options: any) {

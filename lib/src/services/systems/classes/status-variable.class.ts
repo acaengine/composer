@@ -8,7 +8,6 @@
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import { COMPOSER } from '../../../settings';
-import { setTimeout } from 'timers';
 
 const EXEC_LIMIT = 10;
 const EXEC_TIME_DELAY = 100;

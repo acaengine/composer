@@ -29,33 +29,25 @@ export class ResourceFactory {
             switch (this.methods[key].method) {
                 case COMMON.cmd.GET:
                     func = (ikey: any) => {
-                        this[ikey] = (params: any) => {
-                            return this._get(this.methods[ikey], params);
-                        };
+                        this[ikey] = (params: any) => this._get(this.methods[ikey], params);
                     };
                     func(key);
                     break;
                 case COMMON.cmd.POST:
                     func = (ikey: any) => {
-                        this[ikey] = (params: any, data: any) => {
-                            return this._post(this.methods[ikey], params, data);
-                        };
+                        this[ikey] = (params: any, data: any) => this._post(this.methods[ikey], params, data);
                     };
                     func(key);
                     break;
                 case COMMON.cmd.PUT:
                     func = (ikey: any) => {
-                        this[ikey] = (params: any, data: any) => {
-                            return this._put(this.methods[ikey], params, data);
-                        };
+                        this[ikey] = (params: any, data: any) => this._put(this.methods[ikey], params, data);
                     };
                     func(key);
                     break;
                 case COMMON.cmd.DELETE:
                     func = (ikey: any) => {
-                        this[ikey] = (params: any) => {
-                            return this._delete(this.methods[ikey], params);
-                        };
+                        this[ikey] = (params: any) => this._delete(this.methods[ikey], params);
                     };
                     func(key);
                     break;
@@ -131,9 +123,7 @@ export class ResourceFactory {
      */
     private _get(method: any, params: any) {
         const url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
-        return new Promise<any>((resolve, reject) => {
-            this.__get(url, method, resolve, reject);
-        });
+        return new Promise<any>((resolve, reject) => this.__get(url, method, resolve, reject));
     }
     /**
      * Wrapper for a GET request
@@ -158,15 +148,11 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => {
-                        this.__get(url, method, resolve, reject, ++tries);
-                    }, 500);
+                    setTimeout(() => this.__get(url, method, resolve, reject, ++tries), 500);
                 }
             });
         } else {
-            setTimeout(() => {
-                this.__get(url, method, resolve, reject);
-            }, 500);
+            setTimeout(() => this.__get(url, method, resolve, reject), 500);
         }
     }
 
@@ -179,9 +165,7 @@ export class ResourceFactory {
      */
     private _post(method: any, params: any, data: any) {
         const url = this.createUrl(params);
-        return new Promise<any>((resolve, reject) => {
-            this.__post(url, method, data, resolve, reject);
-        });
+        return new Promise<any>((resolve, reject) => this.__post(url, method, data, resolve, reject));
     }
 
     /**
@@ -208,15 +192,11 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => {
-                        this.__post(url, method, req_data, resolve, reject, ++tries);
-                    }, 500);
+                    setTimeout(() => this.__post(url, method, req_data, resolve, reject, ++tries), 500);
                 }
             });
         } else {
-            setTimeout(() => {
-                this.__post(url, req_data, method, resolve, reject);
-            }, 500);
+            setTimeout(() => this.__post(url, req_data, method, resolve, reject), 500);
         }
     }
 
@@ -229,9 +209,7 @@ export class ResourceFactory {
      */
     private _put(method: any, params: any, data: any) {
         const url = this.createUrl(params);
-        return new Promise<any>((resolve, reject) => {
-            this.__put(url, method, data, resolve, reject);
-        });
+        return new Promise<any>((resolve, reject) => this.__put(url, method, data, resolve, reject));
     }
 
     /**
@@ -258,15 +236,11 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => {
-                        this.__put(url, method, req_data, resolve, reject, ++tries);
-                    }, 500);
+                    setTimeout(() => this.__put(url, method, req_data, resolve, reject, ++tries), 500);
                 }
             });
         } else {
-            setTimeout(() => {
-                this.__put(url, method, req_data, resolve, reject);
-            }, 500);
+            setTimeout(() => this.__put(url, method, req_data, resolve, reject), 500);
         }
     }
 
@@ -278,9 +252,7 @@ export class ResourceFactory {
      */
     private _delete(method: any, params: any) {
         const url = this.createUrl(params);
-        return new Promise((resolve, reject) => {
-            this.__delete(url, method, resolve, reject);
-        });
+        return new Promise((resolve, reject) => this.__delete(url, method, resolve, reject));
     }
 
     /**
@@ -306,15 +278,11 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => {
-                        this.__delete(url, method, resolve, reject, ++tries);
-                    }, 500);
+                    setTimeout(() => this.__delete(url, method, resolve, reject, ++tries), 500);
                 }
             });
         } else {
-            setTimeout(() => {
-                this.__delete(url, method, resolve, reject);
-            }, 500);
+            setTimeout(() => this.__delete(url, method, resolve, reject), 500);
         }
     }
 

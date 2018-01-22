@@ -33,7 +33,7 @@ export class CommsService {
     private simple: boolean = false;
     private valid_params = [
         'login_url', 'login_redirect', 'refresh_url', 'redirect_uri', 'refresh_uri',
-        'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local',
+        'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local', 'authority_loaded'
     ];
 
     constructor(
@@ -432,7 +432,7 @@ export class CommsService {
                                 const here = path;
                                 this.store.local.setItem(`oauth_redirect`, here);
                                 oauth.initImplicitFlow();
-                                setTimeout(() => { this.loginDone(); }, 100);
+                                setTimeout(() => this.loginDone(), 100);
                             }
                         }
                     });

@@ -19,6 +19,7 @@ import { ResourceFactory } from './resource-factory.class';
 @Injectable()
 export class ResourcesService {
     public authLoaded: boolean = false;
+    private model: any = {};
     private factories: any; // key, value map of factories
     private url: string;
     private auth_promise: any = null;
@@ -32,44 +33,55 @@ export class ResourcesService {
      * Initialises authentication details and sets up OAuth
      * @param  {any}    resolve Promise resolve function
      * @param  {any}    reject  Promise reject function
-     * @return {void}
+     * @return {Promise}
      */
-    public initAuth(resolve: any, reject: any) {
-        COMPOSER.log('RESRC', `Loading Authority...`);
-        if (this.mock) {
-            this.authLoaded = true;
-            return resolve();
-        }
-        const parts = this.url.split('/');
-        const uri = parts.splice(0, 3).join('/');
-        const base_el = document.getElementsByTagName('base')[0];
-        let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
-        if (base === '.') {
-            base = location.pathname;
-        }
-        this.get('Authority').get_authority().then((auth: any) => {
-            COMPOSER.log(`RESRC`, `Authority loaded. Session: ${auth.session === true}`);
-            if (typeof auth !== 'object') {
-                return reject({ message: 'Auth details no valid.' });
-            }
-            let url = encodeURIComponent(location.href);
-            url = auth.login_url.replace('{{url}}', url);
-            this.http.setupOAuth({
-                loginRedirect: (uri && location.origin.indexOf(uri) === 0 ? `${url}` : ((uri || '') + url)),
+    public initAuth() {
+        if (!this.model.auth_promise) {
+            this.model.auth_promise = new Promise((resolve, reject) => {
+                COMPOSER.log('RESRC', `Loading Authority...`);
+                if (this.mock) {
+                    this.authLoaded = true;
+                    return resolve();
+                }
+                const parts = this.url.split('/');
+                const uri = parts.splice(0, 3).join('/');
+                const base_el = document.getElementsByTagName('base')[0];
+                let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
+                if (base === '.') {
+                    base = location.pathname;
+                }
+                this.get('Authority').get_authority().then((auth: any) => {
+                    COMPOSER.log(`RESRC`, `Authority loaded. Session: ${auth.session === true}`, auth);
+                    if (typeof auth !== 'object') {
+                        return reject({ message: 'Auth details no valid.' });
+                    }
+                    let url = encodeURIComponent(location.href);
+                    url = auth.login_url.replace('{{url}}', url);
+                    this.http.setupOAuth({
+                        login_redirect: (uri && location.origin.indexOf(uri) === 0 ? `${url}` : ((uri || '') + url)),
+                        authority_loaded: true
+                    });
+                    if (auth.session) {
+                        this.http.setLoginStatus(auth.session);
+                    }
+                    this.authLoaded = true;
+                    this.http.tryLogin();
+                    resolve(auth);
+                    setTimeout(() => this.model.auth_promise = null, 300);
+
+                }, (err: any) => {
+                    COMPOSER.error('RESRC', 'Error getting authority.', err);
+                    this.http.setupOAuth({
+                        login_redirect: `${uri}/auth/login`,
+                        authority_loaded: true
+                    });
+                    this.http.tryLogin();
+                    reject(err);
+                    setTimeout(() => this.model.auth_promise = null, 300);
+                });
             });
-            if (auth.session) {
-                this.http.setLoginStatus(auth.session);
-            }
-            this.authLoaded = true;
-            setTimeout(() => resolve(this.http.tryLogin()), 200);
-        }, (err: any) => {
-            COMPOSER.error('RESRC', 'Error getting authority.', err);
-            this.http.setupOAuth({
-                loginRedirect: `${uri}/auth/login`,
-            });
-            this.http.tryLogin();
-            reject(err);
-        });
+        }
+        return this.model.auth_promise;
     }
     /**
      * Sets up OAuth with the given options
@@ -239,7 +251,7 @@ export class ResourcesService {
                 this.factories = {};
             }
             this.factories.Authority = auth;
-            this.initAuth(resolve, reject);
+            this.initAuth().then((resp) => resolve(resp), (err) => reject(err));
         });
     }
     /**
