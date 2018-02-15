@@ -124,14 +124,14 @@ export class WebSocketInterface {
 
     /**
      * Requests to execute a function on the server
-     * @param  {string}   sys_id   System ID
-     * @param  {string}   mod_id   Module name
-     * @param  {number}   i        Index of module in the system
-     * @param  {any}      fn       Name of the function to call on the module
-     * @param  {any}      args     Arguments to pass to the function being called
+     * @param  {string}         sys_id   System ID
+     * @param  {string}         mod_id   Module name
+     * @param  {number}         i        Index of module in the system
+     * @param  {string}         fn       Name of the function to call on the module
+     * @param  {Array<any>}     args     Arguments to pass to the function being called
      * @return {Promise<any>}   Returns a promise which resolves the result of the call or rejects with an error message
      */
-    public exec(sys_id: string, mod_id: string, i: number, fn: any, args: any) {
+    public exec(sys_id: string, mod_id: string, i: number, fn: string, args: Array<any>) {
         return new Promise<any>((resolve, reject) => {
             this.sendRequest(EXEC, sys_id, mod_id, i, fn, args)
                 .then((id) => {

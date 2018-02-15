@@ -165,6 +165,18 @@
          }
      }
 
+     /**
+     * Executes a command over the websocket connection
+     * @return {Promise<any>}
+     */
+     public exec(sys_id: string, mod_id: string, i: number, fn: string, args: Array<any>) {
+         if (this.io && this.io.connected) {
+             return this.io.exec(sys_id, mod_id, i, fn, args);
+         } else {
+             throw `execute failed as websocket not online\n${sys_id}: ${mod_id}_${i}.${fn}(${args.join(",")})`;
+         }
+     }
+
     /**
      * Get a system with the given id, creates a new system if it doesn't exist
      * @param  {string} sys_id System ID
