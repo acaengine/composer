@@ -58,10 +58,10 @@ export class WebSocketInterface {
 
     /**
      * Initialises websocket
-     * @param  {any}       auth
-     * @param  {string =    location.hostname} host Hostname for the websocket to connect to
-     * @param  {string =    '3000'}            port Port that the websocket is listening on
-     * @return {void}
+     * @param auth
+     * @param host Hostname for the websocket to connect to
+     * @param port Port that the websocket is listening on
+     * @return
      */
     public setup(auth: any, host?: string, port?: string, protocol?: string) {
         if (!host) {
@@ -82,12 +82,12 @@ export class WebSocketInterface {
 
     /**
      * Requests a binding to a status variable on the server
-     * @param  {string}   sys_id   System to bind to
-     * @param  {string}   mod_id   Module to bind to
-     * @param  {number}   i        Index of module in the system
-     * @param  {string}   name     Name of status variable to bind to
-     * @param  {Function} callback Function to call when the binding is successful
-     * @return {number}   Returns the id of the request
+     * @param sys_id   System to bind to
+     * @param mod_id   Module to bind to
+     * @param i        Index of module in the system
+     * @param name     Name of status variable to bind to
+     * @param callback Function to call when the binding is successful
+     * @return    Returns the id of the request
      */
     public bind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
         return new Promise<any>((resolve, reject) => {
@@ -103,12 +103,12 @@ export class WebSocketInterface {
 
     /**
      * Requests to unbind to a bound status variable on the server
-     * @param  {string}   sys_id   System ID
-     * @param  {string}   mod_id   Module name
-     * @param  {number}   i        Index of module in the system
-     * @param  {string}   name     Name of status variable to unbind
-     * @param  {Function} callback Function to call when the unbind is successful
-     * @return {number}   Returns the id of the request
+     * @param sys_id   System ID
+     * @param mod_id   Module name
+     * @param i        Index of module in the system
+     * @param name     Name of status variable to unbind
+     * @param callback Function to call when the unbind is successful
+     * @return    Returns the id of the request
      */
     public unbind(sys_id: string, mod_id: string, i: number, name: string, callback: () => void) {
         return new Promise<any>((resolve, reject) => {
@@ -124,12 +124,12 @@ export class WebSocketInterface {
 
     /**
      * Requests to execute a function on the server
-     * @param  {string}         sys_id   System ID
-     * @param  {string}         mod_id   Module name
-     * @param  {number}         i        Index of module in the system
-     * @param  {string}         fn       Name of the function to call on the module
-     * @param  {Array<any>}     args     Arguments to pass to the function being called
-     * @return {Promise<any>}   Returns a promise which resolves the result of the call or rejects with an error message
+     * @param sys_id   System ID
+     * @param mod_id   Module name
+     * @param i        Index of module in the system
+     * @param fn       Name of the function to call on the module
+     * @param args     Arguments to pass to the function being called
+     * @return    Returns a promise which resolves the result of the call or rejects with an error message
      */
     public exec(sys_id: string, mod_id: string, i: number, fn: string, args: Array<any>) {
         return new Promise<any>((resolve, reject) => {
@@ -145,10 +145,10 @@ export class WebSocketInterface {
 
     /**
      * Enables debugging on the selected system and module
-     * @param  {string} sys_id System ID
-     * @param  {string} mod_id Module name
-     * @param  {number} i      Index of the module in the system
-     * @return {number}        Returns the id of the request made
+     * @param sys_id System ID
+     * @param mod_id Module name
+     * @param i      Index of the module in the system
+     * @return         Returns the id of the request made
      */
     public debug(sys_id: string, mod_id: string, i: number) {
         return this.sendRequest(DEBUG, sys_id, mod_id, i, DEBUG);
@@ -156,10 +156,10 @@ export class WebSocketInterface {
 
     /**
      * Sends ignore to the selected system and module
-     * @param  {string} sys_id System ID
-     * @param  {string} mod_id Module name
-     * @param  {number} i      Index of the module in the system
-     * @return {number}        Returns the id of the request made
+     * @param sys_id System ID
+     * @param mod_id Module name
+     * @param i      Index of the module in the system
+     * @return         Returns the id of the request made
      */
     public ignore(sys_id: string, mod_id: string, inst: any) {
         return this.sendRequest(IGNORE, sys_id, mod_id, null, IGNORE);
@@ -167,7 +167,7 @@ export class WebSocketInterface {
 
     /**
      * Connects to the websocket on the given host and port
-     * @return {void}
+     * @return
      */
     private connect(tries: number = 0) {
         if (!this.connect_promise) {
@@ -266,7 +266,7 @@ export class WebSocketInterface {
 
     /**
      * Reconnects the websocket is it closes or does not exist
-     * @return {void}
+     * @return
      */
     private reconnect() {
         if (this.io === null || this.io.readyState === this.io.CLOSED && !this.connect_promise) {
@@ -277,7 +277,7 @@ export class WebSocketInterface {
     }
     /**
      * Starts pings to the server every so often to keep the connection alive
-     * @return {void}
+     * @return
      */
     private startKeepAlive() {
         this.keepAliveInterval = setInterval(() => {
@@ -288,7 +288,7 @@ export class WebSocketInterface {
     }
     /**
      * Stops pings to the server
-     * @return {void}
+     * @return
      */
     private stopKeepAlive() {
         clearInterval(this.keepAliveInterval);
@@ -296,8 +296,8 @@ export class WebSocketInterface {
 
     /**
      * Called when the websocket is connected
-     * @param  {any}    evt Event returned by the websocket
-     * @return {void}
+     * @param evt Event returned by the websocket
+     * @return
      */
     private onopen(evt: any) {
         COMPOSER.log('WS', 'Websocket connected');
@@ -315,8 +315,8 @@ export class WebSocketInterface {
 
     /**
      * Function that is called when the websocket is disconnected
-     * @param  {any}    evt Event returned by the websocket
-     * @return {void}
+     * @param evt Event returned by the websocket
+     * @return
      */
     private onclose(evt: any) {
         this.connected = false;
@@ -328,8 +328,8 @@ export class WebSocketInterface {
 
     /**
      * Function that is called when the websocket is receives a message
-     * @param  {any}    evt Event returned by the websocket
-     * @return {void}
+     * @param evt Event returned by the websocket
+     * @return
      */
     private onmessage(evt: any) {
         let msg: any;
@@ -399,9 +399,9 @@ export class WebSocketInterface {
 
     /**
      * Called when processing a message failed
-     * @param  {any}    msg  Failure message to display
-     * @param  {any}    type Type of message
-     * @return {void}
+     * @param msg  Failure message to display
+     * @param type Type of message
+     * @return
      */
     private fail(msg: any, type: any) {
         COMPOSER.error('WS', `Failed ${type}. ${JSON.stringify(msg)}`);
@@ -410,13 +410,13 @@ export class WebSocketInterface {
 
     /**
      * Sends a message through the websocket
-     * @param  {any}    type   Message type
-     * @param  {any}    system System for message to be sent to
-     * @param  {any}    mod    Module for message to be sent to
-     * @param  {any}    index  Index of module in system
-     * @param  {any}    name   Name of status variable or function on the module
-     * @param  {any[] = []} args Arguments to pass to the function on the module
-     * @return {any} Returns the id of the request made through the websocket.
+     * @param type   Message type
+     * @param system System for message to be sent to
+     * @param mod    Module for message to be sent to
+     * @param index  Index of module in system
+     * @param name   Name of status variable or function on the module
+     * @param args Arguments to pass to the function on the module
+     * @return  Returns the id of the request made through the websocket.
      */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []): any {
         return new Promise<any>((resolve) => {

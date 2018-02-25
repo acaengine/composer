@@ -30,9 +30,9 @@ export class Module {
     }
     /**
      * Bind to status variable on module
-     * @param  {string}   prop  Name of the status variable to bind
-     * @param  {() => void} cb_fn Function that is called when the binding value changes
-     * @return {() => void} Returns a function that can be called to unbind to the status variable
+     * @param prop  Name of the status variable to bind
+     * @param cb_fn Function that is called when the binding value changes
+     * @return Returns a function that can be called to unbind to the status variable
      */
     public bind(prop: string, next: (change: boolean) => void) {
         const variable = this.get(prop);
@@ -41,10 +41,10 @@ export class Module {
 
     /**
      * Execute a function on this module on the server
-     * @param  {string} fn    Function name
-     * @param  {string} prop  Status variable to be changed
-     * @param  {any}    args  Arguments to pass to the function
-     * @return {Promise<any>|string} Returns a exec promise or an error message
+     * @param fn    Function name
+     * @param prop  Status variable to be changed
+     * @param args  Arguments to pass to the function
+     * @return  Returns a exec promise or an error message
      */
     public exec(fn: string, args: any) {
         return new Promise((resolve, reject) => {
@@ -56,8 +56,8 @@ export class Module {
 
     /**
      * Unbind to the give status variable
-     * @param  {string} prop Name of the status variable to unbind
-     * @return {void}
+     * @param prop Name of the status variable to unbind
+     * @return
      */
     public unbind(prop: string) {
         const variable = this.get(prop);
@@ -73,8 +73,8 @@ export class Module {
     }
     /**
      * Get the status variable from the module
-     * @param  {string} prop Name of status variable to get
-     * @return {StatusVariable} Returns the status variable with the give name
+     * @param prop Name of status variable to get
+     * @return  Returns the status variable with the give name
      */
     public get(prop: string) {
         if (this.status_variables[prop]) {
@@ -87,7 +87,7 @@ export class Module {
 
     /**
      * Rebinds all the status variables in the module
-     * @return {void}
+     * @return
      */
     public rebind() {
         for (const id in this.status_variables) {
@@ -99,8 +99,8 @@ export class Module {
 
     /**
      * Sets the debugger for the module
-     * @param  {any}    debug Debugger
-     * @return {boolean} Returns the active state of the debugger
+     * @param debug Debugger
+     * @return  Returns the active state of the debugger
      */
     public setDebug(debug: any) {
         if (typeof debug !== 'object') {

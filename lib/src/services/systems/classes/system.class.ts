@@ -22,9 +22,9 @@
      }
     /**
      * Gets the module with the given id and index
-     * @param  {string}      id Module name
-     * @param  {number = 1}  index Index of module in system
-     * @return {Module} Returns the module with the given id and index
+     * @param id Module name
+     * @param index Index of module in system
+     * @return  Returns the module with the given id and index
      */
     public get(id: string, index: number | string = 1) {
         if (id.indexOf('_') >= 0) {
@@ -42,7 +42,7 @@
     }
     /**
      * Rebinds all bound status variables on existing modules in the system
-     * @return {void}
+     * @return
      */
      public rebind() {
          for (const mod of this.modules) {

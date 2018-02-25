@@ -63,16 +63,16 @@ export class CommsService {
 
     /**
      * Initialises OAuth
-     * @param  {string}  url      Login URL
-     * @param  {string}  refresh  Refresh tokens URL
-     * @param  {string}  redirect Redirect URI
-     * @param  {string}  c_id     OAuth Client ID
-     * @param  {string}  login    Login URL
-     * @param  {string}  issuer   OAuth Issuer
-     * @param  {string}  scope    OAuth Scope
-     * @param  {boolean} oidc     Use Open ID
-     * @param  {string}  logout   Logout URL
-     * @return {void}
+     * @param url      Login URL
+     * @param refresh  Refresh tokens URL
+     * @param redirect Redirect URI
+     * @param c_id     OAuth Client ID
+     * @param login    Login URL
+     * @param issuer   OAuth Issuer
+     * @param scope    OAuth Scope
+     * @param oidc     Use Open ID
+     * @param logout   Logout URL
+     * @return
      */
     public setupOAuth(options: any) {
         const oauth = this.oAuthService;
@@ -89,8 +89,8 @@ export class CommsService {
     }
     /**
      * Changes the http service to respond with mock data
-     * @param {boolean = true} enable Enables or disables mock data responses
-     * @return {void}
+     * @param enable Enables or disables mock data responses
+     * @return
      */
     public mock(enable: boolean = true) {
         if (enable && this.http instanceof HttpClient) {
@@ -103,7 +103,7 @@ export class CommsService {
     }
     /**
      * Attempt to login to the system
-     * @return {void}
+     * @return
      */
     public tryLogin() {
         COMPOSER.log('COMMS', `Trying Login`);
@@ -118,9 +118,9 @@ export class CommsService {
 
     /**
      * Wrapper for Angular HTTP GET with auth
-     * @param  {string} url     Request URL
-     * @param  {any}    options Request Options
-     * @return {Observable} Returns an observable which acts like the Http observable
+     * @param url     Request URL
+     * @param options Request Options
+     * @return  Returns an observable which acts like the Http observable
      */
     public get(url: string, options?: any) {
         return new Observable((observer: any) => {
@@ -141,10 +141,10 @@ export class CommsService {
 
     /**
      * Wrapper for Angular HTTP POST with auth
-     * @param  {string} url     Request URL
-     * @param  {any}    body    (Optional)Request Body
-     * @param  {any}    options (Optional)Request Options
-     * @return {Observable} Returns an observable which acts like the Http observable
+     * @param url     Request URL
+     * @param body    (Optional)Request Body
+     * @param options (Optional)Request Options
+     * @return  Returns an observable which acts like the Http observable
      */
     public post(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
@@ -166,10 +166,10 @@ export class CommsService {
 
     /**
      * Wrapper for Angular HTTP PUT with auth
-     * @param  {string} url     Request URL
-     * @param  {any}    body    (Optional)Request Body
-     * @param  {any}    options (Optional)Request Options
-     * @return {Observable} Returns an observable which acts like the Http observable
+     * @param url     Request URL
+     * @param body    (Optional)Request Body
+     * @param options (Optional)Request Options
+     * @return  Returns an observable which acts like the Http observable
      */
     public put(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
@@ -191,9 +191,9 @@ export class CommsService {
 
     /**
      * Wrapper for Angular HTTP DELETE with auth
-     * @param  {string} url     Request URL
-     * @param  {any}    options (Optional)Request Options
-     * @return {Observable} Returns an observable which acts like the Http observable
+     * @param url     Request URL
+     * @param options (Optional)Request Options
+     * @return  Returns an observable which acts like the Http observable
      */
     public delete(url: string, options?: any) {
         return new Observable((observer: any) => {
@@ -210,8 +210,8 @@ export class CommsService {
     }
     /**
      * Creates a MD5 hash of the given string
-     * @param  {string} str String to hash
-     * @return {string}     Returns a hash of the given string
+     * @param str String to hash
+     * @return      Returns a hash of the given string
      */
     public hash(str: string) {
         return Md5.hashStr(str, false) as string;
@@ -219,7 +219,7 @@ export class CommsService {
 
     /**
      * Login to the system with the set details
-     * @return {Promise<any>} Returns a promise which resolves with an access token
+     * @return  Returns a promise which resolves with an access token
      */
     public login() {
         if (this.login_promise === null) {
@@ -236,7 +236,7 @@ export class CommsService {
     }
     /**
      * Get access token
-     * @return {string} Returns access token
+     * @return  Returns access token
      */
     get token() {
         return this.login();
@@ -255,7 +255,7 @@ export class CommsService {
 
     /**
      * Check whether or not the user is logged in
-     * @return {[type]} [description]
+     * @return  [description]
      */
     public isLoggedIn() {
         return this.token ? true : (this.refresh ? null : false);
@@ -263,10 +263,10 @@ export class CommsService {
 
     /**
      * Refreshs access token
-     * @param  {any}    resolve Login promise resolve
-     * @param  {any}    reject  Login promise reject
-     * @param  {number}
-     * @return {void}
+     * @param resolve Login promise resolve
+     * @param reject  Login promise reject
+     * @param
+     * @return
      */
     public refreshToken(resolve: any, reject: any, retries: number = 1) {
         const oauth: any = this.oAuthService;
@@ -311,8 +311,8 @@ export class CommsService {
 
     /**
      * Sets whether the user has logged in or not
-     * @param  {boolean} status Logged in status
-     * @return {void}
+     * @param status Logged in status
+     * @return
      */
     public setLoginStatus(status: boolean) {
         const oauth: any = this.oAuthService;
@@ -324,7 +324,7 @@ export class CommsService {
     }
     /**
      * Removes all authentication related keys from storage
-     * @return {void}
+     * @return
      */
     public clearStore() {
         const oauth: any = this.oAuthService;
@@ -332,8 +332,8 @@ export class CommsService {
     }
     /**
      * Checks if user is authorised
-     * @param  {any}    cb_fn Callback function which is passed the response
-     * @return {void}
+     * @param cb_fn Callback function which is passed the response
+     * @return
      */
     public checkAuth(cb_fn: any) {
         COMPOSER.log('COMMS', `Checking Auth.`);
@@ -443,7 +443,7 @@ export class CommsService {
 
     /**
      * Called when login is completed
-     * @return {void}
+     * @return
      */
     private loginDone() {
         this.cleanUrl();
@@ -452,9 +452,9 @@ export class CommsService {
 
     /**
      * Handles errors when attempting to login
-     * @param  {any}    err    Error response from login attempt
-     * @param  {any}    reject Login Promise reject function
-     * @return {void}
+     * @param err    Error response from login attempt
+     * @param reject Login Promise reject function
+     * @return
      */
     private processLoginError(err: any, reject: any) {
         const oauth: any = this.oAuthService;
@@ -474,9 +474,9 @@ export class CommsService {
 
     /**
      * Stores last couple errors in localStorage for debugging purposes
-     * @param  {string}  type  Type of error
-     * @param  {any}     error Error to store
-     * @return {void}
+     * @param type  Type of error
+     * @param error Error to store
+     * @return
      */
     private storeError(type: string, error: any) {
         const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -514,9 +514,9 @@ export class CommsService {
     }
     /**
      * Replaces old tokens with new
-     * @param  {any}    data    Object contain new tokens and expiry
-     * @param  {any}    resolve Login resolve function
-     * @return {void}
+     * @param data    Object contain new tokens and expiry
+     * @param resolve Login resolve function
+     * @return
      */
     private updateToken(data: any, resolve: any) {
         const oauth: any = this.oAuthService;
@@ -537,7 +537,7 @@ export class CommsService {
     }
     /**
      * Clean up URL after logging in so that the ugly hash/query is not displayed
-     * @return {void}
+     * @return
      */
     private cleanUrl() {
         const path = this.loc.path(false);
@@ -558,10 +558,10 @@ export class CommsService {
 
     /**
      * Process HTTP options
-     * @param  {string} url     Request URL
-     * @param  {any}    body    Request Body
-     * @param  {any}    options Request Options
-     * @return {any} Returns the details for the request
+     * @param url     Request URL
+     * @param body    Request Body
+     * @param options Request Options
+     * @return  Returns the details for the request
      */
     private processOptions(url: string, body?: any, options?: any) {
         return new Promise((resolve, reject) => {
@@ -595,10 +595,10 @@ export class CommsService {
 
     /**
      * Handler for HTTP request errors
-     * @param  {any}    err Request error
-     * @param  {any}    req Request details
-     * @param  {any}    obs Request observable
-     * @return {void}
+     * @param err Request error
+     * @param req Request details
+     * @param obs Request observable
+     * @return
      */
     private error(err: any, req: any, obs: any) {
         const hash = this.hash(req.url + req.body);

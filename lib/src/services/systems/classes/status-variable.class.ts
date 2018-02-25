@@ -123,7 +123,7 @@ export class StatusVariable {
     }
     /**
      * Unbind from this variable
-     * @return {void}
+     * @return
      */
     public unbind() {
         const count = this.value('bindings');
@@ -142,8 +142,8 @@ export class StatusVariable {
 
     /**
      * Called when an execute returns success
-     * @param  {any}  msg Message returned by the server
-     * @return {void}
+     * @param msg Message returned by the server
+     * @return
      */
     public success(msg: any) {
         return;
@@ -151,8 +151,8 @@ export class StatusVariable {
 
     /**
      * Called when an execute returns error
-     * @param  {any}  msg Message returned by the server
-     * @return {void}
+     * @param msg Message returned by the server
+     * @return
      */
     public error(msg: any) {
         return;
@@ -160,8 +160,8 @@ export class StatusVariable {
 
     /**
      * Called when an status variable is updated on the server side
-     * @param  {any}  msg Message returned by the server
-     * @return {void}
+     * @param msg Message returned by the server
+     * @return
      */
     public notify(msg: any) {
         this.setValue(msg.value);

@@ -39,8 +39,8 @@ export class OAuthService {
 
     /**
      * Set the type of storage to use for OAuth
-     * @param  {string} storage Storage to use Local or Session
-     * @return {void}
+     * @param storage Storage to use Local or Session
+     * @return
      */
     public setStorage(storage: string) {
         this._storage = storage;
@@ -48,7 +48,7 @@ export class OAuthService {
 
     /**
      * Get generated a login URL with the set parameters
-     * @return {string} Returns the generated login URL
+     * @return  Returns the generated login URL
      */
     get login_url() {
         return this.createLoginUrl('').then((url) => url);
@@ -56,7 +56,7 @@ export class OAuthService {
 
     /**
      * Get generated a refresh URL with the set parameters
-     * @return {string} Returns the generated refresh URL
+     * @return  Returns the generated refresh URL
      */
     get refresh_url() {
         return this.createRefreshUrl('').then((url) => url, (err) => '');
@@ -72,8 +72,8 @@ export class OAuthService {
 
     /**
      * Try to process login
-     * @param  {any}    options Login processing options
-     * @return {Promise<boolean>} Returns Promise which resolves success of login
+     * @param options Login processing options
+     * @return  Returns Promise which resolves success of login
      */
     public tryLogin(options?: any) {
         return new Promise((resolve, reject) => {
@@ -91,7 +91,7 @@ export class OAuthService {
 
     /**
      * Get the identity claims from storage
-     * @return {string} Returns the identity claims
+     * @return  Returns the identity claims
      */
     public getIdentityClaims() {
         const claims = this.store[this._storage].getItem(`${this.model.client_id}_id_token_claims_obj`)
@@ -102,7 +102,7 @@ export class OAuthService {
 
     /**
      * Get the id token from storage
-     * @return {string} Returns the id token
+     * @return  Returns the id token
      */
     public getIdToken() {
         return this.store[this._storage].getItem(`${this.model.client_id}_id_token`).then((res: string) => res);
@@ -110,7 +110,7 @@ export class OAuthService {
 
     /**
      * Get the access token from storage
-     * @return {string} Returns the access token
+     * @return  Returns the access token
      */
     public getAccessToken() {
         if (!this.promises.access_token) {
@@ -132,7 +132,7 @@ export class OAuthService {
     }
     /**
      * Get the access token from storage
-     * @return {string} Returns the access token
+     * @return  Returns the access token
      */
     public getRefreshToken() {
         if (!this.promises.refresh_token) {
@@ -155,7 +155,7 @@ export class OAuthService {
 
     /**
      * Checks to see if access token is still valid
-     * @return {boolean} Returns the expiry state of the access token
+     * @return  Returns the expiry state of the access token
      */
     public hasValidAccessToken() {
         if (!this.promises.valid_access_token) {
@@ -209,7 +209,7 @@ export class OAuthService {
 
     /**
      * Get the authorisation header to add to requests
-     * @return {string} Returns authorisation header
+     * @return  Returns authorisation header
      */
     public authorizationHeader() {
         if (!this.promises.auth_header) {
@@ -229,7 +229,7 @@ export class OAuthService {
 
     /**
      * Clears storage and redirects to logout URL
-     * @return {void}
+     * @return
      */
     public logOut() {
         COMPOSER.log('OAUTH', 'Logging out. Clear access tokens...');
@@ -248,7 +248,7 @@ export class OAuthService {
     }
     /**
      * Removes any auth related details from storage
-     * @return {void}
+     * @return
      */
     public clearAuth() {
         COMPOSER.log('OAUTH', `Clearing authentication variables...`);
@@ -272,8 +272,8 @@ export class OAuthService {
 
     /**
      * Generates a login URL with the set parameters
-     * @param  {any}    state OAuth State
-     * @return {string} Returns a generated login URL
+     * @param state OAuth State
+     * @return  Returns a generated login URL
      */
     private createLoginUrl(state?: any) {
         if (!state) { state = ''; }
@@ -301,8 +301,8 @@ export class OAuthService {
     }
     /**
      * Generates a refresh URL with the set parameters
-     * @param  {any}    state OAuth State
-     * @return {string} Returns a generated refresh URL
+     * @param state OAuth State
+     * @return  Returns a generated refresh URL
      */
     private createRefreshUrl(state: any) {
         if (typeof state === 'undefined') { state = ''; }
@@ -338,8 +338,8 @@ export class OAuthService {
 
     /**
      * Starts process to login and get OAuth tokens
-     * @param  {string} additionalState OAuth State
-     * @return {void}
+     * @param additionalState OAuth State
+     * @return
      */
     private initImplicitFlow(additionalState: string = '') {
         if (!this.model.client_id || this.model.client_id === '' || this.run_flow) {
@@ -397,10 +397,10 @@ export class OAuthService {
 
     /**
      * Attempts to process login information
-     * @param  {any}    options Login processing options
-     * @param  {any}    resolve Promise resolve
-     * @param  {any}    reject  Promise reject
-     * @return {void}
+     * @param options Login processing options
+     * @param resolve Promise resolve
+     * @param reject  Promise reject
+     * @return
      */
     private attemptLogin(options: any, tries: number = 0) {
         return new Promise((resolve, reject) => {
@@ -510,9 +510,9 @@ export class OAuthService {
     }
     /**
      * Process tokens
-     * @param  {any}    idToken     ID Token
-     * @param  {any}    access_token Access Token
-     * @return {boolean} Returns success of processing id token
+     * @param idToken     ID Token
+     * @param access_token Access Token
+     * @return  Returns success of processing id token
      */
     private processIdToken(idToken: any, access_token: any) {
         return new Promise((resolve) => {
@@ -580,7 +580,7 @@ export class OAuthService {
 
     /**
      * Creates a nonce and stores it in storage
-     * @return {string} Returns the created nonce
+     * @return  Returns the created nonce
      */
     private createAndSaveNonce() {
         return this.createNonce().then((nonce: any) => {
@@ -592,7 +592,7 @@ export class OAuthService {
 
     /**
      * Generates a nonce
-     * @return {Promise<string>} Returns a promise that resolve a nonce
+     * @return  Returns a promise that resolve a nonce
      */
     private createNonce() {
 
@@ -614,7 +614,7 @@ export class OAuthService {
     }
     /**
      * Breaks up URL hash/query into a key, value map
-     * @return {any} Returns a map of key, value pairs from the URL hash/query
+     * @return  Returns a map of key, value pairs from the URL hash/query
      */
     private getFragment() {
         const path = this.location.path();
@@ -628,8 +628,8 @@ export class OAuthService {
 
     /**
      * Parses query string and generates a map of the parameters
-     * @param  {string}    queryString Query or hash string
-     * @return {any} Returns a map of key, value pairs from the query string
+     * @param queryString Query or hash string
+     * @return  Returns a map of key, value pairs from the query string
      */
     private parseQueryString(queryString: string) {
         const data: any = {};
@@ -674,9 +674,9 @@ export class OAuthService {
 
     /**
      * Checks if claims and tokens correctly in hash
-     * @param  {any}    access_token Access Token
-     * @param  {any}    idClaims    ID Claims
-     * @return {boolean} Returns claims and tokens correctly in hash
+     * @param access_token Access Token
+     * @param idClaims    ID Claims
+     * @return  Returns claims and tokens correctly in hash
      */
     private checkAtHash(access_token: any, idClaims: any) {
         if (!access_token || !idClaims || !idClaims.at_hash) {

@@ -110,9 +110,9 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     /**
      * Executes a function on the module
-     * @param  {string} exec (Optional) Name of the function to call on the module, defaults to the
+     * @param exec (Optional) Name of the function to call on the module, defaults to the
      *                       binding name if not set
-     * @return {void}
+     * @return
      */
     public call_exec(exec?: string) {
         if (this.binding && (this.exec === null || this.exec === '')) {
@@ -145,8 +145,8 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     /**
      * () => void call when the element that this is attached to is tapped
      * emits a ontap event
-     * @param  {any}    e Hammer Tap event returned by Angular 2
-     * @return {void}
+     * @param e Hammer Tap event returned by Angular 2
+     * @return
      */
     @HostListener('tap', ['$event'])
     private onClick(e: any) { this.emit(e, this.ontap); }
@@ -154,8 +154,8 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     /**
      * () => void call when the element that this is attached emits a mouseup/touchend
      * emits an onrelease event
-     * @param  {any}    e Hammer PressUp event returned by Angular 2
-     * @return {void}
+     * @param e Hammer PressUp event returned by Angular 2
+     * @return
      */
     @HostListener('pressup', ['$event'])
     private onRelease(e: any) { this.emit(e, this.onrelease); }
@@ -163,8 +163,8 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     /**
      * () => void call when the element that this is attached to is tapped
      * emits a onpress event
-     * @param  {any}    e Hammer Press event returned by Angular 2
-     * @return {void}
+     * @param e Hammer Press event returned by Angular 2
+     * @return
      */
     @HostListener('press', ['$event'])
     private onPress(e: any) { this.emit(e, this.onpress); }
@@ -172,7 +172,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     /**
      * Checks if the element is exists on the page and binds/unbinds from the
      * status variable if neccessary
-     * @return {void}
+     * @return
      */
     private checkVisibility() {
         if (!this.checkElement()) {
@@ -189,7 +189,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     /**
      * Checks if the element attached to the directive is part of the DOM
-     * @return {void}
+     * @return
      */
     private checkElement() {
         let el = this.el.nativeElement;
@@ -204,7 +204,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     /**
      * Cleans up the module string an pulls out the module index if applicable
-     * @return {void}
+     * @return
      */
     private cleanModule() {
         if (this.mod) {
@@ -224,8 +224,8 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     /**
      * Checks if the give type's value has changed
-     * @param  {string} type Type to check
-     * @return {boolean} Returns whether or not the given type's value has changed
+     * @param type Type to check
+     * @return  Returns whether or not the given type's value has changed
      */
     private hasChanged(type: string) {
         if (type === 'system') {
@@ -241,7 +241,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     /**
      * Gets the system from the Systems Service
-     * @return {void}
+     * @return
      */
     private getSystem() {
         if (!this.service) { return; }
@@ -255,7 +255,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     /**
      * Gets the module from the system
-     * @return {void}
+     * @return
      */
     private getModule() {
         if (!this.system) { return; }
@@ -268,7 +268,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     }
     /**
      * Gets the status variable from the module and binds to it.
-     * @return {void}
+     * @return
      */
     private getBinding() {
         if (!this.bind || !this.module) { return; }

@@ -31,9 +31,9 @@ export class ResourcesService {
 
     /**
      * Initialises authentication details and sets up OAuth
-     * @param  {any}    resolve Promise resolve function
-     * @param  {any}    reject  Promise reject function
-     * @return {Promise}
+     * @param resolve Promise resolve function
+     * @param reject  Promise reject function
+     * @return
      */
     public initAuth() {
         if (!this.model.auth_promise) {
@@ -85,8 +85,8 @@ export class ResourcesService {
     }
     /**
      * Sets up OAuth with the given options
-     * @param  {any}    options OAuth details
-     * @return {void}
+     * @param options OAuth details
+     * @return
      */
     public setup(options: any) {
         this.http.setupOAuth({
@@ -102,8 +102,8 @@ export class ResourcesService {
 
     /**
      * Initialises all the resource factories for each route
-     * @param  {string} url_base Base resource URL, defaults to origin + '/control/'
-     * @return {Promise<any>}    Returns a promise when resolves the state of the auth.
+     * @param url_base Base resource URL, defaults to origin + '/control/'
+     * @return     Returns a promise when resolves the state of the auth.
      */
     public init(url_base?: string, mock: boolean = false) {
         if (mock) {
@@ -256,25 +256,25 @@ export class ResourcesService {
     }
     /**
      * Function to get the user access token for the API
-     * @return {string} Returns an OAuth access token
+     * @return  Returns an OAuth access token
      */
     public getToken() {
         return this.http.token;
     }
     /**
      * Function checks if the the user is current authorised.
-     * @return {void}
+     * @return
      */
     public checkAuth() {
         this.http.checkAuth(() => COMPOSER.log('RESRC', 'Refreshed Auth'));
     }
     /**
      * Creates a new resource factory with the given parameters.
-     * @param  {string} name    Name of the resource factory
-     * @param  {string} url     Base API URL of the resources
-     * @param  {any}    params  Route paramters available on the API URL
-     * @param  {any}    methods Request methods that are avaiable on this resource
-     * @return {void}
+     * @param name    Name of the resource factory
+     * @param url     Base API URL of the resources
+     * @param params  Route paramters available on the API URL
+     * @param methods Request methods that are avaiable on this resource
+     * @return
      */
     public new(name: string, url: string, params: any, methods: any) {
         const factory = new ResourceFactory(url, params, methods, this.http);
@@ -287,8 +287,8 @@ export class ResourcesService {
 
     /**
      * Function to get a resource factory with the given name
-     * @param  {string} name Name of the resource factory to get
-     * @return {ResourceFactory} Returns a resource factory, null if not found
+     * @param name Name of the resource factory to get
+     * @return  Returns a resource factory, null if not found
      */
     public get(name: string) {
         if (!this.authLoaded) {

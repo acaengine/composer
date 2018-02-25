@@ -24,7 +24,7 @@
      }
     /**
      * Posts changes made to the resource to the server
-     * @return {any} Returns the responce from the server
+     * @return  Returns the responce from the server
      */
      public save() {
          if (!this.url || this.id === undefined) {

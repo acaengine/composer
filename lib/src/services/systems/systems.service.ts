@@ -46,7 +46,7 @@ export class SystemsService {
 
     /**
      * Get the resources service
-     * @return {Resources} Returns the resources service
+     * @return  Returns the resources service
      */
     get resources() {
         return this.r;
@@ -54,8 +54,8 @@ export class SystemsService {
 
     /**
      * Sets up the websocket and resources service with the given options
-     * @param  {any} options Options to pass to websocket and resources service
-     * @return {boolean} Returns the success of the initialisation of the resouces service
+     * @param options Options to pass to websocket and resources service
+     * @return  Returns the success of the initialisation of the resouces service
      */
     public setup(options: any): any {
          COMPOSER.loadSettings();
@@ -88,8 +88,8 @@ export class SystemsService {
 
     /**
      * Get a system with the given id, creates a new system if it doesn't exist
-     * @param  {string} sys_id System ID
-     * @return {any} Returns the system with the given id
+     * @param sys_id System ID
+     * @return  Returns the system with the given id
      */
     public get(sys_id: string) {
         this.updateSystems();
@@ -126,10 +126,10 @@ export class SystemsService {
 
     /**
      * Gets a module from the
-     * @param  {string} sys_id System ID
-     * @param  {string} id     Module name
-     * @param  {number = 1} i      Index of module in system
-     * @return {any}    Returns module if found
+     * @param sys_id System ID
+     * @param id     Module name
+     * @param i      Index of module in system
+     * @return     Returns module if found
      */
     public getModule(sys_id: string, id: string, i: number = 1) {
         const system = this.get(sys_id);
@@ -139,7 +139,7 @@ export class SystemsService {
 
     /**
      * Check the state of the websocket
-     * @return {[type]} [description]
+     * @return  [description]
      */
     public isConnected() {
         return this.io ? this.io.connected : false;
@@ -147,7 +147,7 @@ export class SystemsService {
 
     /**
      * Rebinds all the bindings in each system
-     * @return {void}
+     * @return
      */
     public rebind() {
         for (let i = 0; this.systems && i < this.systems.length; i++) {
@@ -157,7 +157,7 @@ export class SystemsService {
 
     /**
     * Executes a command over the websocket connection
-    * @return {Promise<any>}
+    * @return
     */
     public exec(sys_id: string, mod_id: string, i: number, fn: string, args: Array<any>) {
         if (this.io && this.io.connected) {
@@ -169,8 +169,8 @@ export class SystemsService {
 
     /**
      * Get a system with the given id, creates a new system if it doesn't exist
-     * @param  {string} sys_id System ID
-     * @return {any} Returns the system with the given id
+     * @param sys_id System ID
+     * @return  Returns the system with the given id
      */
     private getSystem(sys_id: string) {
         this.updateSystems();
@@ -191,7 +191,7 @@ export class SystemsService {
 
     /**
      * Checks if each system stored exists on the server
-     * @return {void}
+     * @return
      */
     private updateSystems(): any {
         if (this.r && this.io) {

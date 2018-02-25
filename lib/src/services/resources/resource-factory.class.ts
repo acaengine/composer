@@ -56,9 +56,9 @@ export class ResourceFactory {
     }
     /**
      * Builds a url to use by the factory
-     * @param  {any}    params Parameters to be injected into the url
-     * @param  {any}    url    (Optional) URL for the parameters to be injected into, defaults to factory URL
-     * @return {string}        Returns a URL with the params injected into the appropriate places
+     * @param params Parameters to be injected into the url
+     * @param url    (Optional) URL for the parameters to be injected into, defaults to factory URL
+     * @return         Returns a URL with the params injected into the appropriate places
      */
     private createUrl(params: any, url?: any) {
         const gkeys = Object.keys(this.params);
@@ -98,10 +98,10 @@ export class ResourceFactory {
     }
     /**
      * Creates a new resource object with the provided data
-     * @param  {any}     data    Resource data
-     * @param  {string}  url     URL that the resource was retrieved from
-     * @param  {boolean} isArray Does the data contain multiple resources
-     * @return {Array|Resource}  Returns the resources from the parsed data
+     * @param data    Resource data
+     * @param url     URL that the resource was retrieved from
+     * @param isArray Does the data contain multiple resources
+     * @return   Returns the resources from the parsed data
      */
     private processData(data: any, url: string, isArray?: boolean) {
         let result: any;
@@ -117,9 +117,9 @@ export class ResourceFactory {
     }
     /**
      * Wrapper for a GET request
-     * @param  {any}    method Object describing the handling of the method
-     * @param  {any}    params URL parameters(Route/Query)
-     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     * @param method Object describing the handling of the method
+     * @param params URL parameters(Route/Query)
+     * @return   Returns a promise which returns the result of the http GET
      */
     private _get(method: any, params: any) {
         const url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
@@ -127,11 +127,11 @@ export class ResourceFactory {
     }
     /**
      * Wrapper for a GET request
-     * @param  {any}    url     Request URL
-     * @param  {any}    method  Object describing the handling of the method
-     * @param  {any}    resolve Promise resolve function
-     * @param  {any}    reject  Promise reject function
-     * @return {void}
+     * @param url     Request URL
+     * @param method  Object describing the handling of the method
+     * @param resolve Promise resolve function
+     * @param reject  Promise reject function
+     * @return
      */
     private __get(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
         if (tries > 10) {
@@ -158,10 +158,10 @@ export class ResourceFactory {
 
     /**
      * Wrapper for a POST request
-     * @param  {any} method Object describing the handling of the method
-     * @param  {any} params URL parameters(Route/Query)
-     * @param  {any} data   POST data
-     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     * @param method Object describing the handling of the method
+     * @param params URL parameters(Route/Query)
+     * @param data   POST data
+     * @return   Returns a promise which returns the result of the http GET
      */
     private _post(method: any, params: any, data: any) {
         const url = this.createUrl(params);
@@ -170,12 +170,12 @@ export class ResourceFactory {
 
     /**
      * Wrapper for a POST request
-     * @param  {any} url     Request URL
-     * @param  {any} method  Object describing the handling of the method
-     * @param  {any} data    POST data
-     * @param  {any} resolve Promise resolve function
-     * @param  {any} reject  Promise reject function
-     * @return {void}
+     * @param url     Request URL
+     * @param method  Object describing the handling of the method
+     * @param data    POST data
+     * @param resolve Promise resolve function
+     * @param reject  Promise reject function
+     * @return
      */
     private __post(url: any, method: any, req_data: any, resolve: any, reject: any, tries: number = 0) {
         if (tries > 10) {
@@ -202,10 +202,10 @@ export class ResourceFactory {
 
     /**
      * Wrapper for a PUT request
-     * @param  {any} method Object describing the handling of the method
-     * @param  {any} params URL parameters(Route/Query)
-     * @param  {any} data   PUT data
-     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     * @param method Object describing the handling of the method
+     * @param params URL parameters(Route/Query)
+     * @param data   PUT data
+     * @return   Returns a promise which returns the result of the http GET
      */
     private _put(method: any, params: any, data: any) {
         const url = this.createUrl(params);
@@ -214,12 +214,12 @@ export class ResourceFactory {
 
     /**
      * Wrapper for a PUT request
-     * @param  {any} url     Request URL
-     * @param  {any} method  Object describing the handling of the method
-     * @param  {any} data    PUT data
-     * @param  {any} resolve Promise resolve function
-     * @param  {any} reject  Promise reject function
-     * @return {void}
+     * @param url     Request URL
+     * @param method  Object describing the handling of the method
+     * @param data    PUT data
+     * @param resolve Promise resolve function
+     * @param reject  Promise reject function
+     * @return
      */
     private __put(url: any, method: any, req_data: any, resolve: any, reject: any, tries: number = 0) {
         if (tries > 10) {
@@ -246,9 +246,9 @@ export class ResourceFactory {
 
     /**
      * Wrapper for a DELETE request
-     * @param  {any} method Object describing the handling of the method
-     * @param  {any} params URL parameters(Route/Query)
-     * @return {Promise<any>}  Returns a promise which returns the result of the http GET
+     * @param method Object describing the handling of the method
+     * @param params URL parameters(Route/Query)
+     * @return   Returns a promise which returns the result of the http GET
      */
     private _delete(method: any, params: any) {
         const url = this.createUrl(params);
@@ -257,11 +257,11 @@ export class ResourceFactory {
 
     /**
      * Wrapper for a DELETE request
-     * @param  {any}    url     Request URL
-     * @param  {any}    method  Object describing the handling of the method
-     * @param  {any}    resolve Promise resolve function
-     * @param  {any}    reject  Promise reject function
-     * @return {void}
+     * @param url     Request URL
+     * @param method  Object describing the handling of the method
+     * @param resolve Promise resolve function
+     * @param reject  Promise reject function
+     * @return
      */
     private __delete(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
         if (tries > 10) {
@@ -288,7 +288,7 @@ export class ResourceFactory {
 
     /**
      * Checks to see if user is authorised
-     * @return {boolean} Returns whether or not the user is logged in
+     * @return  Returns whether or not the user is logged in
      */
     private auth() {
         return this.http.isLoggedIn();

@@ -59,10 +59,10 @@ export class MockWebSocketInterface {
     }
     /**
      * Initialises websocket
-     * @param  {any}       auth
-     * @param  {string =    location.hostname} host Hostname for the websocket to connect to
-     * @param  {string =    '3000'}            port Port that the websocket is listening on
-     * @return {void}
+     * @param auth
+     * @param host Hostname for the websocket to connect to
+     * @param port Port that the websocket is listening on
+     * @return
      */
     public setup(auth: any, host: string = location.hostname, port: string = '3000') {
         this.auth = auth;
@@ -74,8 +74,8 @@ export class MockWebSocketInterface {
     }
     /**
      * Called when the websocket is connected
-     * @param  {any}    evt Event returned by the websocket
-     * @return {void}
+     * @param evt Event returned by the websocket
+     * @return
      */
     public onopen(evt: any) {
         this.connected = true;
@@ -90,8 +90,8 @@ export class MockWebSocketInterface {
 
     /**
      * Function that is called when the websocket is disconnected
-     * @param  {any}    evt Event returned by the websocket
-     * @return {void}
+     * @param evt Event returned by the websocket
+     * @return
      */
     public onclose(evt: any) {
         this.connected = false;
@@ -101,11 +101,11 @@ export class MockWebSocketInterface {
     }
     /**
      * Requests a binding to a status variable on the server
-     * @param  {string}   sys_id   System to bind to
-     * @param  {string}   mod_id   Module to bind to
-     * @param  {number}   i        Index of module in the system
-     * @param  {string}   name     Name of status variable to bind to
-     * @return {number}   Returns the id of the request
+     * @param sys_id   System to bind to
+     * @param mod_id   Module to bind to
+     * @param i        Index of module in the system
+     * @param name     Name of status variable to bind to
+     * @return    Returns the id of the request
      */
     public bind(sys_id: string, mod_id: string, i: number, name: string) {
         return new Promise<any>((resolve, reject) => {
@@ -121,11 +121,11 @@ export class MockWebSocketInterface {
 
     /**
      * Requests to unbind to a bound status variable on the server
-     * @param  {string}   sys_id   System ID
-     * @param  {string}   mod_id   Module name
-     * @param  {number}   i        Index of module in the system
-     * @param  {string}   name     Name of status variable to unbind
-     * @return {number}   Returns the id of the request
+     * @param sys_id   System ID
+     * @param mod_id   Module name
+     * @param i        Index of module in the system
+     * @param name     Name of status variable to unbind
+     * @return    Returns the id of the request
      */
     public unbind(sys_id: string, mod_id: string, i: number, name: string) {
         return new Promise<any>((resolve, reject) => {
@@ -141,12 +141,12 @@ export class MockWebSocketInterface {
 
     /**
      * Requests to execute a function on the server
-     * @param  {string}   sys_id   System ID
-     * @param  {string}   mod_id   Module name
-     * @param  {number}   i        Index of module in the system
-     * @param  {any}      fn       Name of the function to call on the module
-     * @param  {any}      args     Arguments to pass to the function being called
-     * @return {Promise<any>}   Returns a promise which resolves the result of the call or rejects with an error message
+     * @param sys_id   System ID
+     * @param mod_id   Module name
+     * @param i        Index of module in the system
+     * @param fn       Name of the function to call on the module
+     * @param args     Arguments to pass to the function being called
+     * @return    Returns a promise which resolves the result of the call or rejects with an error message
      */
     public exec(sys_id: string, mod_id: string, i: number, fn: any, args: any) {
         return new Promise((resolve, reject) => {
@@ -159,10 +159,10 @@ export class MockWebSocketInterface {
     }
     /**
      * Enables debugging on the selected system and module
-     * @param  {string} sys_id System ID
-     * @param  {string} mod_id Module name
-     * @param  {number} i      Index of the module in the system
-     * @return {number}        Returns the id of the request made
+     * @param sys_id System ID
+     * @param mod_id Module name
+     * @param i      Index of the module in the system
+     * @return         Returns the id of the request made
      */
     public debug(sys_id: string, mod_id: string, i: number) {
         return this.sendRequest(DEBUG, sys_id, mod_id, i, DEBUG);
@@ -170,17 +170,17 @@ export class MockWebSocketInterface {
 
     /**
      * Sends ignore to the selected system and module
-     * @param  {string} sys_id System ID
-     * @param  {string} mod_id Module name
-     * @param  {number} i      Index of the module in the system
-     * @return {number}        Returns the id of the request made
+     * @param sys_id System ID
+     * @param mod_id Module name
+     * @param i      Index of the module in the system
+     * @return         Returns the id of the request made
      */
     public ignore(sys_id: string, mod_id: string, inst: any) {
         return this.sendRequest(IGNORE, sys_id, mod_id, null, IGNORE);
     }
     /**
      * Loads mock systems into variable
-     * @return {void}
+     * @return
      */
     private setupSystems() {
         if (!this.systems || this.systems.length <= 0) {
@@ -189,7 +189,7 @@ export class MockWebSocketInterface {
     }
     /**
      * Imitates the connecting of a real websocket
-     * @return {void}
+     * @return
      */
     private connect() {
         if (!this.connect_promise) {
@@ -214,7 +214,7 @@ export class MockWebSocketInterface {
     }
     /**
      * Imitation of reconnect in real websocket
-     * @return {[type]} [description]
+     * @return  [description]
      */
     private reconnect() {
         return;
@@ -239,8 +239,8 @@ export class MockWebSocketInterface {
 
     /**
      * Function that is called when the websocket is receives a message
-     * @param  {any}    evt Event returned by the websocket
-     * @return {void}
+     * @param evt Event returned by the websocket
+     * @return
      */
     private onmessage(evt: any) {
         let msg: any;
@@ -289,9 +289,9 @@ export class MockWebSocketInterface {
     }
     /**
      * Called when processing a message failed
-     * @param  {any}    msg  Failure message to display
-     * @param  {any}    type Type of message
-     * @return {void}
+     * @param msg  Failure message to display
+     * @param type Type of message
+     * @return
      */
     private fail(msg: any, type: any) {
         COMPOSER.log('WS(M)', `Failed(${type}): ${JSON.stringify(msg)}`);
@@ -299,13 +299,13 @@ export class MockWebSocketInterface {
     }
     /**
      * Sends a message through the websocket
-     * @param  {any}    type   Message type
-     * @param  {any}    system System for message to be sent to
-     * @param  {any}    mod    Module for message to be sent to
-     * @param  {any}    index  Index of module in system
-     * @param  {any}    name   Name of status variable or function on the module
-     * @param  {any[] = []} args Arguments to pass to the function on the module
-     * @return {any} Returns the id of the request made through the websocket.
+     * @param type   Message type
+     * @param system System for message to be sent to
+     * @param mod    Module for message to be sent to
+     * @param index  Index of module in system
+     * @param name   Name of status variable or function on the module
+     * @param args Arguments to pass to the function on the module
+     * @return  Returns the id of the request made through the websocket.
      */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any[] = []): any {
         return new Promise<number>((resolve) => {
@@ -338,9 +338,9 @@ export class MockWebSocketInterface {
     }
     /**
      * Imitates a status variable change on the server
-     * @param  {any}    r     Request made to the server
-     * @param  {any}    value New value of status variable
-     * @return {void}
+     * @param r     Request made to the server
+     * @param value New value of status variable
+     * @return
      */
     private notifyChange(r: any, value: any) {
         const evt_ex = {
@@ -355,9 +355,9 @@ export class MockWebSocketInterface {
     }
     /**
      * Imitates a response from the server to any request made
-     * @param  {string} type Request type
-     * @param  {any}    r    Request body
-     * @return {void}
+     * @param type Request type
+     * @param r    Request body
+     * @return
      */
     private respondTo(type: string, r: any) {
         let evt: any = {};
