@@ -428,7 +428,6 @@ export class OAuthService {
 
     private processLogin(parts: any, options: any) {
         return new Promise((resolve, reject) => {
-            console.log('Parts:', parts);
             const access_token = parts.access_token;
             const idToken = parts.id_token;
             const state = parts.state;
