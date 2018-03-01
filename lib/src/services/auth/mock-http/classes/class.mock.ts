@@ -12,7 +12,7 @@
      public name: string = '';
 
      constructor() {
-         this.name = 'Bob' + Math.floor(Math.random() * 89999 + 10000);
+         this.name = `Area ${Math.floor(Math.random() * 98 + 1)}.${Math.floor(Math.random() * 899 + 100)}`;
      }
 
      public match(value: any, field?: string) {

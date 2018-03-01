@@ -48,7 +48,7 @@ export let initialiseMockClasses = () => {
         const module = new MockModule();
         MODULE_LIST.push(module);
     }
-    MOCK_REQ_HANDLER.register('/control/api/modules', MODULE_LIST);
+    MOCK_REQ_HANDLER.register('/control/api/modules', { total: MODULE_LIST.length, results: MODULE_LIST });
     MOCK_REQ_HANDLER.register(`/control/api/module/:mod_id`, MODULE_LIST, (event) => {
         const modules = event.data;
         const id: string = event.params.mod_id;
@@ -68,7 +68,7 @@ export let initialiseMockClasses = () => {
         const zone = new MockZone();
         ZONE_LIST.push(zone);
     }
-    MOCK_REQ_HANDLER.register('/control/api/zones', ZONE_LIST);
+    MOCK_REQ_HANDLER.register('/control/api/zones', { total: ZONE_LIST.length, results: ZONE_LIST });
     MOCK_REQ_HANDLER.register(`/control/api/zone/:zone_id`, ZONE_LIST, (event) => {
         const zones = event.data;
         const id: string = event.params.zone_id;
@@ -112,7 +112,7 @@ export let initialiseMockClasses = () => {
         }
     });
 
-    MOCK_REQ_HANDLER.register('/control/api/systems', SYSTEM_LIST);
+    MOCK_REQ_HANDLER.register('/control/api/systems', { total: SYSTEM_LIST.length, results: SYSTEM_LIST });
     // Add mock user to the system
     MOCK_REQ_HANDLER.register('/control/api/user/current', new MockUser());
 };
