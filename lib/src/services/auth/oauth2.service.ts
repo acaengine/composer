@@ -162,9 +162,7 @@ export class OAuthService {
             this.promises.valid_access_token = new Promise<boolean>((resolve, reject) => {
                 this.getAccessToken().then((token: string) => {
                     this.store[this._storage].getItem(`${this.model.client_id}_expires_at`).then((expiresAt: string) => {
-                        setTimeout(() => {
-                            this.promises.valid_access_token = null;
-                        }, 10);
+                        setTimeout(() => this.promises.valid_access_token = null, 10);
                         if (!expiresAt) {
                             this.store[this._storage].getItem(`accessExpiry`).then((expiresAt_local: string) => {
                                 const now = new Date();
@@ -372,7 +370,13 @@ export class OAuthService {
                         if (this.model.authority_loaded) {
                             this.store.session.setItem(`${this.model.client_id}_login`, 'true');
                             COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
-                            location.href = this.model.login_redirect;
+                            this.hasValidAccessToken().then((state) => {
+                                if (!state) {
+                                    if (location.hash.indexOf('access_token') < 0 && location.search.indexOf('access_token') < 0) {
+                                        location.href = this.model.login_redirect;
+                                    }
+                                }
+                            });
                         } else {
                             COMPOSER.log('OAUTH', `Authority hasn't loaded yet.`);
                             this.run_flow = false;

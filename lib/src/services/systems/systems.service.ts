@@ -151,7 +151,9 @@ export class SystemsService {
      */
     public rebind() {
         for (let i = 0; this.systems && i < this.systems.length; i++) {
-            this.systems[i].rebind();
+            if (this.systems[i]) {
+                this.systems[i].rebind();
+            }
         }
     }
 
