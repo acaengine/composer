@@ -13,6 +13,7 @@ import { ChangeDetectorRef, OnChanges, OnDestroy, OnInit } from '@angular/core';
 import { COMPOSER } from '../settings';
 import { SystemsService } from '../services/systems/systems.service';
 
+const INVALID_STATES: any[] = [null, undefined];
 
 @Directive({
     selector: '[binding]',
@@ -23,7 +24,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     @Input() public sys: string; // Name of the system to connect to
     @Input() public mod: string; // Name of the module to connect to
     @Input() public index: number; // Index of the named module in the system
-    @Input() public value: any; // Value of the status variable bound to
+    @Input() public value: any = null; // Value of the status variable bound to
     @Input() public exec: string; // Name of the function to execute on the module when value changes
     @Input() public params: any; // Parameters to pass to the called function on module
     @Input() public ignore: number = 0; // Number of execute requests to ignore
@@ -82,8 +83,14 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
                 this.binding.setValue(this.value, this.exec || this.exec === '');
             }
                 // Execute function has changed
-            if (changes.exec || change_in_value) {
-                this.call(changes.exec ? changes.exec.previous : '');
+            if (changes.exec) {
+                COMPOSER.log('BIND(D)', `${this.id}: Execute function changed. ${changes.exec.previous || ''} → ${this.exec}`);
+                if (changes.exec.previous !== undefined && changes.exec.previous !== null) {
+                    this.call(changes.exec ? changes.exec.previous : null);
+                }
+            } else if (change_in_value && (INVALID_STATES.indexOf(old_value) >= 0) !== (INVALID_STATES.indexOf(this.value) >= 0)) {
+                COMPOSER.log('BIND(D)', `${this.id}: Local value changed. ${old_value} → ${this.value}`);
+                this.call();
             }
         } else if (!this.init) {
             // Initialized local binding value
@@ -100,32 +107,29 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
 
     public call(old?: string) {
         if (this.ignore <= 0) {
-            COMPOSER.log('BIND(D)', `${this.id}: Execute function changed. ${old} → ${this.exec}`);
             this.call_exec();
         } else {
-            this.ignore--;
-            this.ignoreChange.emit(this.ignore);
+            setTimeout(() => {
+                this.ignore--;
+                this.ignoreChange.emit(this.ignore);
+            }, 10);
         }
     }
 
     /**
      * Executes a function on the module
-     * @param exec (Optional) Name of the function to call on the module, defaults to the
-     *                       binding name if not set
+     * @param exec (Optional) Name of the function to call on the module, defaults to the binding name if not set
      * @return
      */
     public call_exec(exec?: string) {
-        if (this.binding && (this.exec === null || this.exec === '')) {
-            this.exec = this.binding.id;
-        }
-        if (!this.module || !this.exec) {
-            return;
-        }
+        if (!exec) { exec = this.exec; }
+        if (this.binding && exec === '') { exec = this.binding.id; }
+        if (!this.module || !exec) { return; }
         const bind_info = `${this.sys}, ${this.mod}, ${this.bind || 'No binding'}`;
         COMPOSER.log('BIND(D)', `${this.id}: Calling exec from directive: ${bind_info}`);
         // Update value to value set by user
         const params = this.params ? this.params : (this.bind ? this.value : []);
-        this.module.exec(this.exec, params).then((res: any) => null, (err: any) => null);
+        this.module.exec(exec, params).then((res: any) => null, (err: any) => null);
     }
 
     private ngOnDestory() {
