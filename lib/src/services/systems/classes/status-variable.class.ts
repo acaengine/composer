@@ -52,11 +52,12 @@ export class StatusVariable {
 
     public setValue(value: any, local: boolean = false) {
         const previous = this.value('previous');
-        this.subjects.previous.next(this.value());
         this.subjects.value.next(value);
+        console.log('Set value:', previous, value, local);
         if (!local) {
+            this.subjects.previous.next(this.value());
             this.subjects.changed.next(!this.value('change'));
-        } else if (previous !== value) {
+        } else {
             COMPOSER.log('STATUS', `Local value changed calling exec(${this.binding}). ${previous} → ${value}`);
             this.exec();
         }
@@ -165,12 +166,14 @@ export class StatusVariable {
      */
     public notify(msg: any) {
         this.setValue(msg.value);
+        this.promises.exec = null;
     }
 
     private exec() {
         if (!this.promises.exec) {
             this.promises.exec = new Promise((resolve, reject) => {
                 const count = this.value('bindings');
+                const previous = this.value('previous');
                 if (count > 0) {
                     const module = this.parent;
                     const system = module.parent;

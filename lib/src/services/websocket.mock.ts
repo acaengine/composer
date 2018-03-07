@@ -150,11 +150,12 @@ export class MockWebSocketInterface {
      */
     public exec(sys_id: string, mod_id: string, i: number, fn: any, args: any) {
         return new Promise((resolve, reject) => {
-            const id = this.sendRequest(EXEC, sys_id, mod_id, i, fn, args);
-            this.requests[id] = {
-                resolve,
-                reject,
-            };
+            this.sendRequest(EXEC, sys_id, mod_id, i, fn, args).then((id) => {
+                this.requests[id] = {
+                    resolve,
+                    reject,
+                };
+            }, (err) => null);
         });
     }
     /**
@@ -261,12 +262,13 @@ export class MockWebSocketInterface {
             meta = msg.meta;
             const meta_list = `${this.capitalise(msg.type)}(${meta.id}). ${meta.sys}, ${meta.mod} ${meta.index}, ${meta.name}`;
             COMPOSER.log('WS(M)', `${meta_list}`, msg.value);
+            console.log('Requests:', this.requests);
             if (msg.type === SUCCESS) {
                 if (this.requests[msg.id] && this.requests[msg.id].resolve) {
                     this.requests[msg.id].resolve(msg.value);
                 }
             } else if (msg.type === ERROR) {
-                if (this.requests[msg.id] && this.requests[msg.id].resolve) {
+                if (this.requests[msg.id] && this.requests[msg.id].reject) {
                     this.requests[msg.id].reject(msg.msg);
                 }
             }
@@ -330,7 +332,7 @@ export class MockWebSocketInterface {
                 name,
                 args,
             };
-            COMPOSER.log('WS(M)', `Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
+            COMPOSER.error('WS(M)', `Sent ${type} request(${this.req_id}). ${system}, ${mod} ${index}, ${name}`, args);
             if (args !== null) { request.args = args; }
             setTimeout(() => this.respondTo(type, request), 200);
             resolve(this.req_id);

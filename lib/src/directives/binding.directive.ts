@@ -77,10 +77,14 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
         }
         if (this.init) {
             const old_value = this.binding ? this.binding.value() : (changes.value ? changes.value.previous : null);
-            const change_in_value = this.value !== (old_value);
+            let change_in_value = this.value !== (old_value);
+            if (INVALID_STATES.indexOf(old_value) >= 0 && INVALID_STATES.indexOf(this.value) >= 0) {
+                change_in_value = false;
+            }
                 // Bindings local value has change
+            console.log('Changed:', change_in_value, this.value, this.exec);
             if (this.binding && change_in_value) {
-                this.binding.setValue(this.value, this.exec || this.exec === '');
+                this.binding.setValue(this.value, this.exec === '');
             }
                 // Execute function has changed
             if (changes.exec) {
@@ -88,9 +92,9 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
                 if (changes.exec.previous !== undefined && changes.exec.previous !== null) {
                     this.call(changes.exec ? changes.exec.previous : null);
                 }
-            } else if (change_in_value && (INVALID_STATES.indexOf(old_value) >= 0) !== (INVALID_STATES.indexOf(this.value) >= 0)) {
+            } else if (change_in_value && this.exec) {
                 COMPOSER.log('BIND(D)', `${this.id}: Local value changed. ${old_value} → ${this.value}`);
-                this.call();
+                this.call()
             }
         } else if (!this.init) {
             // Initialized local binding value
@@ -123,10 +127,9 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
      */
     public call_exec(exec?: string) {
         if (!exec) { exec = this.exec; }
-        if (this.binding && exec === '') { exec = this.binding.id; }
         if (!this.module || !exec) { return; }
         const bind_info = `${this.sys}, ${this.mod}, ${this.bind || 'No binding'}`;
-        COMPOSER.log('BIND(D)', `${this.id}: Calling exec from directive: ${bind_info}`);
+        COMPOSER.log('BIND(D)', `${this.id}: Executing function '${exec}' from directive: ${bind_info}`);
         // Update value to value set by user
         const params = this.params ? this.params : (this.bind ? this.value : []);
         this.module.exec(exec, params).then((res: any) => null, (err: any) => null);
