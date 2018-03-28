@@ -76,9 +76,7 @@ export class OAuthService {
      * @return  Returns Promise which resolves success of login
      */
     public tryLogin(options?: any) {
-        return new Promise((resolve, reject) => {
-            this.attemptLogin(options).then((i) => resolve(i), (e) => reject(e));
-        });
+        return this.attemptLogin(options);
     }
 
     public tryLoginWithIFrame() {
@@ -343,6 +341,7 @@ export class OAuthService {
         if (!this.model.client_id || this.model.client_id === '' || this.run_flow) {
             return;
         }
+        COMPOSER.log('OAUTH', 'Client ID:', this.model.client_id);
         this.createLoginUrl(additionalState).then((url) => {
             let path = location.href;
             if (location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
@@ -437,7 +436,7 @@ export class OAuthService {
             const state = parts.state;
             const code = parts.code;
             const refresh_token = parts.refresh_token;
-            COMPOSER.log('OAUTH', `State: ${state}`);
+            COMPOSER.log('OAUTH', `State:  ${state}`);
             COMPOSER.log('OAUTH', `Access: ${access_token}`);
 
             const oidcSuccess = false;

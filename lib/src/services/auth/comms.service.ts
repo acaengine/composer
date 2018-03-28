@@ -128,9 +128,9 @@ export class CommsService {
                 if (req.auth) {
                     this.http.get(req.url, req.options)
                         .subscribe(
-                        (data: any) => observer.next(data),
-                        (err: any) => this.error(err, req, observer),
-                        () => observer.complete(),
+                            (data: any) => observer.next(data),
+                            (err: any) => this.error(err, req, observer),
+                            () => observer.complete(),
                     );
                 } else {
                     this.error({ status: 401, message: 'No auth token.' }, req, observer);
@@ -153,9 +153,9 @@ export class CommsService {
                 if (req.auth) {
                     this.http.post(req.url, req.body, req.options)
                         .subscribe(
-                        (data: any) => observer.next(data),
-                        (err: any) => this.error(err, req, observer),
-                        () => observer.complete(),
+                            (data: any) => observer.next(data),
+                            (err: any) => this.error(err, req, observer),
+                            () => observer.complete(),
                     );
                 } else {
                     this.error({ status: 401, message: 'No auth token.' }, req, observer);
@@ -178,9 +178,9 @@ export class CommsService {
                 if (req.auth) {
                     this.http.put(req.url, req.body, req.options)
                         .subscribe(
-                        (data: any) => observer.next(data),
-                        (err: any) => this.error(err, req, observer),
-                        () => observer.complete(),
+                            (data: any) => observer.next(data),
+                            (err: any) => this.error(err, req, observer),
+                            () => observer.complete(),
                     );
                 } else {
                     this.error({ status: 401, message: 'No auth token.' }, req, observer);
@@ -201,9 +201,9 @@ export class CommsService {
                 req.type = 'delete';
                 this.http.delete(req.url, req.options)
                     .subscribe(
-                    (data: any) => observer.next(data),
-                    (err: any) => this.error(err, req, observer),
-                    () => observer.complete(),
+                        (data: any) => observer.next(data),
+                        (err: any) => this.error(err, req, observer),
+                        () => observer.complete(),
                 );
             });
         });
@@ -224,9 +224,7 @@ export class CommsService {
     public login() {
         if (this.login_promise === null) {
             COMPOSER.log('COMMS', `Attempting login.`);
-            this.login_promise = new Promise((resolve, reject) => {
-                this.performLogin(resolve, reject);
-            });
+            this.login_promise = this.performLogin();
         }
         return this.login_promise;
     }
@@ -275,36 +273,36 @@ export class CommsService {
             let tokens: any;
             this.http.post(url, '')
                 .subscribe(
-                (data: any) => tokens = data,
-                (err: any) => {
-                    // Try refresh with root client ID
-                    if (err && err.status === 401
-                        && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
+                    (data: any) => tokens = data,
+                    (err: any) => {
+                        // Try refresh with root client ID
+                        if (err && err.status === 401
+                            && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
 
-                        COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
-                        oauth.getRefreshToken().then((rt: string) => {
-                            oauth.redirectUri = `${location.origin}/oauth-resp.html`;
-                            const client_id = this.hash(`${location.origin}/oauth-resp.html`);
-                            this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
-                                if (rt && !rt_root) {
-                                    this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
-                                }
-                                setTimeout(() => {
-                                    this.refreshToken(resolve, reject, retries + 1);
-                                }, 500 * retries);
+                            COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
+                            oauth.getRefreshToken().then((rt: string) => {
+                                oauth.redirectUri = `${location.origin}/oauth-resp.html`;
+                                const client_id = this.hash(`${location.origin}/oauth-resp.html`);
+                                this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
+                                    if (rt && !rt_root) {
+                                        this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
+                                    }
+                                    setTimeout(() => {
+                                        this.refreshToken(resolve, reject, retries + 1);
+                                    }, 500 * retries);
+                                });
                             });
-                        });
-                    } else if (err.status === 0) {
-                        COMPOSER.error('COMMS', `Refresh failed with code 0. Headers may be malformed or missing CORS.`);
-                        this.processLoginError(err, reject);
-                    } else {
-                        this.processLoginError(err, reject);
-                    }
-                }, () => {
-                    COMPOSER.log('COMMS', `Got new tokens:`, tokens);
-                    this.updateToken(tokens, resolve);
-                    setTimeout(() => { this.loginDone(); }, 100);
-                },
+                        } else if (err.status === 0) {
+                            COMPOSER.error('COMMS', `Refresh failed with code 0. Headers may be malformed or missing CORS.`);
+                            this.processLoginError(err, reject);
+                        } else {
+                            this.processLoginError(err, reject);
+                        }
+                    }, () => {
+                        COMPOSER.log('COMMS', `Got new tokens:`, tokens);
+                        this.updateToken(tokens, resolve);
+                        setTimeout(() => { this.loginDone(); }, 100);
+                    },
             );
         });
     }
@@ -352,92 +350,122 @@ export class CommsService {
         }
     }
 
-    private performLogin(resolve: any, reject: any) {
-        if (this.http instanceof MockHttp) {
-            this.login_promise = null;
-            return resolve('mock_token');
+    private performLogin(tries: number = 0) {
+        if (tries > 3) {
+            setTimeout(() => this.loginDone(), 100);
+            return new Promise((rs, rj) => rj('Log in attempt failed...'));
         }
-        const oauth: any = this.oAuthService;
-        if (!oauth || !oauth.model.client_id || oauth.model.client_id  === '') {
-            COMPOSER.log('COMMS', `OAuth is not initialised.`);
-            return setTimeout(() => this.performLogin(resolve, reject), 500);
+        return new Promise((resolve, reject) => {
+            if (this.http instanceof MockHttp) {
+                this.login_promise = null;
+                return resolve('mock_token');
+            }
+            const oauth: any = this.oAuthService;
+            if (!oauth || !oauth.model.client_id || oauth.model.client_id === '') {
+                COMPOSER.log('COMMS', `OAuth is not initialised.`);
+                return setTimeout(() => this.performLogin().then((d) => resolve(d), (e) => reject(e)), 500);
+            }
+            COMPOSER.log('COMMS', `Checking for valid access token.`);
+            oauth.hasValidAccessToken().then((valid: boolean) => {
+                if (valid) {
+                    COMPOSER.log('COMMS', `Valid access token availiable.`);
+                    oauth.getAccessToken().then((token: string) => {
+                        resolve(token);
+                        setTimeout(() => { this.loginDone(); }, 100);
+                    });
+                } else {
+                    COMPOSER.log('COMMS', `No valid access token available.`);
+                    // Attempt to finish logging in
+                    oauth.tryLogin().then((status: any) => {
+                        // Check if valid access token is available
+                        this.checkAccessToken().then((d) => resolve(d), (e) => reject(e));
+                    }, (err) => {
+                        COMPOSER.log('COMMS', `Log in attempt failed...`, null, 'warn');
+                        setTimeout(() => this.performLogin(tries).then((d) => resolve(d), (e) => reject(e)), 300 * ++tries);
+                    });
+                }
+            });
+        });
+    }
+
+    private checkAccessToken(tries: number = 0) {
+        if (tries > 3) {
+            setTimeout(() => this.loginDone(), 100);
+            return new Promise((rs, rj) => rj('Log in attempt failed...'));
         }
-        COMPOSER.log('COMMS', `Checking for valid access token.`);
-        oauth.hasValidAccessToken().then((valid: boolean) => {
-            if (valid) {
-                COMPOSER.log('COMMS', `Valid access token availiable.`);
-                oauth.getAccessToken().then((token: string) => {
-                    resolve(token);
-                    setTimeout(() => { this.loginDone(); }, 100);
-                });
-            } else {
-                COMPOSER.log('COMMS', `No valid access token available.`);
-                // Attempt to finish logging in
-                oauth.tryLogin().then((status: any) => {
-                    // Check if valid access token is available
-                    oauth.hasValidAccessToken().then((valid_after_load: boolean) => {
-                        if (valid_after_load) {
-                            COMPOSER.log('COMMS', `Valid access token availiable.`);
-                            oauth.getAccessToken().then((token: string) => {
-                                resolve(token);
-                                setTimeout(() => { this.loginDone(); }, 100);
-                            });
-                        } else {
-                            if (this.trust) {
-                                COMPOSER.log('COMMS', `Device is trusted`);
-                                oauth.response_type = 'code';
-                                this.store.local.getItem(`${oauth.clientId}_refresh_token`).then((refresh: string) => {
-                                    if (refresh || oauth.model.code) { // Refresh token exists
-                                        COMPOSER.log('COMMS', `Refresh token found. Refreshing access token...`);
-                                        // Perform refresh
-                                        if (oauth.clientId === '') {
-                                            resolve({ message: 'OAuth not setup, retrying after 100ms' });
-                                            setTimeout(() => {
-                                                this.loginDone();
-                                                this.login();
-                                            }, 100);
-                                        }
-                                        else {
-                                            this.refreshToken(resolve, reject);
-                                        }
-                                    } else { // No refresh token
-                                        COMPOSER.log('COMMS', `No Refresh Token or Code`);
-                                        let path = location.href;
-                                        if (location.hash.indexOf(path) >= 0
-                                            && location.href.indexOf(location.origin + '/#/') >= 0) {
+        return new Promise((resolve, reject) => {
+            const oauth: any = this.oAuthService;
+            oauth.hasValidAccessToken().then((valid_after_load: boolean) => {
+                if (valid_after_load) {
+                    COMPOSER.log('COMMS', `Valid access token availiable.`);
+                    oauth.getAccessToken().then((token: string) => {
+                        resolve(token);
+                        setTimeout(() => { this.loginDone(); }, 100);
+                    });
+                } else {
+                    if (this.trust) {
+                        COMPOSER.log('COMMS', `Device is trusted`);
+                        oauth.response_type = 'code';
+                        this.checkRefreshToken().then((d) => resolve(d), (e) => reject(e));
+                    } else {
+                        COMPOSER.log('COMMS', `Device is not trusted.`);
+                        oauth.response_type = 'token';
+                        COMPOSER.log('COMMS', `Starting login process...`);
+                        let path = location.href;
+                        if (location.hash.indexOf(path) >= 0
+                            && location.href.indexOf(location.origin + '/#/') >= 0) {
 
-                                            if (path.indexOf('?') >= 0) {
-                                                path = path.split('?')[0];
-                                            }
-                                        }
-                                        const here = path;
-                                        this.store.local.setItem(`oauth_redirect`, here);
-                                        oauth.initImplicitFlow();
-                                        setTimeout(() => { this.loginDone(); }, 100);
-                                    }
-                                });
-
-                            } else {
-                                COMPOSER.log('COMMS', `Device is not trusted.`);
-                                oauth.response_type = 'token';
-                                COMPOSER.log('COMMS', `Starting login process...`);
-                                let path = location.href;
-                                if (location.hash.indexOf(path) >= 0
-                                    && location.href.indexOf(location.origin + '/#/') >= 0) {
-
-                                    if (path.indexOf('?') >= 0) {
-                                        path = path.split('?')[0];
-                                    }
-                                }
-                                const here = path;
-                                this.store.local.setItem(`oauth_redirect`, here);
-                                oauth.initImplicitFlow();
-                                setTimeout(() => this.loginDone(), 100);
+                            if (path.indexOf('?') >= 0) {
+                                path = path.split('?')[0];
                             }
                         }
-                    });
-                });
-            }
+                        const here = path;
+                        this.store.local.setItem(`oauth_redirect`, here);
+                        oauth.initImplicitFlow();
+                        setTimeout(() => this.checkAccessToken(tries).then((d) => resolve(d), (e) => reject(e)), 300 * ++tries);
+                    }
+                }
+            });
+        });
+    }
+
+    private checkRefreshToken(tries: number = 0) {
+        if (tries > 3) {
+            setTimeout(() => this.loginDone(), 100);
+            return new Promise((rs, rj) => rj('Log in attempt failed...'));
+        }
+        return new Promise((resolve, reject) => {
+            const oauth: any = this.oAuthService;
+            this.store.local.getItem(`${oauth.clientId}_refresh_token`).then((refresh: string) => {
+                if (refresh || oauth.model.code) { // Refresh token exists
+                    COMPOSER.log('COMMS', `Refresh token found. Refreshing access token...`);
+                    // Perform refresh
+                    if (oauth.clientId === '') {
+                        resolve({ message: 'OAuth not setup, retrying after 100ms' });
+                        setTimeout(() => {
+                            this.loginDone();
+                            this.login();
+                        }, 100);
+                    }
+                    else {
+                        this.refreshToken(resolve, reject);
+                    }
+                } else { // No refresh token
+                    COMPOSER.log('COMMS', `No Refresh Token or Code`);
+                    let path = location.href;
+                    if (location.hash.indexOf(path) >= 0
+                        && location.href.indexOf(location.origin + '/#/') >= 0) {
+
+                        if (path.indexOf('?') >= 0) {
+                            path = path.split('?')[0];
+                        }
+                    }
+                    const here = path;
+                    this.store.local.setItem(`oauth_redirect`, here);
+                    oauth.initImplicitFlow();
+                    setTimeout(() => { this.loginDone(); }, 100);
+                }
+            });
         });
     }
 
@@ -465,7 +493,7 @@ export class CommsService {
             this.clearStore();
             this.oAuthService.model.code = undefined;
             setTimeout(() => { this.loginDone(); }, 100);
-            this.login().then(() => { return; }, (login_err) => { reject(login_err); });
+            this.login().then(() => null, (login_err) => reject(login_err));
         } else {
             setTimeout(() => { location.reload(); }, 5000);
             setTimeout(() => { this.loginDone(); }, 100);
