@@ -53,7 +53,6 @@ export class StatusVariable {
     public setValue(value: any, local: boolean = false) {
         const previous = this.value('previous');
         this.subjects.value.next(value);
-        console.log('Set value:', previous, value, local);
         if (!local) {
             this.subjects.previous.next(this.value());
             this.subjects.changed.next(!this.value('change'));
@@ -76,13 +75,13 @@ export class StatusVariable {
     public bind(next: (value: any) => void) {
         return new Promise((resolve, reject) => {
             const mod = `${this.parent.id} ${this.parent.index}`;
-            const msg = `Binding to ${this.id} on ${this.parent.parent.id}, ${mod}`;
+            const msg = `Binding to '${this.id}' on ${this.parent.parent.id}, ${mod}`;
             COMPOSER.log('STATUS', msg);
             if (this.value('bindings') <= 0) {
                 const module = this.parent;
                 const system = module.parent;
                 this.service.io.bind(system.id, module.id, module.index, this.id).then(() => {
-                    COMPOSER.log('STATUS', `Bound to ${this.id} on ${this.parent.parent.id}, ${mod}`, this.value());
+                    COMPOSER.log('STATUS', `Bound to '${this.id}' on ${this.parent.parent.id}, ${mod}`, this.value());
                     resolve(() => { this.unbind() });
                 }, (err) => {
                     COMPOSER.error('STATUS', 'Binding to status variable failed.', err);

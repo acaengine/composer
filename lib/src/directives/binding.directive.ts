@@ -82,7 +82,6 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
                 change_in_value = false;
             }
                 // Bindings local value has change
-            console.log('Changed:', change_in_value, this.value, this.exec);
             if (this.binding && change_in_value) {
                 this.binding.setValue(this.value, this.exec === '');
             }

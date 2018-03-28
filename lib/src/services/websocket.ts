@@ -229,11 +229,7 @@ export class WebSocketInterface {
                                 };
                             } else {
                                 setTimeout(() => {
-                                    this.connect(++tries).then(() => {
-                                        resolve();
-                                    }, () => {
-                                        reject();
-                                    });
+                                    this.connect(++tries).then(() => resolve(), () => reject());
                                 }, 200);
                             }
                         });

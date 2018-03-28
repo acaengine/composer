@@ -29,9 +29,13 @@
     public get(id: string, index: number | string = 1) {
         if (id.indexOf('_') >= 0) {
             const parts = id.split('_');
-            id = parts[0];
-            index = parts[1];
+            const tmp_index = parts.slice(-1)[0];
+            if (!isNaN(+tmp_index)) {
+                id = parts.slice(0, parts.length - 1).join('_');
+                index = tmp_index;
+            }
         }
+        if (!index) { index = 1; }
         const name = `${id}_${index}`;
         if (this.modules[name]) {
             return this.modules[name];

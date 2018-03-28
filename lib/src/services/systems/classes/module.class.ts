@@ -23,7 +23,10 @@ export class Module {
         this.id = name;
         this.service = srv;
         this.parent = parent;
-        this.index = i;
+        this.index = i || 1;
+        if (isNaN(this.index)) {
+            this.index = 1;
+        }
         COMPOSER.observe('debug').subscribe((data: any) => {
             this._debug = data;
         });
