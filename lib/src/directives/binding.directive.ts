@@ -16,7 +16,7 @@ import { SystemsService } from '../services/systems/systems.service';
 const INVALID_STATES: any[] = [null, undefined];
 
 @Directive({
-    selector: '[binding]',
+    selector: '[binding]'
 })
 export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     // Bindables
@@ -284,12 +284,10 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
         }
         this.binding = this.module.get(this.bind);
         this.module.bind(this.bind, (change: any) => {
-            setTimeout(() => {
-                    // Changes to local value
-                this.value = this.binding.value();
-                this.valueChange.emit(this.value);
-                this._cdr.markForCheck();
-            }, 10);
+                // Changes to local value
+            this.value = this.binding.value();
+            this.valueChange.emit(this.value);
+            this._cdr.detectChanges();
         }).then((unbind) => {
             this.unbind = unbind;
             this.value = this.binding.current;
