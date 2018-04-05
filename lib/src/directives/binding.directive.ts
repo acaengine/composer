@@ -24,7 +24,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     @Input() public sys: string; // Name of the system to connect to
     @Input() public mod: string; // Name of the module to connect to
     @Input() public index: number; // Index of the named module in the system
-    @Input() public value: any = null; // Value of the status variable bound to
+    @Input() public value: any; // Value of the status variable bound to
     @Input() public exec: string; // Name of the function to execute on the module when value changes
     @Input() public params: any; // Parameters to pass to the called function on module
     @Input() public ignore: number = 0; // Number of execute requests to ignore
@@ -76,7 +76,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
             this.getBinding();
         }
         if (this.init) {
-            const old_value = this.binding ? this.binding.value() : (changes.value ? changes.value.previous : null);
+            const old_value = this.binding ? this.binding.value() : (changes.value ? changes.value.previous : this.value);
             let change_in_value = this.value !== (old_value);
             if (INVALID_STATES.indexOf(old_value) >= 0 && INVALID_STATES.indexOf(this.value) >= 0) {
                 change_in_value = false;
