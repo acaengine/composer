@@ -31,6 +31,7 @@ export class CommsService {
     private debug: boolean = true;
     private http: any = null;
     private simple: boolean = false;
+    private local_auth = false;
     private valid_params = [
         'login_url', 'login_redirect', 'refresh_url', 'redirect_uri', 'refresh_uri',
         'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local', 'authority_loaded'
@@ -80,6 +81,9 @@ export class CommsService {
             for (const i in options) {
                 if (i && this.valid_params.indexOf(i) >= 0) {
                     oauth.model[i] = options[i];
+                    if (i === 'login_local') {
+                        this.local_auth = options[i];
+                    }
                 }
             }
             if (options.simple) {
@@ -495,8 +499,8 @@ export class CommsService {
             setTimeout(() => { this.loginDone(); }, 100);
             this.login().then(() => null, (login_err) => reject(login_err));
         } else {
-            setTimeout(() => { location.reload(); }, 5000);
-            setTimeout(() => { this.loginDone(); }, 100);
+            setTimeout(() => { if (!this.local_auth) { location.reload(); } }, 5000);
+            setTimeout(() => this.loginDone(), 100);
         }
     }
 
@@ -659,14 +663,14 @@ export class CommsService {
                     }, (retry_err) => {
                         COMPOSER.error('COMMS', `Error logging in.`, retry_err);
                         this.clearStore();
-                        setTimeout(() => location.reload(), 200);
+                        setTimeout(() => { if (!this.local_auth) { location.reload(); } }, 200);
                         this.retry[hash] = 0;
                     });
             }, 200);
         } else if (!err || err.status === 401) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
             this.clearStore();
-            setTimeout(() => location.reload(), 200);
+            setTimeout(() => { if (!this.local_auth) { location.reload(); } }, 200);
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
