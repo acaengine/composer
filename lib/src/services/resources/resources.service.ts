@@ -35,7 +35,8 @@ export class ResourcesService {
      * @param reject  Promise reject function
      * @return
      */
-    public initAuth() {
+    public initAuth(tries: number = 0) {
+        if (tries > 5) { return location.reload(); }
         if (!this.model.auth_promise) {
             this.model.auth_promise = new Promise((resolve, reject) => {
                 COMPOSER.log('RESRC', `Loading Authority...`);
@@ -71,13 +72,11 @@ export class ResourcesService {
 
                 }, (err: any) => {
                     COMPOSER.error('RESRC', 'Error getting authority.', err);
-                    this.http.setupOAuth({
-                        login_redirect: `${uri}/auth/login`,
-                        authority_loaded: true
-                    });
-                    this.http.tryLogin();
                     reject(err);
-                    setTimeout(() => this.model.auth_promise = null, 300);
+                    setTimeout(() => {
+                        this.model.auth_promise = null;
+                        this.initAuth(tries);
+                    }, 500 * ++tries);
                 });
             });
         }
