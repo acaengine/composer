@@ -49,8 +49,10 @@
      * @return
      */
      public rebind() {
-         for (const mod of this.modules) {
-             mod.rebind();
+         for (const id in this.modules) {
+             if (this.modules.hasOwnProperty(id) && this.modules[id]) {
+                 this.modules[id].rebind();
+             }
          }
      }
 
