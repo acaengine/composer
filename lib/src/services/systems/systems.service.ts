@@ -9,7 +9,6 @@
 
 import { Injectable } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { System } from './classes/system.class';
 
 import { DataStoreService } from '../data-store.service';
 import { ResourcesService } from '../resources/resources.service';
@@ -18,11 +17,14 @@ import { $WebSocketMock } from '../websocket.mock';
 
 import { COMPOSER } from '../../settings';
 
+import { EngineSystem } from './classes/system.class';
+import { EngineModule } from './classes/module.class';
+
 @Injectable()
 export class SystemsService {
     public is_setup: boolean = false;
-    private systems: System[] = [];
-    private bound_systems: System[] = [];
+    private systems: EngineSystem[] = [];
+    private bound_systems: EngineSystem[] = [];
     private io: any;
     private connected = false;
     private request_id = 0;
@@ -48,7 +50,7 @@ export class SystemsService {
      * Get the resources service
      * @return  Returns the resources service
      */
-    get resources() {
+    get resources(): ResourcesService {
         return this.r;
     }
 
@@ -91,7 +93,7 @@ export class SystemsService {
      * @param sys_id System ID
      * @return  Returns the system with the given id
      */
-    public get(sys_id: string) {
+    public get(sys_id: string): EngineSystem {
         this.updateSystems();
         const system = this.r.get('System');
         if (!this.mock) {
@@ -131,17 +133,17 @@ export class SystemsService {
      * @param i      Index of module in system
      * @return     Returns module if found
      */
-    public getModule(sys_id: string, id: string, i: number = 1) {
+    public getModule(sys_id: string, id: string, i: number = 1): EngineModule {
         const system = this.get(sys_id);
-        const module = system.get(id, i);
-        return module;
+        const mod = system.get(id, i);
+        return mod;
     }
 
     /**
      * Check the state of the websocket
      * @return  [description]
      */
-    public isConnected() {
+    public isConnected(): boolean {
         return this.io ? this.io.connected : false;
     }
 
@@ -174,7 +176,7 @@ export class SystemsService {
      * @param sys_id System ID
      * @return  Returns the system with the given id
      */
-    private getSystem(sys_id: string) {
+    private getSystem(sys_id: string): EngineSystem {
         this.updateSystems();
         let system: any = null;
         // Check if system already exists
@@ -185,7 +187,7 @@ export class SystemsService {
         }
         if (system === null) {
             // System not stored create new one.
-            system = new System(this, sys_id);
+            system = new EngineSystem(this, sys_id);
             this.systems.push(system);
         }
         return system;
@@ -195,7 +197,7 @@ export class SystemsService {
      * Checks if each system stored exists on the server
      * @return
      */
-    private updateSystems(): any {
+    private updateSystems() {
         if (this.r && this.io) {
             for (let i = 0; this.systems && i < this.systems.length; i++) {
                 const system = this.systems[i];

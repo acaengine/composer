@@ -6,9 +6,9 @@
  */
 
  import { COMPOSER } from '../../../settings';
- import { Module } from './module.class';
+ import { EngineModule } from './module.class';
 
- export class System {
+ export class EngineSystem {
      public id: string;
      public service: any;
      public parent: any;
@@ -26,8 +26,8 @@
      * @param index Index of module in system
      * @return  Returns the module with the given id and index
      */
-    public get(id: string, index: number | string = 1) {
-        if (id.indexOf('_') >= 0) {
+    public get(id: string, index: number | string = 1): EngineModule {
+        if (id && id.indexOf('_') >= 0) {
             const parts = id.split('_');
             const tmp_index = parts.slice(-1)[0];
             if (!isNaN(+tmp_index)) {
@@ -40,9 +40,9 @@
         if (this.modules[name]) {
             return this.modules[name];
         }
-        const module = new Module(this.service, this, id, +index);
-        this.modules[name] = module;
-        return module;
+        const mod = new EngineModule(this.service, this, id, +index);
+        this.modules[name] = mod;
+        return mod;
     }
     /**
      * Rebinds all bound status variables on existing modules in the system

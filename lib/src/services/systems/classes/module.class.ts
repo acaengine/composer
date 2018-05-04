@@ -8,9 +8,9 @@
 import { Observable } from 'rxjs/Observable';
 
 import { COMPOSER } from '../../../settings';
-import { StatusVariable } from './status-variable.class';
+import { EngineStatusVariable } from './status-variable.class';
 
-export class Module {
+export class EngineModule {
     public id: string;         // Module name
     public parent: any;        // Module's system
     public index: number = 0;  // Module Index
@@ -83,7 +83,7 @@ export class Module {
         if (this.status_variables[prop]) {
             return this.status_variables[prop];
         }
-        const s_var = new StatusVariable(this.service, this, prop, 0);
+        const s_var = new EngineStatusVariable(this.service, this, prop, 0);
         this.status_variables[prop] = s_var;
         return s_var;
     }

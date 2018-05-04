@@ -6,15 +6,16 @@
  */
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { EngineModule } from './module.class';
 
 import { COMPOSER } from '../../../settings';
 
 const EXEC_LIMIT = 10;
 const EXEC_TIME_DELAY = 100;
 
-export class StatusVariable {
-    public id: string;             // Name of status variable
-    public parent: any;            // Module connected to status variable
+export class EngineStatusVariable {
+    public id: string;           // Name of status variable
+    public parent: EngineModule; // Module connected to status variable
     public model: any = {};
     private service: any;           // System service
     private promises: any = {};
