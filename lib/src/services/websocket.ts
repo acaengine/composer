@@ -172,9 +172,7 @@ export class WebSocketInterface {
     private connect(tries: number = 0) {
         if (!this.connect_promise) {
             this.connect_promise = new Promise((resolve, reject) => {
-                if (tries > 10) {
-                    reject();
-                }
+                if (tries > 10) { reject(); }
                 if (this.io && this.io.readyState !== this.io.CLOSED) {
                     if (this.io.readyState === this.io.CONNECTING) {
                         reject({ message: 'Already attempting to connect to websocket.' });
@@ -230,7 +228,7 @@ export class WebSocketInterface {
                             } else {
                                 setTimeout(() => {
                                     this.connect(++tries).then(() => resolve(), () => reject());
-                                }, 200);
+                                }, 200 );
                             }
                         });
                     } else {

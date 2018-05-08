@@ -95,10 +95,10 @@ export class EngineStatusVariable {
     }
 
     public rebind() {
-        const module = this.parent;
-        const system = module.parent;
-        COMPOSER.log('STATUS', `Rebinding to ${this.id} on ${system.id}, ${module.id} ${module.index}`);
-        if (this.value('bindings') <= 0) {
+        if (this.value('bindings') > 0) {
+            const module = this.parent;
+            const system = module.parent;
+            COMPOSER.log('STATUS', `Rebinding to ${this.id} on ${system.id}, ${module.id} ${module.index}`);
             this.service.io.bind(system.id, module.id, module.index, this.id).then(() => {
                 COMPOSER.log('STATUS', `Rebound to ${this.id} on ${system.id}, ${module.id} ${module.index}`, this.value());
             }, (err) => COMPOSER.error('STATUS', 'Binding to status variable failed.', err));
