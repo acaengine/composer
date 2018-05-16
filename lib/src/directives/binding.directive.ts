@@ -7,7 +7,7 @@
  * @Last modified time: 03/02/2017 1:08 PM
  */
 
-import { Directive, ElementRef, EventEmitter, HostListener, Input, Output, Renderer2 } from '@angular/core';
+import { Directive, ElementRef, EventEmitter, HostListener, Input, Output, Renderer2, ViewContainerRef } from '@angular/core';
 import { ChangeDetectorRef, OnChanges, OnDestroy, OnInit } from '@angular/core';
 
 import { COMPOSER } from '../settings';
@@ -47,7 +47,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     private init: boolean = false;
     private debug: boolean = false;
 
-    constructor(private el: ElementRef, private service: SystemsService, private renderer: Renderer2, private _cdr: ChangeDetectorRef) {
+    constructor(private el: ElementRef, private service: SystemsService, private renderer: Renderer2, private _cdr: ChangeDetectorRef, private view: ViewContainerRef) {
         this.id = (Math.floor(Math.random() * 899999) + 100000).toString();
         this.renderer.addClass(this.el.nativeElement, `binding-directive-${this.id}`);
     }
@@ -287,7 +287,9 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
                 // Changes to local value
             this.value = this.binding.value();
             this.valueChange.emit(this.value);
-            this._cdr.detectChanges();
+            if (this.view) {
+                this._cdr.detectChanges();
+            }
         }).then((unbind) => {
             this.unbind = unbind;
             this.value = this.binding.current;

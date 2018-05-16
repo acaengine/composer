@@ -412,6 +412,7 @@ export class OAuthService {
                 options = options || {};
 
                 let parts = this.getFragment();
+                console.log('Parts:', parts);
                 if (Object.keys(parts).length <= 1) {
                     this.store.session.getItem('OAUTH.params').then((item: string) => {
                         if (item) {
@@ -597,9 +598,7 @@ export class OAuthService {
      * @return  Returns a promise that resolve a nonce
      */
     private createNonce() {
-
         return new Promise<string>((resolve, reject) => {
-
             if (this.model.rng_url) {
                 throw new Error('createNonce with rng-web-api has not been implemented so far');
             } else {
@@ -620,10 +619,19 @@ export class OAuthService {
      */
     private getFragment() {
         const path = this.location.path();
-        if (location.hash.indexOf('#') >= 0 && location.hash.indexOf(path) < 0) {
-            return this.parseQueryString(location.hash.substr(1));
-        } else if (location.search.indexOf('?') >= 0) {
-            return this.parseQueryString(location.search.substr(1));
+        const hash = location.hash;
+        let hash_content = hash ? hash.substr(1) : '';
+        const search = location.search;
+            // Check if hash has key value pairs
+        if (hash.indexOf('#') >= 0 && hash_content.indexOf('=') >= 0) {
+            if (hash_content.indexOf('#') > 0) {
+                hash_content = hash_content.substr(hash_content.indexOf('#') + 1);
+            }
+            console.log('Hash:', hash_content);
+            return this.parseQueryString(hash_content);
+        } else if (search.indexOf('?') >= 0) {
+            console.log('Search:', search);
+            return this.parseQueryString(search.substr(1));
         }
         return {};
     }
@@ -667,10 +675,8 @@ export class OAuthService {
             if (key.substr(0, 1) === '/') {
                 key = key.substr(1);
             }
-
             data[key] = value;
         }
-
         return data;
     }
 
@@ -691,8 +697,8 @@ export class OAuthService {
         const claimsAtHash = idClaims.at_hash.replace(/=/g, '');
 
         if (atHash !== claimsAtHash) {
-            COMPOSER.log('OAUTH', 'exptected at_hash: ' + atHash, null, 'warn');
-            COMPOSER.log('OAUTH', 'actual at_hash: ' + claimsAtHash, null, 'warn');
+            COMPOSER.log('OAUTH', 'Exptected at_hash: ' + atHash, null, 'warn');
+            COMPOSER.log('OAUTH', 'Actual at_hash: ' + claimsAtHash, null, 'warn');
         }
 
         return (atHash === claimsAtHash);
