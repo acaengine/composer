@@ -20,7 +20,9 @@ import { COMPOSER } from '../../settings';
 import { EngineSystem } from './classes/system.class';
 import { EngineModule } from './classes/module.class';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class SystemsService {
     public is_setup: boolean = false;
     private systems: EngineSystem[] = [];

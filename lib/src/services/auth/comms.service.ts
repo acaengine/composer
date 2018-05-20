@@ -21,7 +21,9 @@ import { OAuthService } from './oauth2.service';
 
 const MAX_ERROR_COUNT = 5;
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class CommsService {
     private trust: boolean = false;
     private sub: any;

@@ -10,7 +10,9 @@ import { ClientMessageBrokerFactory, FnArg, SerializerTypes, UiArguments } from 
 
 import { DataStoreService } from './data-store.service';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class DataStoreWorkerService extends DataStoreService {
     private broker: any = null;
 

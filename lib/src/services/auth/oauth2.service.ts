@@ -16,7 +16,9 @@ import * as sha256 from 'fast-sha256';
 import { COMPOSER } from '../../settings';
 import { DataStoreService } from '../data-store.service';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class OAuthService {
     public model: any = {}
     public validationHandler: any;

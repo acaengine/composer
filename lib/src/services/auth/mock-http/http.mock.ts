@@ -14,7 +14,9 @@ import { MockModule, MockSystem, MockUser, MockZone, MODULE_LIST, SYSTEM_LIST, Z
 import { MOCK_REQ_HANDLER } from './request-handler.mock';
 import { MockRequest } from './request.mock';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class MockHttp {
 
     public type = 'MockHttp';

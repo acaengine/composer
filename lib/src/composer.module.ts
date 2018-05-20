@@ -50,8 +50,8 @@ import { COMPOSER } from './settings';
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private version: string = '0.8.18';
-    private build: string = '2018-05-16.v1';
+    private version: string = '0.9.0';
+    private build: string = '2018-05-21.v1';
 
     constructor() {
         if (!ComposerModule.init) {
@@ -64,13 +64,6 @@ export class ComposerModule {
         return {
             ngModule: ComposerModule,
             providers: [
-                // ...SERVICES
-                CommsService,
-                ResourcesService,
-                ComposerDebugService,
-                SystemsService,
-                OAuthService,
-                DataStoreService
             ]
         };
     }

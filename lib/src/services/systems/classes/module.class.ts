@@ -49,7 +49,7 @@ export class EngineModule {
      * @param args  Arguments to pass to the function
      * @return  Returns a exec promise or an error message
      */
-    public exec(fn: string, args: any) {
+    public exec(fn: string, args: any[] = []) {
         return new Promise((resolve, reject) => {
             const system = this.parent;
             this.service.io.exec(system.id, this.id, this.index, fn, args)

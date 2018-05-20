@@ -12,7 +12,9 @@ import { CommsService } from './auth/comms.service';
 import { SystemsService } from './systems/systems.service';
 import { ResourcesService } from './resources/resources.service';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class ComposerDebugService {
     public services: any = {};
 

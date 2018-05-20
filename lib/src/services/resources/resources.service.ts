@@ -16,7 +16,9 @@ import { CommsService } from '../auth/comms.service';
 import { COMMON } from './common';
 import { ResourceFactory } from './resource-factory.class';
 
-@Injectable()
+@Injectable({
+    providedIn: 'root'
+})
 export class ResourcesService {
     public authLoaded: boolean = false;
     private model: any = {};
