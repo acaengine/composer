@@ -625,14 +625,19 @@ export class OAuthService {
         let hash_content = hash ? hash.substr(1) : '';
         const search = location.search;
             // Check if hash has key value pairs
-        if (hash.indexOf('#') >= 0 && hash_content.indexOf('=') >= 0) {
+
+        if (hash_content.indexOf('?') < 0 && hash_content.indexOf('=') > 0) { // Handle hash without a sub query
             if (hash_content.indexOf('#') > 0) {
                 hash_content = hash_content.substr(hash_content.indexOf('#') + 1);
             }
             console.log('Hash:', hash_content);
             return this.parseQueryString(hash_content);
-        } else if (search.indexOf('?') >= 0) {
-            console.log('Search:', search);
+        } else if (hash_content.indexOf('?') >= 0 && hash_content.indexOf('=') > 0) { // Handle hash with a sub query
+            let s = hash_content.substr(hash_content.indexOf('?'));
+            if (s.indexOf('=') >= 0) {
+                return this.parseQueryString(s.substr(1));
+            }
+        } else if (search.indexOf('?') >= 0 && search.indexOf('=') > 0) { // Handle query
             return this.parseQueryString(search.substr(1));
         }
         return {};
