@@ -22,7 +22,7 @@ const NOTIFY = 'notify';
 // timers
 const SECONDS = 1000;
 const RECONNECT_TIMER = 5 * SECONDS;
-const KEEP_ALIVE_TIMER = 60 * SECONDS;
+const KEEP_ALIVE_TIMER = 55 * SECONDS;
 
 export class WebSocketInterface {
     private static retries: any = {};
