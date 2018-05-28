@@ -196,11 +196,10 @@ export class WebSocketInterface {
                                 let uri = this.uri;
                                 // Setup URI
                                 uri += '?bearer_token=' + token;
+                                const search = location.search;
                                 if (this.fixed) {
                                     uri += '&fixed_device=true';
-                                }
-                                const search = location.search;
-                                if (search.indexOf('fixed_device') >= 0) {
+                                } else if (search.indexOf('fixed_device') >= 0) {
                                     uri += '&fixed_device=true';
                                 }
                                 COMPOSER.log('WS', 'Building websocket...');
