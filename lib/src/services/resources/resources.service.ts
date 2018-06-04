@@ -9,7 +9,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 import { COMPOSER } from '../../settings';
 import { CommsService } from '../auth/comms.service';
@@ -71,7 +71,6 @@ export class ResourcesService {
                     this.http.tryLogin();
                     resolve(auth);
                     setTimeout(() => this.model.auth_promise = null, 300);
-
                 }, (err: any) => {
                     COMPOSER.error('RESRC', 'Error getting authority.', err);
                     reject(err);

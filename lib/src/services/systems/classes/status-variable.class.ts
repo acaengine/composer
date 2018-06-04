@@ -5,7 +5,7 @@
  * @Last Modified time: 2017-05-02 11:09:19
  */
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BehaviorSubject } from 'rxjs';
 import { EngineModule } from './module.class';
 
 import { COMPOSER } from '../../../settings';

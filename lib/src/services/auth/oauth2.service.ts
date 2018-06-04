@@ -9,7 +9,7 @@
 
 import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BehaviorSubject } from 'rxjs';
 
 import * as sha256 from 'fast-sha256';
 

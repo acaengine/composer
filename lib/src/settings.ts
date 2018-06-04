@@ -5,7 +5,7 @@
  * @Last Modified time: 2017-12-15 09:42:29
  */
 
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 export class COMPOSER {
     public static var_list: string[] = ['debug'];

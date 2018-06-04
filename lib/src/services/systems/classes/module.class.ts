@@ -5,7 +5,7 @@
  * @Last Modified time: 2017-05-02 10:52:20
  */
 
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 import { COMPOSER } from '../../../settings';
 import { EngineStatusVariable } from './status-variable.class';

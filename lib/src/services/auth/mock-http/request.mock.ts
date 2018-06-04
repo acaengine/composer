@@ -5,7 +5,7 @@
  * @Last Modified time: 2017-05-02 11:13:34
  */
 
- import { Observable } from 'rxjs/Observable';
+ import { Observable } from 'rxjs';
 
  import { COMPOSER } from '../../../settings';
  import { MOCK_REQ_HANDLER } from './request-handler.mock';

@@ -5,7 +5,7 @@
  * @Last Modified time: 2017-12-15 10:24:28
  */
 
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 import { COMPOSER } from '../../settings';
 import { CommsService } from '../auth/comms.service';
