@@ -255,51 +255,48 @@ export class CommsService {
     }
 
     /**
-     * Refreshs access token
-     * @param resolve Login promise resolve
-     * @param reject  Login promise reject
-     * @param
-     * @return
+     * Refresh access token
+     * @param retries Number of retries performed
      */
-    public refreshToken(resolve: any, reject: any, retries: number = 1) {
-        const oauth: any = this.oAuthService;
-        this.refresh = true;
-        oauth.refresh_url.then((url: any) => {
-            let tokens: any;
-            this.http.post(url, '')
-                .subscribe(
-                    (data: any) => tokens = data,
-                    (err: any) => {
-                        // Try refresh with root client ID
-                        if (err && err.status === 401
-                            && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 10) {
+    public refreshToken(retries: number = 0) {
+        return new Promise((resolve, reject) => {
+            const oauth: any = this.oAuthService;
+            this.refresh = true;
+            oauth.refresh_url.then((url: any) => {
+                let tokens: any;
+                this.http.post(url, '')
+                    .subscribe(
+                        (data: any) => tokens = data,
+                        (err: any) => {
+                            // Try refresh with root client ID
+                            if (err && err.status === 401
+                                && url.indexOf(this.hash(`${location.origin}/oauth-resp.html`)) < 0 && retries < 5) {
 
-                            COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
-                            oauth.getRefreshToken().then((rt: string) => {
-                                oauth.redirectUri = `${location.origin}/oauth-resp.html`;
-                                const client_id = this.hash(`${location.origin}/oauth-resp.html`);
-                                this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
-                                    if (rt && !rt_root) {
-                                        this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
-                                    }
-                                    setTimeout(() => {
-                                        this.refreshToken(resolve, reject, retries + 1);
-                                    }, 500 * retries);
+                                COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
+                                oauth.getRefreshToken().then((rt: string) => {
+                                    oauth.redirectUri = `${location.origin}/oauth-resp.html`;
+                                    const client_id = this.hash(`${location.origin}/oauth-resp.html`);
+                                    this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
+                                        if (rt && !rt_root) {
+                                            this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
+                                        }
+                                        setTimeout(() => this.refreshToken(retries).then((v) => resolve(v), (e) => reject(e)), 500 * ++retries);
+                                    });
                                 });
-                            });
-                        } else if (err.status === 0) {
-                            COMPOSER.error('COMMS', `Refresh failed with code 0. Headers may be malformed or missing CORS.`);
-                            this.processLoginError(err, reject);
-                        } else {
-                            this.processLoginError(err, reject);
-                        }
-                    }, () => {
-                        COMPOSER.log('COMMS', `Got new tokens:`, tokens);
-                        this.updateToken(tokens, resolve);
-                        setTimeout(() => { this.loginDone(); }, 100);
-                    },
-            );
-        });
+                            } else if (err.status === 0) {
+                                COMPOSER.error('COMMS', `Refresh failed with code 0. Headers may be malformed or missing CORS.`);
+                                this.processLoginError(err, reject);
+                            } else {
+                                this.processLoginError(err, reject);
+                            }
+                        }, () => {
+                            COMPOSER.log('COMMS', `Got new tokens:`, tokens);
+                            this.updateToken(tokens, resolve);
+                            setTimeout(() => this.loginDone(), 100);
+                        },
+                );
+            });
+        })
     }
 
     /**

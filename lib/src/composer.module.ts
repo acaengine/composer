@@ -12,23 +12,11 @@ import { NgModule, ModuleWithProviders } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
 // import { ClientMessageBrokerFactory, WorkerAppModule } from '@angular/platform-webworker';
 
-// import { SERVICES } from './services';
-import { CommsService } from './services/auth/comms.service';
-import { ResourcesService } from './services/resources/resources.service';
-import { ComposerDebugService } from './services/debug.service';
-import { SystemsService } from './services/systems/systems.service';
-import { OAuthService } from './services/auth/oauth2.service';
-import { DataStoreService } from './services/data-store.service';
-
 // import { DIRECTIVES } from './directives';
 import { BindingDirective } from './directives/binding.directive';
 import { DebugDirective } from './directives/debug.directive';
 
 import { COMPOSER } from './settings';
-
-// export * from './directives';
-// export * from './services';
-// export * from './data-store.broker';
 
 @NgModule({
     declarations: [
@@ -50,8 +38,8 @@ import { COMPOSER } from './settings';
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private version: string = '0.9.2';
-    private build: string = '2018-05-23.v1';
+    private version: string = '0.9.3';
+    private build: string = '2018-06-12.v1';
 
     constructor() {
         if (!ComposerModule.init) {
@@ -63,8 +51,7 @@ export class ComposerModule {
     public static forRoot(): ModuleWithProviders {
         return {
             ngModule: ComposerModule,
-            providers: [
-            ]
+            providers: []
         };
     }
 }
