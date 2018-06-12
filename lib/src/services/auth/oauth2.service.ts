@@ -42,28 +42,31 @@ export class OAuthService {
     /**
      * Set the type of storage to use for OAuth
      * @param storage Storage to use Local or Session
-     * @return
      */
     public setStorage(storage: string) {
         this._storage = storage;
     }
 
     /**
-     * Get generated a login URL with the set parameters
-     * @return  Returns the generated login URL
+     * Get generated login URL with the set parameters
+     * @return  Generated login URL
      */
     get login_url() {
         return this.createLoginUrl('').then((url) => url);
     }
 
     /**
-     * Get generated a refresh URL with the set parameters
-     * @return  Returns the generated refresh URL
+     * Get generated refresh URL with the set parameters
+     * @return Generated refresh URL
      */
     get refresh_url() {
         return this.createRefreshUrl('').then((url) => url, (err) => '');
     }
 
+    /**
+     * Listen to auth state of the user
+     * @param next Callback for auth state of user
+     */
     public needsLogin(next: (state: any) => void) {
         if (!this.subjects.login) {
             this.subjects.login = new BehaviorSubject(this.needs_login);
@@ -75,7 +78,7 @@ export class OAuthService {
     /**
      * Try to process login
      * @param options Login processing options
-     * @return  Returns Promise which resolves success of login
+     * @return Promise of login success
      */
     public tryLogin(options?: any) {
         return this.attemptLogin(options);
@@ -91,7 +94,7 @@ export class OAuthService {
 
     /**
      * Get the identity claims from storage
-     * @return  Returns the identity claims
+     * @return Identity claims
      */
     public getIdentityClaims() {
         const claims = this.store[this._storage].getItem(`${this.model.client_id}_id_token_claims_obj`)
@@ -101,16 +104,16 @@ export class OAuthService {
     }
 
     /**
-     * Get the id token from storage
-     * @return  Returns the id token
+     * Get the ID Token from storage
+     * @return  ID Token
      */
     public getIdToken() {
         return this.store[this._storage].getItem(`${this.model.client_id}_id_token`).then((res: string) => res);
     }
 
     /**
-     * Get the access token from storage
-     * @return  Returns the access token
+     * Get the Access Token from storage
+     * @return Access Token
      */
     public getAccessToken() {
         if (!this.promises.access_token) {
@@ -131,8 +134,8 @@ export class OAuthService {
         return this.promises.access_token;
     }
     /**
-     * Get the access token from storage
-     * @return  Returns the access token
+     * Get the Refresh Token from storage
+     * @return  Refresh Token
      */
     public getRefreshToken() {
         if (!this.promises.refresh_token) {
@@ -154,8 +157,8 @@ export class OAuthService {
     }
 
     /**
-     * Checks to see if access token is still valid
-     * @return  Returns the expiry state of the access token
+     * Check if Access Token is still valid
+     * @return Expiry state of the access token
      */
     public hasValidAccessToken() {
         if (!this.promises.valid_access_token) {
@@ -185,6 +188,11 @@ export class OAuthService {
         return this.promises.valid_access_token;
     }
 
+
+    /**
+     * Check if ID Token is still valid
+     * @return Expiry state of the ID Token
+     */
     public hasValidIdToken() {
         if (!this.promises.id_token) {
             this.promises.id_token = new Promise<boolean>((resolve, reject) => {
@@ -207,7 +215,7 @@ export class OAuthService {
 
     /**
      * Get the authorisation header to add to requests
-     * @return  Returns authorisation header
+     * @return Authorisation header
      */
     public authorizationHeader() {
         if (!this.promises.auth_header) {
@@ -227,7 +235,6 @@ export class OAuthService {
 
     /**
      * Clears storage and redirects to logout URL
-     * @return
      */
     public logOut() {
         COMPOSER.log('OAUTH', 'Logging out. Clear access tokens...');
@@ -244,9 +251,9 @@ export class OAuthService {
         COMPOSER.log('OAUTH', 'Redirecting to logout URL...');
         location.href = logout_url;
     }
+
     /**
      * Removes any auth related details from storage
-     * @return
      */
     public clearAuth() {
         COMPOSER.log('OAUTH', `Clearing authentication variables...`);
@@ -269,9 +276,9 @@ export class OAuthService {
     }
 
     /**
-     * Generates a login URL with the set parameters
+     * Generate a login URL with the set parameters
      * @param state OAuth State
-     * @return  Returns a generated login URL
+     * @return Generated login URL
      */
     private createLoginUrl(state?: any) {
         if (!state) { state = ''; }
@@ -298,9 +305,9 @@ export class OAuthService {
         });
     }
     /**
-     * Generates a refresh URL with the set parameters
+     * Generate a refresh URL with the set parameters
      * @param state OAuth State
-     * @return  Returns a generated refresh URL
+     * @return Generated refresh URL
      */
     private createRefreshUrl(state: any) {
         if (typeof state === 'undefined') { state = ''; }
@@ -335,9 +342,8 @@ export class OAuthService {
     }
 
     /**
-     * Starts process to login and get OAuth tokens
+     * Start process to login and getting OAuth tokens
      * @param additionalState OAuth State
-     * @return
      */
     private initImplicitFlow(additionalState: string = '') {
         if (!this.model.client_id || this.model.client_id === '' || this.run_flow) {
@@ -403,9 +409,6 @@ export class OAuthService {
     /**
      * Attempts to process login information
      * @param options Login processing options
-     * @param resolve Promise resolve
-     * @param reject  Promise reject
-     * @return
      */
     private attemptLogin(options: any, tries: number = 0) {
         return new Promise((resolve, reject) => {
@@ -513,11 +516,12 @@ export class OAuthService {
             });
         });
     }
+
     /**
      * Process tokens
-     * @param idToken     ID Token
+     * @param idToken      ID Token
      * @param access_token Access Token
-     * @return  Returns success of processing id token
+     * @return  Promise of success of processing tokens
      */
     private processIdToken(idToken: any, access_token: any) {
         return new Promise((resolve) => {
@@ -584,8 +588,8 @@ export class OAuthService {
     }
 
     /**
-     * Creates a nonce and stores it in storage
-     * @return  Returns the created nonce
+     * Create a nonce and store it in storage
+     * @return Nonce
      */
     private createAndSaveNonce() {
         return this.createNonce().then((nonce: any) => {
@@ -597,7 +601,7 @@ export class OAuthService {
 
     /**
      * Generates a nonce
-     * @return  Returns a promise that resolve a nonce
+     * @return Promise of a nonce
      */
     private createNonce() {
         return new Promise<string>((resolve, reject) => {
@@ -616,8 +620,8 @@ export class OAuthService {
         });
     }
     /**
-     * Breaks up URL hash/query into a key, value map
-     * @return  Returns a map of key, value pairs from the URL hash/query
+     * Break up URL hash/query into a key, value map
+     * @return Map of key, value pairs from the URL hash/query
      */
     private getFragment() {
         const path = this.location.path();
@@ -644,9 +648,9 @@ export class OAuthService {
     }
 
     /**
-     * Parses query string and generates a map of the parameters
+     * Parse query string and generate a map of the parameters
      * @param queryString Query or hash string
-     * @return  Returns a map of key, value pairs from the query string
+     * @return  Map of key, value pairs from the query string
      */
     private parseQueryString(queryString: string) {
         const data: any = {};
@@ -688,10 +692,10 @@ export class OAuthService {
     }
 
     /**
-     * Checks if claims and tokens correctly in hash
+     * Check if claims and tokens correctly in hash
      * @param access_token Access Token
-     * @param idClaims    ID Claims
-     * @return  Returns claims and tokens correctly in hash
+     * @param idClaims     ID Claims
+     * @return Claims and tokens correctly in hash
      */
     private checkAtHash(access_token: any, idClaims: any) {
         if (!access_token || !idClaims || !idClaims.at_hash) {

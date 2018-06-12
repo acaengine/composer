@@ -20,11 +20,12 @@
          this.parent = srv;
          this.id = sys_id;
      }
+
     /**
      * Gets the module with the given id and index
      * @param id Module name
      * @param index Index of module in system
-     * @return  Returns the module with the given id and index
+     * @return  Matched module or null
      */
     public get(id: string, index: number | string = 1): EngineModule {
         if (id && id.indexOf('_') >= 0) {
@@ -44,9 +45,9 @@
         this.modules[name] = mod;
         return mod;
     }
+
     /**
      * Rebinds all bound status variables on existing modules in the system
-     * @return
      */
      public rebind() {
          for (const id in this.modules) {

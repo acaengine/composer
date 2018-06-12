@@ -1,8 +1,8 @@
 /*
  * @Author: Alex Sorafumo
  * @Date:   2017-05-02 10:49:31
- * @Last Modified by:   Alex Sorafumo
- * @Last Modified time: 2017-05-02 11:09:19
+ * @Last Modified by: Alex Sorafumo
+ * @Last Modified time: 2018-06-12 10:07:27
  */
 
 import { BehaviorSubject } from 'rxjs';
@@ -47,10 +47,18 @@ export class EngineStatusVariable {
         this.observers.changed = this.subjects.changed.asObservable();
     }
 
+    /**
+     * Get the current value of the binding
+     */
     get current() {
         return this.value();
     }
 
+    /**
+     * Sets the value of the binding
+     * @param value New value to set to the binding
+     * @param local Is this change a local one/do we need to update the value on the server?
+     */
     public setValue(value: any, local: boolean = false) {
         const previous = this.value('previous');
         this.subjects.value.next(value);
@@ -63,16 +71,26 @@ export class EngineStatusVariable {
         }
     }
 
+    /**
+     * Get the name of the binding
+     */
     get binding() {
         const module = this.parent;
         const system = module.parent;
         return `${system.id}, ${module.id} ${module.index}, ${this.id}`
     }
 
+    /**
+     * Number of bindings to the status variable
+     */
     public count() {
         return this.value('bindings');
     }
 
+    /**
+     * Bind to the status variable on the server
+     * @param next Callback function which posts the changes to the status variable
+     */
     public bind(next: (value: any) => void) {
         return new Promise((resolve, reject) => {
             const mod = `${this.parent.id} ${this.parent.index}`;
@@ -94,6 +112,9 @@ export class EngineStatusVariable {
         });
     }
 
+    /**
+     * Rebinds the status variable after reconnecting the websocket
+     */
     public rebind() {
         if (this.value('bindings') > 0) {
             const module = this.parent;
@@ -105,6 +126,11 @@ export class EngineStatusVariable {
         }
     }
 
+    /**
+     * Listen to changes of a property of the status variable
+     * @param name Name of the property
+     * @param next Callback which is passed the current value of the property
+     */
     public listen(name: string, next: (value: any) => void) {
         if (this.subjects[name]) {
             return this.observers[name].subscribe(next);
@@ -112,6 +138,10 @@ export class EngineStatusVariable {
         return null;
     }
 
+    /**
+     * Get the current value of the given property
+     * @param name Name of the property to retrieve. Defaults to value
+     */
     public value(name: string = 'value') {
         if (this.subjects[name]) {
             return this.subjects[name].getValue();
@@ -122,9 +152,9 @@ export class EngineStatusVariable {
     public update(params: any) {
         return;
     }
+
     /**
-     * Unbind from this variable
-     * @return
+     * Unbind this status variable from the server
      */
     public unbind() {
         const count = this.value('bindings');
@@ -148,7 +178,6 @@ export class EngineStatusVariable {
     /**
      * Called when an execute returns success
      * @param msg Message returned by the server
-     * @return
      */
     public success(msg: any) {
         return;
@@ -157,7 +186,6 @@ export class EngineStatusVariable {
     /**
      * Called when an execute returns error
      * @param msg Message returned by the server
-     * @return
      */
     public error(msg: any) {
         return;
@@ -166,13 +194,14 @@ export class EngineStatusVariable {
     /**
      * Called when an status variable is updated on the server side
      * @param msg Message returned by the server
-     * @return
      */
     public notify(msg: any) {
         this.setValue(msg.value);
         this.promises.exec = null;
     }
-
+    /**
+     * Executes a function on the module that this status variable is associated with
+     */
     private exec() {
         if (!this.promises.exec) {
             this.promises.exec = new Promise((resolve, reject) => {

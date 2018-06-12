@@ -132,8 +132,8 @@ export class SystemsService {
      * Gets a module from the
      * @param sys_id System ID
      * @param id     Module name
-     * @param i      Index of module in system
-     * @return     Returns module if found
+     * @param i      Index of module
+     * @return Matched module or null
      */
     public getModule(sys_id: string, id: string, i: number = 1): EngineModule {
         const system = this.get(sys_id);
@@ -143,7 +143,7 @@ export class SystemsService {
 
     /**
      * Check the state of the websocket
-     * @return  [description]
+     * @return State of the websocket
      */
     public isConnected(): boolean {
         return this.io ? this.io.connected : false;
@@ -151,7 +151,6 @@ export class SystemsService {
 
     /**
      * Rebinds all the bindings in each system
-     * @return
      */
     public rebind() {
         for (let i = 0; this.systems && i < this.systems.length; i++) {
@@ -162,21 +161,25 @@ export class SystemsService {
     }
 
     /**
-    * Executes a command over the websocket connection
-    * @return
-    */
+     * Executes a command over the websocket connection
+     * @param sys_id ID of the system
+     * @param mod_id ID of the module
+     * @param i Index of the module
+     * @param fn Name of the command to excute
+     * @param args Parameters to pass to method that is being executed
+     */
     public exec(sys_id: string, mod_id: string, i: number, fn: string, args: Array<any>) {
         if (this.io && this.io.connected) {
             return this.io.exec(sys_id, mod_id, i, fn, args);
         } else {
-            throw `execute failed as websocket not online\n${sys_id}: ${mod_id}_${i}.${fn}(${args.join(",")})`;
+            throw `Execute failed as websocket not online\n${sys_id}: ${mod_id}_${i}.${fn}(${args.join(",")})`;
         }
     }
 
     /**
      * Get a system with the given id, creates a new system if it doesn't exist
      * @param sys_id System ID
-     * @return  Returns the system with the given id
+     * @return  Matched system or null
      */
     private getSystem(sys_id: string): EngineSystem {
         this.updateSystems();
@@ -197,7 +200,6 @@ export class SystemsService {
 
     /**
      * Checks if each system stored exists on the server
-     * @return
      */
     private updateSystems() {
         if (this.r && this.io) {

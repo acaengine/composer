@@ -27,27 +27,25 @@ export class EngineModule {
         if (isNaN(this.index)) {
             this.index = 1;
         }
-        COMPOSER.observe('debug').subscribe((data: any) => {
-            this._debug = data;
-        });
+        COMPOSER.observe('debug').subscribe((data: any) => this._debug = data);
     }
     /**
      * Bind to status variable on module
-     * @param prop  Name of the status variable to bind
-     * @param cb_fn Function that is called when the binding value changes
-     * @return Returns a function that can be called to unbind to the status variable
+     * @param name  Name of the status variable to bind
+     * @param cb_fn Callback for changes of the binding's value
+     * @return Unbind callback
      */
-    public bind(prop: string, next: (change: boolean) => void) {
-        const variable = this.get(prop);
+    public bind(name: string, next: (change: boolean) => void) {
+        const variable = this.get(name);
         return variable.bind(next);
     }
 
     /**
      * Execute a function on this module on the server
-     * @param fn    Function name
+     * @param fn    Function/Method name
      * @param prop  Status variable to be changed
      * @param args  Arguments to pass to the function
-     * @return  Returns a exec promise or an error message
+     * @return  Promise for the result of the excute on the server
      */
     public exec(fn: string, args: any[] = []) {
         return new Promise((resolve, reject) => {
@@ -60,37 +58,42 @@ export class EngineModule {
     /**
      * Unbind to the give status variable
      * @param prop Name of the status variable to unbind
-     * @return
      */
     public unbind(prop: string) {
         const variable = this.get(prop);
         variable.unbind();
     }
 
+    /**
+     * Send debug command to the server
+     */
     public debug() {
         const id = this.service.io.debug(this.parent.id, this.id, this.index);
     }
 
+    /**
+     * Send ignore command to the server
+     */
     public ignore() {
         const id = this.service.io.ignore(this.parent.id, this.id, this);
     }
+
     /**
      * Get the status variable from the module
-     * @param prop Name of status variable to get
-     * @return  Returns the status variable with the give name
+     * @param name Name of status variable to get
+     * @return  Status variable
      */
-    public get(prop: string) {
-        if (this.status_variables[prop]) {
-            return this.status_variables[prop];
+    public get(name: string) {
+        if (this.status_variables[name]) {
+            return this.status_variables[name];
         }
-        const s_var = new EngineStatusVariable(this.service, this, prop, 0);
-        this.status_variables[prop] = s_var;
+        const s_var = new EngineStatusVariable(this.service, this, name, 0);
+        this.status_variables[name] = s_var;
         return s_var;
     }
 
     /**
      * Rebinds all the status variables in the module
-     * @return
      */
     public rebind() {
         for (const id in this.status_variables) {
@@ -103,7 +106,7 @@ export class EngineModule {
     /**
      * Sets the debugger for the module
      * @param debug Debugger
-     * @return  Returns the active state of the debugger
+     * @return  Active state of the debugger
      */
     public setDebug(debug: any) {
         if (typeof debug !== 'object') {

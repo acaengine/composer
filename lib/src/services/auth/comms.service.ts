@@ -66,16 +66,7 @@ export class CommsService {
 
     /**
      * Initialises OAuth
-     * @param url      Login URL
-     * @param refresh  Refresh tokens URL
-     * @param redirect Redirect URI
-     * @param c_id     OAuth Client ID
-     * @param login    Login URL
-     * @param issuer   OAuth Issuer
-     * @param scope    OAuth Scope
-     * @param oidc     Use Open ID
-     * @param logout   Logout URL
-     * @return
+     * @param options OAuth options
      */
     public setupOAuth(options: any) {
         const oauth = this.oAuthService;
@@ -94,9 +85,8 @@ export class CommsService {
         }
     }
     /**
-     * Changes the http service to respond with mock data
-     * @param enable Enables or disables mock data responses
-     * @return
+     * Change the http service to respond with mock data
+     * @param enable Use mock data responses
      */
     public mock(enable: boolean = true) {
         if (enable && this.http instanceof HttpClient) {
@@ -109,7 +99,6 @@ export class CommsService {
     }
     /**
      * Attempt to login to the system
-     * @return
      */
     public tryLogin() {
         COMPOSER.log('COMMS', `Trying Login`);
@@ -126,7 +115,7 @@ export class CommsService {
      * Wrapper for Angular HTTP GET with auth
      * @param url     Request URL
      * @param options Request Options
-     * @return  Returns an observable which acts like the Http observable
+     * @return Observable wrapper for HTTPClient.get
      */
     public get(url: string, options?: any) {
         return new Observable((observer: any) => {
@@ -150,7 +139,7 @@ export class CommsService {
      * @param url     Request URL
      * @param body    (Optional)Request Body
      * @param options (Optional)Request Options
-     * @return  Returns an observable which acts like the Http observable
+     * @return Observable wrapper for HTTPClient.post
      */
     public post(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
@@ -175,7 +164,7 @@ export class CommsService {
      * @param url     Request URL
      * @param body    (Optional)Request Body
      * @param options (Optional)Request Options
-     * @return  Returns an observable which acts like the Http observable
+     * @return Observable wrapper for HTTPClient.put
      */
     public put(url: string, body?: any, options?: any) {
         return new Observable((observer: any) => {
@@ -199,7 +188,7 @@ export class CommsService {
      * Wrapper for Angular HTTP DELETE with auth
      * @param url     Request URL
      * @param options (Optional)Request Options
-     * @return  Returns an observable which acts like the Http observable
+     * @return Observable wrapper for HTTPClient.delete
      */
     public delete(url: string, options?: any) {
         return new Observable((observer: any) => {
@@ -215,9 +204,9 @@ export class CommsService {
         });
     }
     /**
-     * Creates a MD5 hash of the given string
+     * Create a MD5 hash of the given string
      * @param str String to hash
-     * @return      Returns a hash of the given string
+     * @return Hash of the given string
      */
     public hash(str: string) {
         return Md5.hashStr(str, false) as string;
@@ -225,7 +214,7 @@ export class CommsService {
 
     /**
      * Login to the system with the set details
-     * @return  Returns a promise which resolves with an access token
+     * @return Promise of an access token
      */
     public login() {
         if (this.login_promise === null) {
@@ -240,7 +229,7 @@ export class CommsService {
     }
     /**
      * Get access token
-     * @return  Returns access token
+     * @return Access token
      */
     get token() {
         return this.login();
@@ -259,7 +248,7 @@ export class CommsService {
 
     /**
      * Check whether or not the user is logged in
-     * @return  [description]
+     * @return Logged in state of the user
      */
     public isLoggedIn() {
         return this.token ? true : (this.refresh ? null : false);
@@ -314,9 +303,8 @@ export class CommsService {
     }
 
     /**
-     * Sets whether the user has logged in or not
+     * Set whether the user has logged in or not
      * @param status Logged in status
-     * @return
      */
     public setLoginStatus(status: boolean) {
         const oauth: any = this.oAuthService;
@@ -326,18 +314,18 @@ export class CommsService {
             this.store.session.removeItem(`${oauth.clientId}_login`);
         }
     }
+
     /**
-     * Removes all authentication related keys from storage
-     * @return
+     * Remove all authentication related keys from storage
      */
     public clearStore() {
         const oauth: any = this.oAuthService;
         oauth.clearAuth();
     }
+
     /**
-     * Checks if user is authorised
-     * @param cb_fn Callback function which is passed the response
-     * @return
+     * Check if user is authorised
+     * @param cb_fn Callback for the auth token state
      */
     public checkAuth(cb_fn: any) {
         COMPOSER.log('COMMS', `Checking Auth.`);
@@ -454,7 +442,7 @@ export class CommsService {
                         }, 100);
                     }
                     else {
-                        this.refreshToken(resolve, reject);
+                        this.refreshToken().then((v) => resolve(v), (e) => reject(e));
                     }
                 } else { // No refresh token
                     COMPOSER.log('COMMS', `No Refresh Token or Code`);

@@ -33,9 +33,6 @@ export class ResourcesService {
 
     /**
      * Initialises authentication details and sets up OAuth
-     * @param resolve Promise resolve function
-     * @param reject  Promise reject function
-     * @return
      */
     public initAuth(tries: number = 0) {
         if (tries > 5) { return location.reload(); }
@@ -84,9 +81,8 @@ export class ResourcesService {
         return this.model.auth_promise;
     }
     /**
-     * Sets up OAuth with the given options
-     * @param options OAuth details
-     * @return
+     * Setup OAuth
+     * @param options OAuth options
      */
     public setup(options: any) {
         this.http.setupOAuth({
@@ -103,7 +99,7 @@ export class ResourcesService {
     /**
      * Initialises all the resource factories for each route
      * @param url_base Base resource URL, defaults to origin + '/control/'
-     * @return     Returns a promise when resolves the state of the auth.
+     * @return Promise of the state of auth
      */
     public init(url_base?: string, mock: boolean = false) {
         if (mock) {
@@ -255,26 +251,24 @@ export class ResourcesService {
         });
     }
     /**
-     * Function to get the user access token for the API
-     * @return  Returns an OAuth access token
+     * Get the user access token for the API
+     * @return  OAuth access token
      */
     public getToken() {
         return this.http.token;
     }
     /**
-     * Function checks if the the user is current authorised.
-     * @return
+     * Check if the the user is current authorised
      */
     public checkAuth() {
         this.http.checkAuth(() => COMPOSER.log('RESRC', 'Refreshed Auth'));
     }
     /**
-     * Creates a new resource factory with the given parameters.
+     * Create a new resource factory with the given parameters.
      * @param name    Name of the resource factory
      * @param url     Base API URL of the resources
      * @param params  Route paramters available on the API URL
      * @param methods Request methods that are avaiable on this resource
-     * @return
      */
     public new(name: string, url: string, params: any, methods: any) {
         const factory = new ResourceFactory(url, params, methods, this.http);
@@ -286,7 +280,7 @@ export class ResourcesService {
     }
 
     /**
-     * Function to get a resource factory with the given name
+     * Get a resource factory with the given name
      * @param name Name of the resource factory to get
      * @return  Returns a resource factory, null if not found
      */

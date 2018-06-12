@@ -27,7 +27,11 @@ export class ComposerDebugService {
         if (!win.$aca) { win.$aca = {}; }
         win.$aca.composer = this;
     }
-
+    /**
+     * Run given command
+     * @param cmd Name of the command
+     * @param data Data to pass command
+     */
     public cmd(cmd: string, data?: any): any {
         if (COMPOSER.get('debug')) {
             switch (cmd.toLowerCase()) {

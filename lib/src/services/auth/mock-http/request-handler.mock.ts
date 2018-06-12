@@ -10,6 +10,12 @@ import { COMPOSER } from '../../../settings';
 export class MockRequestHandler {
     private handlers: any = {};
 
+    /**
+     * Register a mock resource
+     * @param url URL of the resource
+     * @param data Data of the resource
+     * @param fn Callback to handle requests to the resource
+     */
     public register(url: string, data: any, fn?: (handler: any) => any) {
         const parts = url.split('/');
         const params: string[] = [];
@@ -28,6 +34,10 @@ export class MockRequestHandler {
         COMPOSER.log(`HTTP(M)`, `Registered handler for url "${url}"`);
     }
 
+    /**
+     * Unregister a mock resource
+     * @param url URL of resource
+     */
     public unregister(url: string) {
         if (this.handlers[url]) {
             this.handlers[url] = null;
@@ -36,6 +46,12 @@ export class MockRequestHandler {
         }
     }
 
+    /**
+     * Respond to a resource request
+     * @param method Request method. GET, POST, PUT, DELETE etc.
+     * @param url URL of the request
+     * @param fragment Parsed URL fragments
+     */
     public response(method: string, url: string, fragment?: any) {
         const handler: any = this.getHandler(url);
         if (method === 'GET') {
@@ -45,7 +61,7 @@ export class MockRequestHandler {
                     const h = {
                         data: handler.data,
                         fragment,
-                        params: handler.params,
+                        params: handler.params
                     };
                     resp = handler.fn(h);
                 } else {
@@ -53,33 +69,31 @@ export class MockRequestHandler {
                 }
                 COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, resp);
                 if (!resp) {
-                    resp = {
-                        status: 404,
-                        code: 404,
-                        message: 'Requested resource was not found.',
-                        data: {},
-                    };
+                    resp = this.not_found;
                 }
                 return resp;
             } else {
-                const error = {
-                    status: 404,
-                    code: 404,
-                    message: 'Requested resource was not found.',
-                    data: {},
-                };
-                COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, error);
-                return error;
+                COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, this.not_found);
+                return this.not_found;
             }
         } else {
             COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, 'Success');
-            return {
-                message: 'Ok',
-                data: {},
-            };
+            return { message: 'Ok', data: {} };
         }
     }
 
+    private get not_found() {
+        return {
+            status: 404,
+            code: 404,
+            message: 'Requested resource was not found.',
+            data: {},
+        };
+    }
+    /**
+     * Process handler for URL
+     * @param url URL to generate handler for
+     */
     private getHandler(url: string) {
         // Remove origin from URL
         if (url.indexOf('http') === 0) {
