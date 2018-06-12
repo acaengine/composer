@@ -131,10 +131,14 @@ export class EngineStatusVariable {
         if (count === 1) {
             const module = this.parent;
             const system = module.parent;
+            this.subjects.bindings.next(count - 1);
             this.service.io.unbind(system.id, module.id, module.index, this.id).then(() => {
                 this.subjects.bindings.next(0);
                 COMPOSER.log('STATUS', `Unbound binding(${this.binding}). 0 remaining.`);
-            }, (err) => COMPOSER.error('VAR', 'Unbinding from status variable failed.', err));
+            }, (err) => {
+                COMPOSER.error('VAR', 'Unbinding from status variable failed.', err);
+                this.subjects.bindings.next((this.value('bindings') || 0) + 1);
+            });
         } else if (count > 1) {
             this.subjects.bindings.next(count - 1);
             COMPOSER.log('STATUS', `Unbound binding(${this.binding}). ${count - 1} remaining.`);
