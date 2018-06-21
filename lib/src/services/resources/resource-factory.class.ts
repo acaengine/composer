@@ -137,7 +137,7 @@ export class ResourceFactory {
      * @param reject  Promise reject function
      */
     private __get(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 10) {
+        if (tries > 3) {
             return reject({ status: 401, message: 'No auth tokens loaded.' });
         }
         if (this.service.authLoaded) {
@@ -151,7 +151,7 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => this.__get(url, method, resolve, reject, ++tries), 500);
+                    setTimeout(() => this.__get(url, method, resolve, reject, tries), 500 * ++tries);
                 }
             });
         } else {
@@ -180,7 +180,7 @@ export class ResourceFactory {
      * @param reject  Promise reject function
      */
     private __post(url: any, method: any, req_data: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 10) {
+        if (tries > 3) {
             return reject({ status: 401, message: 'No auth tokens loaded.' });
         }
         if (this.service.authLoaded) {
@@ -194,7 +194,7 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => this.__post(url, method, req_data, resolve, reject, ++tries), 500);
+                    setTimeout(() => this.__post(url, method, req_data, resolve, reject, tries), 500 * ++tries);
                 }
             });
         } else {
@@ -223,7 +223,7 @@ export class ResourceFactory {
      * @param reject  Promise reject function
      */
     private __put(url: any, method: any, req_data: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 10) {
+        if (tries > 3) {
             return reject({ status: 401, message: 'No auth tokens loaded.' });
         }
         if (this.service.authLoaded) {
@@ -237,7 +237,7 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => this.__put(url, method, req_data, resolve, reject, ++tries), 500);
+                    setTimeout(() => this.__put(url, method, req_data, resolve, reject, tries), 500 * ++tries);
                 }
             });
         } else {
@@ -264,7 +264,7 @@ export class ResourceFactory {
      * @param reject  Promise reject function
      */
     private __delete(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 10) {
+        if (tries > 3) {
             return reject({ status: 401, message: 'No auth tokens loaded.' });
         }
         if (this.service.authLoaded) {
@@ -278,7 +278,7 @@ export class ResourceFactory {
                         () => resolve(result),
                     );
                 } else {
-                    setTimeout(() => this.__delete(url, method, resolve, reject, ++tries), 500);
+                    setTimeout(() => this.__delete(url, method, resolve, reject, tries), 500 * ++tries);
                 }
             });
         } else {

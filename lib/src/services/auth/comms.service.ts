@@ -98,13 +98,11 @@ export class CommsService {
         }
     }
     /**
-     * Attempt to login to the system
+     * Attempt to logging in to the system
      */
     public tryLogin() {
         COMPOSER.log('COMMS', `Trying Login`);
-        this.login().then(() => {
-            COMPOSER.log('COMMS', `Got Access Token.`);
-        });
+        this.login().then(() => COMPOSER.log('COMMS', `Got Access Token.`), (e) => null);
     }
 
     public needsLogin(next: (state: any) => void) {
@@ -437,8 +435,7 @@ export class CommsService {
                             this.loginDone();
                             this.login();
                         }, 100);
-                    }
-                    else {
+                    } else {
                         this.refreshToken().then((v) => resolve(v), (e) => reject(e));
                     }
                 } else { // No refresh token
@@ -447,13 +444,12 @@ export class CommsService {
                     if (location.hash.indexOf(path) >= 0
                         && location.href.indexOf(location.origin + '/#/') >= 0) {
 
-                        if (path.indexOf('?') >= 0) {
-                            path = path.split('?')[0];
-                        }
+                        if (path.indexOf('?') >= 0) {  path = path.split('?')[0]; }
                     }
                     const here = path;
                     this.store.local.setItem(`oauth_redirect`, here);
                     oauth.initImplicitFlow();
+                    reject('No logged in');
                     setTimeout(() => { this.loginDone(); }, 100);
                 }
             });
@@ -583,8 +579,7 @@ export class CommsService {
      * @return  Returns the details for the request
      */
     private processOptions(url: string, body?: any, options?: any) {
-        return new Promise((resolve, reject) => {
-            const oauth = this.oAuthService;
+        return new Promise((resolve) => {
             let headers: HttpHeaders = new HttpHeaders();
             this.oAuthService.authorizationHeader().then((auth_header: string) => {
                 headers = headers.set('Authorization', auth_header);
@@ -621,15 +616,15 @@ export class CommsService {
      */
     private error(err: any, req: any, obs: any) {
         const hash = this.hash(req.url + req.body);
-        if (!this.retry[hash]) {
-            this.retry[hash] = 0;
-        }
+        if (!this.retry[hash]) { this.retry[hash] = 0; }
         COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}. ${err ? err.message : ''}`);
-        if ((!err || err.status === 401) && this.retry[hash] < 5) {
+        if ((!err || err.status === 401) && this.retry[hash] < 3) {
             // Re-authenticate if authentication error.
             setTimeout(() => {
+                COMPOSER.log('COMMS', `Re-authenticating...`);
                 this.login()
-                    .then((res: any) => {
+                    .then(() => {
+                        COMPOSER.log('COMMS', `Retrying request to '${req.url}'...`);
                         this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
                         setTimeout(() => {
                             this.refresh = false;
@@ -650,14 +645,18 @@ export class CommsService {
                     }, (retry_err) => {
                         COMPOSER.error('COMMS', `Error logging in.`, retry_err);
                         this.clearStore();
-                        setTimeout(() => { if (!this.local_auth) { location.reload(); } }, 200);
+                        setTimeout(() => {
+                            if (!this.local_auth) { location.reload(); } else { obs.error(err); }
+                        }, 200);
                         this.retry[hash] = 0;
                     });
             }, 200);
         } else if (!err || err.status === 401) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
             this.clearStore();
-            setTimeout(() => { if (!this.local_auth) { location.reload(); } }, 200);
+            setTimeout(() => {
+                if (!this.local_auth) { location.reload(); } else { obs.error(err); }
+            }, 200);
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);

@@ -26,18 +26,18 @@ export class MockHttp {
         return new MockRequest('GET', url, null, options);
     }
 
-    public post(url: string, options: any) {
-        COMPOSER.log(`HTTP(M)`, `GET Request made to url "${url}"`);
+    public post(url: string, data: any, options: any) {
+        COMPOSER.log(`HTTP(M)`, `POST Request made to url "${url}"`, data);
         return new MockRequest('POST', url, null, options);
     }
 
     public put(url: string, data: any, options: any) {
-        COMPOSER.log(`HTTP(M)`, `GET Request made to url "${url}"`);
+        COMPOSER.log(`HTTP(M)`, `PUT Request made to url "${url}"`, data);
         return new MockRequest('PUT', url, null, options);
     }
 
     public delete(url: string, options: any) {
-        COMPOSER.log(`HTTP(M)`, `GET Request made to url "${url}"`);
+        COMPOSER.log(`HTTP(M)`, `DELETE Request made to url "${url}"`);
         return new MockRequest('DELETE', url, null, options);
     }
 }
