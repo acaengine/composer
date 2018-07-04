@@ -294,8 +294,10 @@ export class OAuthService {
      * Reload the page if authentication is local
      */
     public reload() {
-        COMPOSER.error('OAUTH', `Reloading page...`);
-        this.model.login_local ? location.reload() : null;
+        if (!this.model.login_local) {
+            COMPOSER.error('OAUTH', `Reloading page...`);
+            location.reload();
+        }
     }
 
     /**

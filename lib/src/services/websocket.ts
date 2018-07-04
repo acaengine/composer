@@ -52,6 +52,9 @@ export class WebSocketInterface {
             port = location.port;
         }
         this.fixed = fixed;
+        if (!this.fixed && localStorage) {
+            this.fixed = localStorage.getItem('fixed_device') === 'true' || localStorage.getItem('trust') === 'true';
+        }
         this.serv = srv;
         this.setup(auth, host, port);
     }
@@ -159,7 +162,7 @@ export class WebSocketInterface {
      * @param sys_id System ID
      * @param mod_id Module name
      * @param i      Index of the module in the system
-     * @return         Returns the id of the request made
+     * @returns ID of the request made
      */
     public ignore(sys_id: string, mod_id: string, inst: any) {
         return this.sendRequest(IGNORE, sys_id, mod_id, null, IGNORE);
@@ -167,7 +170,7 @@ export class WebSocketInterface {
 
     /**
      * Connects to the websocket on the given host and port
-     * @return
+     * @returns Promise of null or error object
      */
     private connect(tries: number = 0) {
         if (!this.connect_promise) {
@@ -258,7 +261,6 @@ export class WebSocketInterface {
 
     /**
      * Reconnects the websocket is it closes or does not exist
-     * @return
      */
     private reconnect() {
         if (this.io === null || this.io.readyState === this.io.CLOSED && !this.connect_promise) {
@@ -269,7 +271,6 @@ export class WebSocketInterface {
     }
     /**
      * Starts pings to the server every so often to keep the connection alive
-     * @return
      */
     private startKeepAlive() {
         this.keepAliveInterval = setInterval(() => {
@@ -289,7 +290,6 @@ export class WebSocketInterface {
     /**
      * Called when the websocket is connected
      * @param evt Event returned by the websocket
-     * @return
      */
     private onopen(evt: any) {
         COMPOSER.log('WS', 'Websocket connected');
@@ -308,7 +308,6 @@ export class WebSocketInterface {
     /**
      * Function that is called when the websocket is disconnected
      * @param evt Event returned by the websocket
-     * @return
      */
     private onclose(evt: any) {
         this.connected = false;
@@ -321,7 +320,7 @@ export class WebSocketInterface {
     /**
      * Function that is called when the websocket is receives a message
      * @param evt Event returned by the websocket
-     * @return
+     * @returns Success of the request message responds to
      */
     private onmessage(evt: any) {
         let msg: any;
@@ -393,7 +392,6 @@ export class WebSocketInterface {
      * Called when processing a message failed
      * @param msg  Failure message to display
      * @param type Type of message
-     * @return
      */
     private fail(msg: any, type: any) {
         COMPOSER.error('WS', `Failed ${type}. ${JSON.stringify(msg)}`);
@@ -408,7 +406,7 @@ export class WebSocketInterface {
      * @param index  Index of module in system
      * @param name   Name of status variable or function on the module
      * @param args Arguments to pass to the function on the module
-     * @return  Returns the id of the request made through the websocket.
+     * @returns Promise of ID of the request made through the websocket.
      */
     private sendRequest(type: any, system: any, mod: any, index: any, name: any, args: any = []): any {
         return new Promise<any>((resolve) => {

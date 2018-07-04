@@ -38,8 +38,8 @@ import { COMPOSER } from './settings';
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private version: string = '0.9.5';
-    private build: string = '2018-07-04.v1';
+    private version: string = '0.9.6';
+    private build: string = '2018-07-04.v2';
 
     constructor() {
         if (!ComposerModule.init) {
