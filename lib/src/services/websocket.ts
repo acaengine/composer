@@ -197,9 +197,7 @@ export class WebSocketInterface {
                                 // Setup URI
                                 uri += '?bearer_token=' + token;
                                 const search = location.search;
-                                if (this.fixed) {
-                                    uri += '&fixed_device=true';
-                                } else if (search.indexOf('fixed_device') >= 0) {
+                                if (this.fixed || search.indexOf('fixed_device') >= 0) {
                                     uri += '&fixed_device=true';
                                 }
                                 COMPOSER.log('WS', 'Building websocket...');
@@ -226,8 +224,9 @@ export class WebSocketInterface {
                                 };
                             } else {
                                 setTimeout(() => {
+                                    this.connect_promise = null;
                                     this.connect(++tries).then(() => resolve(), () => reject());
-                                }, 200 );
+                                }, 200);
                             }
                         });
                     } else {

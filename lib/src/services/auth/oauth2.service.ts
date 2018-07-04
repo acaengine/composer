@@ -25,7 +25,6 @@ export class OAuthService {
 
     private debug: boolean = false;
     private _storage: string = 'local';
-    private run_flow: boolean = false;
     private needs_login: boolean = false;
 
     private promises: any = {};
@@ -61,6 +60,22 @@ export class OAuthService {
      */
     get refresh_url() {
         return this.createRefreshUrl('').then((url) => url, (err) => '');
+    }
+
+    /**
+     * Get value of parameter on the service
+     * @param name
+     */
+    public get(name: string) {
+        return typeof this.model[name] === 'object' ? JSON.parse(JSON.stringify(this.model[name])) : this.model[name];
+    }
+
+    /**
+     * Get value of parameter on the service
+     * @param name
+     */
+    public set(name: string, value: any) {
+        this.model[name] = value;
     }
 
     /**
@@ -123,12 +138,12 @@ export class OAuthService {
                         this.store[this._storage].getItem(`access_token`).then((token_local: string) => {
                             resolve(token_local);
                             this.promises.access_token = null;
-                        });
+                        }, () => this.promises.access_token = null);
                     } else {
                         resolve(token);
                         this.promises.access_token = null;
                     }
-                });
+                }, () => this.promises.access_token = null);
             });
         }
         return this.promises.access_token;
@@ -162,7 +177,7 @@ export class OAuthService {
      */
     public hasValidAccessToken() {
         if (!this.promises.valid_access_token) {
-            this.promises.valid_access_token = new Promise<boolean>((resolve, reject) => {
+            this.promises.valid_access_token = new Promise<boolean>((resolve) => {
                 this.getAccessToken().then((token: string) => {
                     this.store[this._storage].getItem(`${this.model.client_id}_expires_at`).then((expiresAt: string) => {
                         setTimeout(() => this.promises.valid_access_token = null, 10);
@@ -195,7 +210,7 @@ export class OAuthService {
      */
     public hasValidIdToken() {
         if (!this.promises.id_token) {
-            this.promises.id_token = new Promise<boolean>((resolve, reject) => {
+            this.promises.id_token = new Promise<boolean>((resolve) => {
                 if (this.getIdToken) {
                     this.store[this._storage].getItem(`${this.model.client_id}_id_token_expires_at`)
                         .then((expiresAt: string) => {
@@ -276,6 +291,76 @@ export class OAuthService {
     }
 
     /**
+     * Reload the page if authentication is local
+     */
+    public reload() {
+        COMPOSER.error('OAUTH', `Reloading page...`);
+        this.model.login_local ? location.reload() : null;
+    }
+
+    /**
+     * Clear authentication cache and reload the page
+     */
+    public reset() {
+        this.clearAuth();
+        this.reload();
+    }
+
+    /**
+     * Start process to login and getting OAuth tokens
+     * @param additionalState OAuth State
+     */
+    public initImplicitFlow(additionalState: string = '') {
+        if (!this.model.client_id || this.model.client_id === '' || this.model.run_flow) {
+            return;
+        }
+        this.model.run_flow = true;
+        COMPOSER.log('OAUTH', 'Client ID:', this.model.client_id);
+        this.createLoginUrl(additionalState).then((url) => {
+            let path = location.href;
+            if (location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
+                if (path.indexOf('?') >= 0) {
+                    path = path.split('?')[0];
+                }
+            }
+            const here = path;
+            this.store.local.setItem(`oauth_redirect`, here);
+            this.store.session.getItem(`${this.model.client_id}_login`).then((logged: string) => {
+                if ((logged === 'true' || this.model.has_session) && url.indexOf('http') >= 0) {
+                    COMPOSER.log('OAUTH', 'Logged in. Authorizing...');
+                    this.store.session.removeItem(`${this.model.client_id}_login`);
+                    location.href = url;
+                    setTimeout(() => this.model.run_flow = false, 1000);
+                } else {
+                    COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
+                    if (this.model.login_local) {
+                        this.subjects.login.next(true);
+                        setTimeout(() => this.model.run_flow = false, 1000);
+                    } else {
+                        if (!this.model.login_redirect && location.origin.indexOf('http') >= 0) {
+                            this.model.login_redirect = `/login?continue=${location.href}`;
+                        }
+                        if (this.model.authority_loaded) {
+                            // this.store.session.setItem(`${this.model.client_id}_login`, 'true');
+                            COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
+                            this.hasValidAccessToken().then((state) => {
+                                if (!state) {
+                                    if (location.hash.indexOf('access_token') < 0 && location.search.indexOf('access_token') < 0) {
+                                        location.href = this.model.login_redirect;
+                                    }
+                                }
+                            });
+                        } else {
+                            COMPOSER.log('OAUTH', `Authority hasn't loaded yet.`);
+                            setTimeout(() => this.model.run_flow = false, 1000);
+                        }
+                    }
+                }
+            });
+        }, () => this.model.run_flow = false);
+    }
+
+    /**
      * Generate a login URL with the set parameters
      * @param state OAuth State
      * @return Generated login URL
@@ -304,6 +389,7 @@ export class OAuthService {
             return url;
         });
     }
+
     /**
      * Generate a refresh URL with the set parameters
      * @param state OAuth State
@@ -341,58 +427,6 @@ export class OAuthService {
         });
     }
 
-    /**
-     * Start process to login and getting OAuth tokens
-     * @param additionalState OAuth State
-     */
-    private initImplicitFlow(additionalState: string = '') {
-        if (!this.model.client_id || this.model.client_id === '' || this.run_flow) {
-            return;
-        }
-        COMPOSER.log('OAUTH', 'Client ID:', this.model.client_id);
-        this.createLoginUrl(additionalState).then((url) => {
-            let path = location.href;
-            if (location.hash.indexOf(path) >= 0 && location.href.indexOf(location.origin + '/#/') >= 0) {
-                if (path.indexOf('?') >= 0) {
-                    path = path.split('?')[0];
-                }
-            }
-            const here = path;
-            this.store.local.setItem(`oauth_redirect`, here);
-            this.run_flow = true;
-            this.store.session.getItem(`${this.model.client_id}_login`).then((logged: string) => {
-                if (logged === 'true' && url.indexOf('http') >= 0) {
-                    COMPOSER.log('OAUTH', 'Logged in. Authorizing...');
-                    this.store.session.removeItem(`${this.model.client_id}_login`);
-                    location.href = url;
-                } else {
-                    COMPOSER.log('OAUTH', 'Not logged in redirecting to provider...');
-                    if (this.model.login_local) {
-                        this.subjects.login.next(true);
-                        this.run_flow = false;
-                    } else {
-                        if (!this.model.login_redirect && location.origin.indexOf('http') >= 0) {
-                            this.model.login_redirect = `/login?continue=${location.href}`;
-                        }
-                        if (this.model.authority_loaded) {
-                            this.store.session.setItem(`${this.model.client_id}_login`, 'true');
-                            COMPOSER.log('OAUTH', `Login: ${this.model.login_redirect}`);
-                            this.hasValidAccessToken().then((state) => {
-                                if (!state) {
-                                    if (location.hash.indexOf('access_token') < 0 && location.search.indexOf('access_token') < 0) {
-                                        location.href = this.model.login_redirect;
-                                    }
-                                }
-                            });
-                        } else {
-                            COMPOSER.log('OAUTH', `Authority hasn't loaded yet.`);
-                            this.run_flow = false;
-                        }
-                    }
-                }
-            });
-        }, (err) => null);
-    }
 
     private callEventIfExists(options: any) {
         if (options.onTokenReceived) {
@@ -411,28 +445,38 @@ export class OAuthService {
      * @param options Login processing options
      */
     private attemptLogin(options: any, tries: number = 0) {
-        return new Promise((resolve, reject) => {
-            if (tries > 10) { return resolve(); }
-            if (this.model.client_id && this.model.client_id !== '') {
-                options = options || {};
-
-                let parts = this.getFragment();
-                console.log('Parts:', parts);
-                if (Object.keys(parts).length <= 1) {
-                    this.store.session.getItem('OAUTH.params').then((item: string) => {
-                        if (item) {
-                            parts = JSON.parse(item);
-                        }
-                        this.store.session.removeItem('OAUTH.params');
-                        this.processLogin(parts, options).then((i) => resolve(i), (e) => reject(e));
-                    });
-                } else {
-                    this.processLogin(parts, options).then((i) => resolve(i), (e) => reject(e));
+        if (!this.promises.login) {
+            this.promises.login = new Promise((resolve, reject) => {
+                if (tries > 10) {
+                    this.promises.login = false;
+                    return resolve();
                 }
-            } else {
-                setTimeout(() => this.attemptLogin(options, ++tries).then((i) => resolve(i), (e) => reject(e)), 200);
-            }
-        });
+                if (this.model.client_id && this.model.client_id !== '') {
+                    options = options || {};
+
+                    let parts = this.getFragment();
+                    if (Object.keys(parts).length <= 1) {
+                        this.store.session.getItem('OAUTH.params').then((item: string) => {
+                            if (item) { parts = JSON.parse(item); }
+                            this.store.session.removeItem('OAUTH.params');
+                            this.processLogin(parts, options).then(
+                                (i) => { resolve(i); this.promises.login = false; }
+                            );
+                        });
+                    } else {
+                        this.processLogin(parts, options).then(
+                            (i) => { resolve(i); this.promises.login = false; }
+                        );
+                    }
+                } else {
+                    setTimeout(() => {
+                        this.promises.login = false;
+                        this.attemptLogin(options, ++tries).then((i) => resolve(i));
+                    }, 200);
+                }
+            });
+        }
+        return this.promises.login;
     }
 
     private processLogin(parts: any, options: any) {
@@ -634,7 +678,6 @@ export class OAuthService {
             if (hash_content.indexOf('#') > 0) {
                 hash_content = hash_content.substr(hash_content.indexOf('#') + 1);
             }
-            console.log('Hash:', hash_content);
             return this.parseQueryString(hash_content);
         } else if (hash_content.indexOf('?') >= 0 && hash_content.indexOf('=') > 0) { // Handle hash with a sub query
             let s = hash_content.substr(hash_content.indexOf('?'));

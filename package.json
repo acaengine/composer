@@ -1,6 +1,6 @@
 {
   "name": "@acaprojects/ngx-composer",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "license": "MIT",
   "scripts": {
     "ng": "ng",
@@ -14,6 +14,9 @@
   "dependencies": {
   },
   "peerDependencies": {
+    "@angular/core": "^6.0.2",
+    "@angular/common": "^6.0.2",
+    "@angular/http": "^6.0.2",
     "fast-sha256": "^1.1.0",
     "ts-md5": "^1.2.4",
     "watch-object": "^1.1.2",
@@ -26,12 +29,9 @@
     "@angular-devkit/core": "^0.6.3",
     "@angular/animations": "^6.0.2",
     "@angular/cli": "^6.0.3",
-    "@angular/common": "^6.0.2",
     "@angular/compiler": "^6.0.2",
     "@angular/compiler-cli": "^6.0.2",
-    "@angular/core": "^6.0.2",
     "@angular/forms": "^6.0.2",
-    "@angular/http": "^6.0.2",
     "@angular/language-service": "^6.0.2",
     "@angular/platform-browser": "^6.0.2",
     "@angular/platform-browser-dynamic": "^6.0.2",

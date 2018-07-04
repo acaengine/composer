@@ -10,8 +10,8 @@
 import { Location } from '@angular/common';
 import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { Observable } from 'rxjs';
 
 import { Md5 } from 'ts-md5/dist/md5';
 import { COMPOSER } from '../../settings';
@@ -26,7 +26,6 @@ const MAX_ERROR_COUNT = 5;
 })
 export class CommsService {
     private trust: boolean = false;
-    private sub: any;
     private refresh = false;
     private login_promise: Promise<any> = null;
     private retry: any = {};
@@ -39,28 +38,28 @@ export class CommsService {
         'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local', 'authority_loaded'
     ];
 
+    private model: any = {};
+
     constructor(
-        private route: ActivatedRoute,
-        private router: Router,
         private http_service: HttpClient,
         private oAuthService: OAuthService,
         private store: DataStoreService,
         private loc: Location,
+        private route: ActivatedRoute,
         private injector: Injector
     ) {
         this.http = this.http_service;
-        store.local.getItem('trust').then((value: string) => {
-            this.trust = (value === 'true');
-        });
-        this.sub = this.route.queryParams.subscribe((params: any) => {
-            this.trust = params.trust === 'true' ? params.trust === 'true' : this.trust;
-            if (this.trust) {
+        this.route.queryParamMap.subscribe((params) => {
+            if (params.has('trust')) {
+                this.trust = params.get('trust') === 'true';
                 store.local.setItem('trust', 'true');
             }
-            if (params.logout && params.logout === 'true') {
-                this.oAuthService.logOut();
-            }
-        });
+            if (params.has('logout')) { this.oAuthService.logOut(); }
+        })
+        store.local.getItem('trust').then((value) => this.trust = (value === 'true'));
+        if (location.search.indexOf('logout=') >= 0) {
+            this.oAuthService.logOut();
+        }
         this.oAuthService.tryLogin().then(() => null, () => null);
     }
 
@@ -97,6 +96,7 @@ export class CommsService {
             this.http = this.http_service;
         }
     }
+
     /**
      * Attempt to logging in to the system
      */
@@ -217,7 +217,15 @@ export class CommsService {
     public login() {
         if (this.login_promise === null) {
             COMPOSER.log('COMMS', `Attempting login.`);
-            this.login_promise = this.performLogin();
+            this.login_promise = new Promise((rs, rj) => {
+                this.performLogin().then(
+                    (i) => {
+                        rs(i)
+                        this.cleanUrl()
+                        this.login_promise = null;
+                    },
+                    (e) => { this.login_promise = null; rj(e); });
+            })
         }
         return this.login_promise;
     }
@@ -276,21 +284,20 @@ export class CommsService {
                                     const client_id = this.hash(`${location.origin}/oauth-resp.html`);
                                     this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
                                         if (rt && !rt_root) {
-                                            this.store.local.setItem(`${oauth.clientId}_refresh_token`, rt);
+                                            this.store.local.setItem(`${oauth.get('client_id')}_refresh_token`, rt);
                                         }
                                         setTimeout(() => this.refreshToken(retries).then((v) => resolve(v), (e) => reject(e)), 500 * ++retries);
                                     });
                                 });
                             } else if (err.status === 0) {
                                 COMPOSER.error('COMMS', `Refresh failed with code 0. Headers may be malformed or missing CORS.`);
-                                this.processLoginError(err, reject);
+                                this.processLoginError(err).then((i) => resolve(i), (e) => reject(e));
                             } else {
-                                this.processLoginError(err, reject);
+                                this.processLoginError(err).then((i) => resolve(i), (e) => reject(e));
                             }
                         }, () => {
                             COMPOSER.log('COMMS', `Got new tokens:`, tokens);
                             this.updateToken(tokens, resolve);
-                            setTimeout(() => this.loginDone(), 100);
                         },
                 );
             });
@@ -302,20 +309,10 @@ export class CommsService {
      * @param status Logged in status
      */
     public setLoginStatus(status: boolean) {
-        const oauth: any = this.oAuthService;
-        if (status === true) {
-            this.store.session.setItem(`${oauth.clientId}_login`, 'true');
-        } else {
-            this.store.session.removeItem(`${oauth.clientId}_login`);
-        }
-    }
-
-    /**
-     * Remove all authentication related keys from storage
-     */
-    public clearStore() {
-        const oauth: any = this.oAuthService;
-        oauth.clearAuth();
+        const client_id: any = this.oAuthService.get('client_id');
+        const store = this.store.session;
+        this.oAuthService.set('has_session', status);
+        return status === true ? store.setItem(`${client_id}_login`, 'true') : store.removeItem(`${client_id}_login`);
     }
 
     /**
@@ -332,8 +329,8 @@ export class CommsService {
                 headers.set('Authorization', (token ? token : ''));
                 this.http.get(uri + '/auth/oauth/token/info', { headers }).subscribe(
                     (data: any) => cb_fn(data),
-                    (err: any) => this.processLoginError(err, () => { return; }),
-                    () => { return; },
+                    (err: any) => this.processLoginError(err).then((i) => null, (e) => null),
+                    () => null
                 );
             });
         }
@@ -341,7 +338,6 @@ export class CommsService {
 
     private performLogin(tries: number = 0) {
         if (tries > 3) {
-            setTimeout(() => this.loginDone(), 100);
             return new Promise((rs, rj) => rj('Log in attempt failed...'));
         }
         return new Promise((resolve, reject) => {
@@ -358,14 +354,11 @@ export class CommsService {
             oauth.hasValidAccessToken().then((valid: boolean) => {
                 if (valid) {
                     COMPOSER.log('COMMS', `Valid access token availiable.`);
-                    oauth.getAccessToken().then((token: string) => {
-                        resolve(token);
-                        setTimeout(() => { this.loginDone(); }, 100);
-                    });
+                    oauth.getAccessToken().then((token: string) => resolve(token));
                 } else {
                     COMPOSER.log('COMMS', `No valid access token available.`);
                     // Attempt to finish logging in
-                    oauth.tryLogin().then((status: any) => {
+                    oauth.tryLogin().then(() => {
                         // Check if valid access token is available
                         this.checkAccessToken().then((d) => resolve(d), (e) => reject(e));
                     }, (err) => {
@@ -378,27 +371,27 @@ export class CommsService {
     }
 
     private checkAccessToken(tries: number = 0) {
+        if (this.oAuthService.get('run_flow')) {
+            return new Promise((rs, rj) => {
+                setTimeout(() => this.checkAccessToken(tries).then((i) => rs(i), (e) => rj(e)), 500);
+            });
+        }
         if (tries > 3) {
-            setTimeout(() => this.loginDone(), 100);
             return new Promise((rs, rj) => rj('Log in attempt failed...'));
         }
         return new Promise((resolve, reject) => {
-            const oauth: any = this.oAuthService;
-            oauth.hasValidAccessToken().then((valid_after_load: boolean) => {
+            this.oAuthService.hasValidAccessToken().then((valid_after_load: boolean) => {
                 if (valid_after_load) {
                     COMPOSER.log('COMMS', `Valid access token availiable.`);
-                    oauth.getAccessToken().then((token: string) => {
-                        resolve(token);
-                        setTimeout(() => { this.loginDone(); }, 100);
-                    });
+                    this.oAuthService.getAccessToken().then((token: string) => resolve(token));
                 } else {
-                    if (this.trust) {
+                    if (this.trust || location.search.indexOf('trust=') >= 0) {
                         COMPOSER.log('COMMS', `Device is trusted`);
-                        oauth.response_type = 'code';
+                        this.oAuthService.set('response_type', 'code');
                         this.checkRefreshToken().then((d) => resolve(d), (e) => reject(e));
                     } else {
                         COMPOSER.log('COMMS', `Device is not trusted.`);
-                        oauth.response_type = 'token';
+                        this.oAuthService.set('response_type', 'token');
                         COMPOSER.log('COMMS', `Starting login process...`);
                         let path = location.href;
                         if (location.hash.indexOf(path) >= 0
@@ -410,8 +403,8 @@ export class CommsService {
                         }
                         const here = path;
                         this.store.local.setItem(`oauth_redirect`, here);
-                        oauth.initImplicitFlow();
-                        setTimeout(() => this.checkAccessToken(tries).then((d) => resolve(d), (e) => reject(e)), 300 * ++tries);
+                        this.oAuthService.initImplicitFlow();
+                        setTimeout(() => this.checkAccessToken(tries).then((d) => resolve(d), (e) => reject(e)), 600 * ++tries);
                     }
                 }
             });
@@ -420,23 +413,24 @@ export class CommsService {
 
     private checkRefreshToken(tries: number = 0) {
         if (tries > 3) {
-            setTimeout(() => this.loginDone(), 100);
             return new Promise((rs, rj) => rj('Log in attempt failed...'));
         }
         return new Promise((resolve, reject) => {
+            this.model.refresh = true;
             const oauth: any = this.oAuthService;
-            this.store.local.getItem(`${oauth.clientId}_refresh_token`).then((refresh: string) => {
+            this.store.local.getItem(`${oauth.get('client_id')}_refresh_token`).then((refresh: string) => {
                 if (refresh || oauth.model.code) { // Refresh token exists
                     COMPOSER.log('COMMS', `Refresh token found. Refreshing access token...`);
                     // Perform refresh
-                    if (oauth.clientId === '') {
+                    if (oauth.get('client_id') === '') {
+                        this.model.refresh = false;
                         resolve({ message: 'OAuth not setup, retrying after 100ms' });
-                        setTimeout(() => {
-                            this.loginDone();
-                            this.login();
-                        }, 100);
+                        setTimeout(() => this.login(), 100);
                     } else {
-                        this.refreshToken().then((v) => resolve(v), (e) => reject(e));
+                        this.refreshToken().then((v) =>
+                            setTimeout(() => resolve(v), 300),
+                            (e) => reject(e)
+                        );
                     }
                 } else { // No refresh token
                     COMPOSER.log('COMMS', `No Refresh Token or Code`);
@@ -450,19 +444,10 @@ export class CommsService {
                     this.store.local.setItem(`oauth_redirect`, here);
                     oauth.initImplicitFlow();
                     reject('No logged in');
-                    setTimeout(() => { this.loginDone(); }, 100);
+                    this.model.refresh = false;
                 }
             });
         });
-    }
-
-    /**
-     * Called when login is completed
-     * @return
-     */
-    private loginDone() {
-        this.cleanUrl();
-        this.login_promise = null;
     }
 
     /**
@@ -471,20 +456,24 @@ export class CommsService {
      * @param reject Login Promise reject function
      * @return
      */
-    private processLoginError(err: any, reject: any) {
-        const oauth: any = this.oAuthService;
-        this.storeError('login', err);
-        // Clear storage
-        if (err.status === 401) {
-            COMPOSER.log('COMMS', `Error with credentials. Getting new credentials...`);
-            this.clearStore();
-            this.oAuthService.model.code = undefined;
-            setTimeout(() => { this.loginDone(); }, 100);
-            this.login().then(() => null, (login_err) => reject(login_err));
-        } else {
-            setTimeout(() => { if (!this.local_auth) { location.reload(); } }, 5000);
-            setTimeout(() => this.loginDone(), 100);
-        }
+    private processLoginError(err: any) {
+        return new Promise((resolve, reject) => {
+            if (this.oAuthService.get('run_flow')) {
+                return setTimeout(() => this.processLoginError(err).then((i) => resolve(i), (e) => reject(e)), 500);
+            }
+            this.storeError('login', err);
+            // Clear storage
+            if (err.status === 401) {
+                COMPOSER.log('COMMS', `Error with credentials. Getting new credentials...`);
+                this.oAuthService.clearAuth();
+                this.oAuthService.set('code', undefined);
+                this.login_promise = null;
+                this.login().then((i) => resolve(i), (e) => reject(e));
+            } else {
+                setTimeout(() => this.oAuthService.reload(), 5000);
+            }
+            setTimeout(() => this.cleanUrl(), 100);
+        });
     }
 
     /**
@@ -531,28 +520,24 @@ export class CommsService {
      * Replaces old tokens with new
      * @param data    Object contain new tokens and expiry
      * @param resolve Login resolve function
-     * @return
      */
     private updateToken(data: any, resolve: any) {
         const oauth: any = this.oAuthService;
         if (data.access_token) {
-            this.store.local.setItem(`${oauth.clientId}_access_token`, data.access_token);
+            this.store.local.setItem(`${oauth.get('client_id')}_access_token`, data.access_token);
         }
         if (data.refresh_token) {
-            this.store.local.setItem(`${oauth.clientId}_refresh_token`, data.refresh_token);
+            this.store.local.setItem(`${oauth.get('client_id')}_refresh_token`, data.refresh_token);
         }
         if (data.expires_in) {
             const expiry: any = ((new Date()).getTime() + data.expires_in * 1000);
-            this.store.local.setItem(`${oauth.clientId}_expires_at`, expiry.toString());
+            this.store.local.setItem(`${oauth.get('client_id')}_expires_at`, expiry.toString());
         }
-        if (resolve) {
-            resolve();
-        }
-        setTimeout(() => { this.loginDone(); }, 100);
+        if (resolve) { setTimeout(() => { this.model.refresh = false; resolve(); }, 300); }
     }
+
     /**
      * Clean up URL after logging in so that the ugly hash/query is not displayed
-     * @return
      */
     private cleanUrl() {
         const path = this.loc.path(false);
@@ -576,7 +561,7 @@ export class CommsService {
      * @param url     Request URL
      * @param body    Request Body
      * @param options Request Options
-     * @return  Returns the details for the request
+     * @returns Details for the request
      */
     private processOptions(url: string, body?: any, options?: any) {
         return new Promise((resolve) => {
@@ -598,7 +583,7 @@ export class CommsService {
                     type: 'get',
                     body,
                     url,
-                    auth: ((auth_header !== '' && !auth_header.includes('Bearer nul')) || this.http instanceof MockHttp),
+                    auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
                 };
                 if (!req.options) { req.options = { headers }; }
                 else if (!req.options.headers) { req.options.headers = headers; }
@@ -612,7 +597,6 @@ export class CommsService {
      * @param err Request error
      * @param req Request details
      * @param obs Request observable
-     * @return
      */
     private error(err: any, req: any, obs: any) {
         const hash = this.hash(req.url + req.body);
@@ -620,48 +604,45 @@ export class CommsService {
         COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}. ${err ? err.message : ''}`);
         if ((!err || err.status === 401) && this.retry[hash] < 3) {
             // Re-authenticate if authentication error.
-            setTimeout(() => {
-                COMPOSER.log('COMMS', `Re-authenticating...`);
-                this.login()
-                    .then(() => {
-                        COMPOSER.log('COMMS', `Retrying request to '${req.url}'...`);
-                        this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
-                        setTimeout(() => {
-                            this.refresh = false;
-                            if (req.type === 'get' || req.type === 'delete') {
-                                this[req.type](req.url, req.options).subscribe(
-                                    (data: any) => obs.next(data),
-                                    (retry_err: any) => obs.error(retry_err),
-                                    () => { obs.complete(); this.retry[hash] = 0; },
-                                );
-                            } else {
-                                this[req.type](req.url, req.body, req.options).subscribe(
-                                    (data: any) => obs.next(data),
-                                    (retry_err: any) => obs.error(retry_err),
-                                    () => { obs.complete(); this.retry[hash] = 0; },
-                                );
-                            }
-                        }, 300 * this.retry[hash]);
-                    }, (retry_err) => {
-                        COMPOSER.error('COMMS', `Error logging in.`, retry_err);
-                        this.clearStore();
-                        setTimeout(() => {
-                            if (!this.local_auth) { location.reload(); } else { obs.error(err); }
-                        }, 200);
-                        this.retry[hash] = 0;
-                    });
-            }, 200);
+            COMPOSER.log('COMMS', `Re-authenticating...`);
+            this.retryAfterAuth(err, req, obs, hash);
         } else if (!err || err.status === 401) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
-            this.clearStore();
-            setTimeout(() => {
-                if (!this.local_auth) { location.reload(); } else { obs.error(err); }
-            }, 200);
+            this.oAuthService.reset();
+            obs.error(err);
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
             obs.error(err);
             this.retry[hash] = 0;
         }
+    }
+
+    private retryAfterAuth(err, req, obs, hash) {
+        this.login().then(() => {
+            COMPOSER.log('COMMS', `Retrying request to '${req.url}'...`);
+            this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;
+            setTimeout(() => {
+                this.refresh = false;
+                if (req.type === 'get' || req.type === 'delete') {
+                    this[req.type](req.url, req.options).subscribe(
+                        (data: any) => obs.next(data),
+                        (retry_err: any) => obs.error(retry_err),
+                        () => { obs.complete(); this.retry[hash] = 0; },
+                    );
+                } else {
+                    this[req.type](req.url, req.body, req.options).subscribe(
+                        (data: any) => obs.next(data),
+                        (retry_err: any) => obs.error(retry_err),
+                        () => { obs.complete(); this.retry[hash] = 0; },
+                    );
+                }
+            }, 300 * this.retry[hash]);
+        }, (retry_err) => {
+            COMPOSER.error('COMMS', `Error logging in.`, retry_err);
+            this.oAuthService.reset();
+            obs.error(err);
+            this.retry[hash] = 0;
+        });
     }
 }

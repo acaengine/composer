@@ -9,7 +9,6 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 
 import { COMPOSER } from '../../settings';
 import { CommsService } from '../auth/comms.service';
@@ -24,7 +23,6 @@ export class ResourcesService {
     private model: any = {};
     private factories: any; // key, value map of factories
     private url: string;
-    private auth_promise: any = null;
     private mock: boolean = false;
 
     constructor(public http: CommsService, private http_unauth: HttpClient) { }
@@ -35,7 +33,11 @@ export class ResourcesService {
      * Initialises authentication details and sets up OAuth
      */
     public initAuth(tries: number = 0) {
-        if (tries > 5) { return location.reload(); }
+        if (this.authLoaded) { return new Promise((rs) => rs()); }
+        if (tries > 5) {
+            COMPOSER.error('RESRC', `Failed to load Authority...`);
+            return location.reload();
+        }
         if (!this.model.auth_promise) {
             this.model.auth_promise = new Promise((resolve, reject) => {
                 COMPOSER.log('RESRC', `Loading Authority...`);
@@ -47,9 +49,7 @@ export class ResourcesService {
                 const uri = parts.splice(0, 3).join('/');
                 const base_el = document.getElementsByTagName('base')[0];
                 let base = base_el ? (base_el.href ? base_el.href : '/') : '/';
-                if (base === '.') {
-                    base = location.pathname;
-                }
+                if (base === '.') { base = location.pathname; }
                 this.get('Authority').get_authority().then((auth: any) => {
                     COMPOSER.log(`RESRC`, `Authority loaded. Session: ${auth.session === true}`, auth);
                     if (typeof auth !== 'object') {
@@ -61,11 +61,13 @@ export class ResourcesService {
                         login_redirect: (uri && location.origin.indexOf(uri) === 0 ? `${url}` : ((uri || '') + url)),
                         authority_loaded: true
                     });
-                    if (auth.session) {
-                        this.http.setLoginStatus(auth.session);
-                    }
                     this.authLoaded = true;
-                    this.http.tryLogin();
+                    if (auth.session) {
+                        this.http.setLoginStatus(auth.session)
+                            .then(() => this.http.tryLogin(), () => this.http.tryLogin());
+                    } else {
+                        this.http.tryLogin();
+                    }
                     resolve(auth);
                     setTimeout(() => this.model.auth_promise = null, 300);
                 }, (err: any) => {
