@@ -15,8 +15,9 @@ export class MockRequestHandler {
      * @param url URL of the resource
      * @param data Data of the resource
      * @param fn Callback to handle requests to the resource
+     * @param method Request method verb. GET, POST, PUT, DELETE etc.
      */
-    public register(url: string, data: any, fn?: (handler: any) => any) {
+    public register(url: string, data: any, fn?: (handler: any) => any, method: string = 'GET') {
         const parts = url.split('/');
         const params: string[] = [];
         for (const i of parts) {
@@ -24,25 +25,26 @@ export class MockRequestHandler {
                 params.push(i);
             }
         }
-        this.handlers[url] = {
+        this.handlers[`${method}:${url}`] = {
             data,
             parts,
             route_params: params,
             params: {},
             fn,
         };
-        COMPOSER.log(`HTTP(M)`, `Registered handler for url "${url}"`);
+        COMPOSER.log(`HTTP(M)`, `Registered ${method} handler for url "${url}"`);
     }
 
     /**
      * Unregister a mock resource
      * @param url URL of resource
+     * @param method Request method verb. GET, POST, PUT, DELETE etc.
      */
-    public unregister(url: string) {
-        if (this.handlers[url]) {
-            this.handlers[url] = null;
-            delete this.handlers[url];
-            COMPOSER.log(`HTTP(M)`, `Unregistered handler for url "${url}"`);
+    public unregister(url: string, method: string = 'GET') {
+        if (this.handlers[`${method}:${url}`]) {
+            this.handlers[`${method}:${url}`] = null;
+            delete this.handlers[`${method}:${url}`];
+            COMPOSER.log(`HTTP(M)`, `Unregistered ${method} handler for url "${url}"`);
         }
     }
 
@@ -52,33 +54,29 @@ export class MockRequestHandler {
      * @param url URL of the request
      * @param fragment Parsed URL fragments
      */
-    public response(method: string, url: string, fragment?: any) {
-        const handler: any = this.getHandler(url);
-        if (method === 'GET') {
-            if (handler) {
-                let resp: any = null;
-                if (handler.fn) {
-                    const h = {
-                        data: handler.data,
-                        fragment,
-                        params: handler.params
-                    };
-                    resp = handler.fn(h);
-                } else {
-                    resp = handler.data;
-                }
-                COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, resp);
-                if (!resp) {
-                    resp = this.not_found;
-                }
-                return resp;
+    public response(method: string, url: string, fragment?: any, data?: any) {
+        const handler: any = this.getHandler(url, method.toUpperCase());
+        if (handler) {
+            let resp: any = null;
+            if (handler.fn) {
+                const h = {
+                    data: handler.data,
+                    body: data,
+                    fragment,
+                    params: handler.params
+                };
+                resp = handler.fn(h);
             } else {
-                COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, this.not_found);
-                return this.not_found;
+                resp = handler.data;
             }
-        } else {
+            COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, resp);
+            return resp ? resp : this.not_found;
+        } else if (method.toUpperCase() !== 'GET') {
             COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, 'Success');
-            return { message: 'Ok', data: {} };
+            return this.success;
+        } else {
+            COMPOSER.log(`HTTP(M)`, `Response to ${method} for url "${url}"`, this.not_found);
+            return this.not_found;
         }
     }
 
@@ -90,18 +88,30 @@ export class MockRequestHandler {
             data: {},
         };
     }
+
+    private get success() {
+        return {
+            status: 200,
+            code: 200,
+            Result: 'Successful',
+            message: 'Ok',
+            data: {}
+        }
+    }
+
     /**
      * Process handler for URL
      * @param url URL to generate handler for
+     * @param method Request method verb. GET, POST, PUT, DELETE etc.
      */
-    private getHandler(url: string) {
+    private getHandler(url: string, method: string = 'GET') {
         // Remove origin from URL
         if (url.indexOf('http') === 0) {
             url = url.split('/').slice(3).join('/');
         }
             // Check if there is exact match for the URL.
-        if (this.handlers[url]) {
-            return this.handlers[url];
+        if (this.handlers[`${method}:${url}`]) {
+            return this.handlers[`${method}:${url}`];
         }
         const parts = url.split('/');
             // Search for match in handlers with URL parameters.

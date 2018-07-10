@@ -28,12 +28,12 @@ export class MockHttp {
 
     public post(url: string, data: any, options: any) {
         COMPOSER.log(`HTTP(M)`, `POST Request made to url "${url}"`, data);
-        return new MockRequest('POST', url, null, options);
+        return new MockRequest('POST', url, data, options);
     }
 
     public put(url: string, data: any, options: any) {
         COMPOSER.log(`HTTP(M)`, `PUT Request made to url "${url}"`, data);
-        return new MockRequest('PUT', url, null, options);
+        return new MockRequest('PUT', url, data, options);
     }
 
     public delete(url: string, options: any) {

@@ -31,7 +31,7 @@ export class MockRequest {
     public subscribe(data: (value: {}) => void, error: (error: {}) => void, complete: () => void): any {
         return new Observable((observer) => {
             setTimeout(() => {
-                const res = MOCK_REQ_HANDLER.response(this.method, this.url, this.fragments);
+                const res = MOCK_REQ_HANDLER.response(this.method, this.url, this.fragments, this.data);
                 if (!res || res.status === 400 || res.status === 404) {
                     observer.error(res);
                 } else {
