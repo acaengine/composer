@@ -52,8 +52,10 @@ export class WebSocketInterface {
             port = location.port;
         }
         this.fixed = fixed;
+        const client_id = srv.model.client_id;
         if (!this.fixed && localStorage) {
-            this.fixed = localStorage.getItem('fixed_device') === 'true' || localStorage.getItem('trust') === 'true';
+            this.fixed = localStorage.getItem(`${client_id}_fixed_device`) === 'true' || localStorage.getItem('fixed_device') === 'true' ||
+                         localStorage.getItem(`${client_id}_trust`) === 'true' ||localStorage.getItem('trust') === 'true';
         }
         this.serv = srv;
         this.setup(auth, host, port);

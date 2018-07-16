@@ -35,15 +35,20 @@ export class SystemsService {
     private sub: any = null;
     private system_promises: any = {};
     private system_exists: any = {};
+    protected model: any = {};
 
     constructor(private r: ResourcesService, private route: ActivatedRoute, private store: DataStoreService) {
-        store.local.getItem(`fixed_device`).then((value: string) => {
+        this.store.local.getItem(`fixed_device`).then((value: string) => {
             this.fixed_device = (value === 'true');
         });
-
-        this.sub = this.route.queryParams.subscribe((params: any) => {
-            this.fixed_device = params.fixed_device === 'true' ? params.fixed_device === 'true' : this.fixed_device;
-            store.local.setItem('fixed_device', this.fixed_device ? 'true' : 'false');
+            // Listen for query parameter fixed device
+        this.sub = this.route.queryParamMap.subscribe((params: any) => {
+            if (params.has('fixed_device')) {
+                this.fixed_device = params.get('fixed_device') === 'true' || this.fixed_device;
+                if (this.fixed_device) {
+                    store.local.setItem(`${this.model.client_id ? this.model.client_id  + '.' : '' }fixed_device`, 'true');
+                }
+            }
         });
         // setInterval(() => this.updateSystems(), 60 * 1000);
     }
@@ -69,10 +74,20 @@ export class SystemsService {
          if (this.r) {
              this.r.setup(options);
          }
+            // Update store value for fixed device
+         this.model.client_id = this.r.http.hash(o.redirect_uri);
+         if (this.model.client_id) {
+            this.store.local.getItem(`${this.model.client_id}_fixed_device`).then((state) => this.fixed_device = state === 'true');
+            if (this.fixed_device) {
+                this.store.local.setItem(`${this.model.client_id}_fixed_device`, 'true');
+             }
+         }
+            // Setup websocket
          const host = o.host ? o.host : location.hostname;
          const port = o.port ? o.port : location.port;
          const prot = o.protocol ? o.protocol : location.protocol;
          if (options.mock) {
+                // Running mock data
              COMPOSER.log('Systems', 'Setting up mock websocket.');
              if (this.io) {
                  delete this.io;
@@ -81,6 +96,7 @@ export class SystemsService {
              this.io.setup(this.r, host, port, prot);
              return this.r.init(options.api_endpoint, true).then(() => true, (err) => false);
          } else {
+                // Running live data
              COMPOSER.log('Systems', 'Setting up websocket.');
              if (!this.io) {
                  this.io = new $WebSocket(this, this.r, this.fixed_device);
