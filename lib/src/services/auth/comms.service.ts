@@ -51,7 +51,9 @@ export class CommsService {
         this.http = this.http_service;
         this.route.queryParamMap.subscribe((params) => {
             if (params.has('trust')) {
-                this.trust = params.get('trust') === 'true';
+                this.trust = params.get('trust') !== 'false';
+                const c_id = oAuthService.get('client_id');
+                this.store.local.setItem(`${c_id ? c_id + '_' : ''}trust`, 'true');
             }
             if (params.has('logout')) { this.oAuthService.logOut(); }
         })
@@ -408,8 +410,10 @@ export class CommsService {
                         }
                         const here = path;
                         this.store.local.setItem(`oauth_redirect`, here);
-                        this.oAuthService.initImplicitFlow();
-                        setTimeout(() => this.checkAccessToken(tries).then((d) => resolve(d), (e) => reject(e)), 600 * ++tries);
+                        setTimeout(() => {
+                            this.oAuthService.initImplicitFlow();
+                            setTimeout(() => this.checkAccessToken(tries).then((d) => resolve(d), (e) => reject(e)), 600 * ++tries);
+                        }, 1000);
                     }
                 }
             });
@@ -447,9 +451,11 @@ export class CommsService {
                     }
                     const here = path;
                     this.store.local.setItem(`oauth_redirect`, here);
-                    oauth.initImplicitFlow();
-                    setTimeout(() => reject('Not logged in'), 1000);
-                    this.model.refresh = false;
+                    setTimeout(() => {
+                        oauth.initImplicitFlow();
+                        setTimeout(() => reject('Not logged in'), 1000);
+                        this.model.refresh = false;
+                    }, 1000)
                 }
             });
         });
