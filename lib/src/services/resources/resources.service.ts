@@ -34,10 +34,7 @@ export class ResourcesService {
      */
     public initAuth(tries: number = 0) {
         if (this.authLoaded) { return new Promise((rs) => rs()); }
-        if (tries > 5) {
-            COMPOSER.error('RESRC', `Failed to load Authority...`);
-            return location.reload();
-        }
+        if (tries > 10) { tries--; }
         if (!this.model.auth_promise) {
             this.model.auth_promise = new Promise((resolve, reject) => {
                 COMPOSER.log('RESRC', `Loading Authority...`);

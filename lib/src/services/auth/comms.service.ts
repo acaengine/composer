@@ -33,6 +33,7 @@ export class CommsService {
     private http: any = null;
     private simple: boolean = false;
     private local_auth = false;
+    private authority_loaded = false;
     private valid_params = [
         'login_url', 'login_redirect', 'refresh_url', 'redirect_uri', 'refresh_uri',
         'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local', 'authority_loaded'
@@ -82,6 +83,9 @@ export class CommsService {
             }
             if (options.simple) {
                 this.simple = true;
+            }
+            if (options.authority_loaded) {
+                this.authority_loaded = true;
             }
                 // Set trust to local storage
             if (this.trust) {
@@ -225,13 +229,20 @@ export class CommsService {
         if (this.login_promise === null) {
             COMPOSER.log('COMMS', `Attempting login.`);
             this.login_promise = new Promise((rs, rj) => {
-                this.performLogin().then(
-                    (i) => {
-                        rs(i)
-                        this.cleanUrl()
+                if (this.authority_loaded) {
+                    this.performLogin().then(
+                        (i) => {
+                            rs(i)
+                            this.cleanUrl()
+                            this.login_promise = null;
+                        },
+                        (e) => { this.login_promise = null; rj(e); });
+                } else {
+                    setTimeout(() => {
                         this.login_promise = null;
-                    },
-                    (e) => { this.login_promise = null; rj(e); });
+                        this.login().then((d) => rs(d), (e) => rj(e));
+                    }, 500);
+                }
             })
         }
         return this.login_promise;
