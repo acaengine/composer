@@ -418,8 +418,7 @@ export class WebSocketInterface {
                 }
                 this.connect().then(() => {
                     setTimeout(() => {
-                        this.sendRequest(type, system, mod, index, name, args)
-                            .then((id) => { resolve(id); });
+                        this.sendRequest(type, system, mod, index, name, args).then((id) => resolve(id));
                     }, 200);
                     WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`] = 0;
                 }, (err: any) => {
@@ -430,8 +429,7 @@ export class WebSocketInterface {
                         resolve(-1);
                     }
                     setTimeout(() => {
-                        this.sendRequest(type, system, mod, index, name, args)
-                            .then((id) => { resolve(id); });
+                        this.sendRequest(type, system, mod, index, name, args).then((id) => resolve(id));
                     }, 500 * WebSocketInterface.retries[`[${type}] ${system}, ${mod} ${index}, ${name}`]);
                 });
                 return;

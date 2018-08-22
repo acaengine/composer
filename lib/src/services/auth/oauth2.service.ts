@@ -30,6 +30,7 @@ export class OAuthService {
     private promises: any = {};
     private subjects: any = {};
     private observers: any = {};
+    private timers: any = {};
 
     constructor(private location: Location, private store: DataStoreService) {
         if (!this.subjects.login) {
@@ -59,7 +60,7 @@ export class OAuthService {
      * @return Generated refresh URL
      */
     get refresh_url() {
-        return this.createRefreshUrl('').then((url) => url, (err) => '');
+        return this.createRefreshUrl('').then((url) => url);
     }
 
     /**
@@ -178,7 +179,7 @@ export class OAuthService {
     public hasValidAccessToken() {
         if (!this.promises.valid_access_token) {
             this.promises.valid_access_token = new Promise<boolean>((resolve) => {
-                this.getAccessToken().then((token: string) => {
+                this.getAccessToken().then(() => {
                     this.store[this._storage].getItem(`${this.model.client_id}_expires_at`).then((expiresAt: string) => {
                         setTimeout(() => this.promises.valid_access_token = null, 10);
                         if (!expiresAt) {
@@ -271,23 +272,38 @@ export class OAuthService {
      * Removes any auth related details from storage
      */
     public clearAuth() {
-        COMPOSER.log('OAUTH', `Clearing authentication variables...`);
-        const items = [
-            'access_token', 'refresh_token', 'accesstoken', 'refreshtoken',
-            'id_token', 'idtoken', 'nonce', 'expires', 'expiry', 'login', 'oauth',
-        ];
-        this.store[this._storage].keys().then((keys) => {
-            for (const key of keys) {
-                const lkey = key.toLowerCase();
-                for (const i of items) {
-                    if (lkey.indexOf(i) >= 0) {
-                        this.store[this._storage].removeItem(key);
-                        COMPOSER.log('OAUTH', `Remove key '${key}' from ${this._storage} storage`);
-                        break;
+        if (!this.promises.clear_auth) {
+            this.promises.clear_auth = new Promise((resolve) => {
+                COMPOSER.log('OAUTH', `Clearing authentication variables...`);
+                const items = [
+                    'access_token', 'refresh_token', 'accesstoken', 'refreshtoken',
+                    'id_token', 'idtoken', 'nonce', 'expires', 'expiry', 'login', 'oauth',
+                ];
+                const test_map: any = {};
+                this.store[this._storage].keys().then((keys) => {
+                    for (const key of keys) {
+                        const lkey = key.toLowerCase();
+                        for (const i of items) {
+                            if (lkey.indexOf(i) >= 0) {
+                                test_map[key] = false;
+                                this.store[this._storage].removeItem(key).then(() => {
+                                    COMPOSER.log('OAUTH', `Remove key '${key}' from ${this._storage} storage`);
+                                    test_map[key] = true;
+                                    let finished = true;
+                                    for (const k in test_map) {
+                                        if (test_map.hasOwnProperty(k) && !test_map[k]) { return; }
+                                    }
+                                    resolve();
+                                    this.promises.clear_auth = null;
+                                });
+                                break;
+                            }
+                        }
                     }
-                }
-            }
-        });
+                });
+            });
+        }
+        return this.promises.clear_auth;
     }
 
     /**
@@ -304,8 +320,22 @@ export class OAuthService {
      * Clear authentication cache and reload the page
      */
     public reset() {
-        this.clearAuth();
-        this.reload();
+        this.stopReset();
+        this.timers.reset = setTimeout(() => {
+            this.clearAuth();
+            this.reload();
+            this.timers.reset = null;
+        }, 200);
+    }
+
+    /**
+     * Stop resetting authentication process
+     */
+    public stopReset() {
+        if (this.timers.clear) {
+            clearTimeout(this.timers.reset);
+            this.timers.reset = null;
+        }
     }
 
     /**
@@ -448,7 +478,7 @@ export class OAuthService {
      */
     private attemptLogin(options: any, tries: number = 0) {
         if (!this.promises.login) {
-            this.promises.login = new Promise((resolve, reject) => {
+            this.promises.login = new Promise((resolve) => {
                 if (tries > 10) {
                     this.promises.login = false;
                     return resolve();
@@ -482,7 +512,7 @@ export class OAuthService {
     }
 
     private processLogin(parts: any, options: any) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const access_token = parts.access_token;
             const idToken = parts.id_token;
             const state = parts.state;
@@ -491,7 +521,6 @@ export class OAuthService {
             COMPOSER.log('OAUTH', `State:  ${state}`);
             COMPOSER.log('OAUTH', `Access: ${access_token}`);
 
-            const oidcSuccess = false;
             let oauthSuccess = false;
 
             if ((!access_token && !code && !refresh_token) || !state) { return resolve(false); }
@@ -641,7 +670,7 @@ export class OAuthService {
         return this.createNonce().then((nonce: any) => {
             this.store[this._storage].setItem(`${this.model.client_id}_nonce`, nonce);
             return nonce;
-        }, (err) => '');
+        });
 
     }
 
@@ -650,7 +679,7 @@ export class OAuthService {
      * @return Promise of a nonce
      */
     private createNonce() {
-        return new Promise<string>((resolve, reject) => {
+        return new Promise<string>((resolve) => {
             if (this.model.rng_url) {
                 throw new Error('createNonce with rng-web-api has not been implemented so far');
             } else {
@@ -670,7 +699,6 @@ export class OAuthService {
      * @return Map of key, value pairs from the URL hash/query
      */
     private getFragment() {
-        const path = this.location.path();
         const hash = location.hash;
         let hash_content = hash ? hash.substr(1) : '';
         const search = location.search;

@@ -245,7 +245,12 @@ export class CommsService {
      * @return Access token
      */
     get token() {
-        return this.login();
+        return new Promise((resolve, reject) => {
+            this.hasToken.then(
+                () => this.oAuthService.getAccessToken().then((token) => resolve(token)),
+                () => this.login().then((d) => resolve(d), (e) => reject(e))
+            );
+        });
     }
 
     get hasToken() {
@@ -364,6 +369,7 @@ export class CommsService {
                     oauth.getAccessToken().then((token: string) => resolve(token));
                 } else {
                     COMPOSER.log('COMMS', `No valid access token available.`);
+                    oauth.stopReset();
                     // Attempt to finish logging in
                     oauth.tryLogin().then(() => {
                         // Check if valid access token is available
@@ -476,10 +482,11 @@ export class CommsService {
             // Clear storage
             if (err.status === 401) {
                 COMPOSER.log('COMMS', `Error with credentials. Getting new credentials...`);
-                this.oAuthService.clearAuth();
-                this.oAuthService.set('code', undefined);
-                this.login_promise = null;
-                this.login().then((i) => resolve(i), (e) => reject(e));
+                this.oAuthService.clearAuth().then(() => {
+                    this.oAuthService.set('code', undefined);
+                    this.login_promise = null;
+                    location.reload();
+                });
             } else {
                 setTimeout(() => this.oAuthService.reload(), 5000);
             }
@@ -613,19 +620,23 @@ export class CommsService {
         const hash = this.hash(req.url + req.body);
         if (!this.retry[hash]) { this.retry[hash] = 0; }
         COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}. ${err ? err.message : ''}`);
-        if ((!err || err.status === 401) && this.retry[hash] < 3) {
+        if (err && err.status === 401 && this.retry[hash] < 3) {
             // Re-authenticate if authentication error.
             COMPOSER.log('COMMS', `Re-authenticating...`);
             this.retryAfterAuth(err, req, obs, hash);
-        } else if (!err || err.status === 401) {
+        } else if (err && err.status === 401) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
             this.oAuthService.reset();
             obs.error(err);
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
-            obs.error(err);
-            this.retry[hash] = 0;
+            if (this.retry[hash] < 3) {
+                this.retryAfterAuth(err, req, obs, hash);
+            } else {
+                obs.error(err);
+                this.retry[hash] = 0;
+            }
         }
     }
 
