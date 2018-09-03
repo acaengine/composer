@@ -348,8 +348,8 @@ export class CommsService {
             const parts: any = this.oAuthService.model.login_url.split('/');
             const uri: any = parts.splice(0, 3).join('/');
             this.oAuthService.authorizationHeader().then((token: string) => {
-                const headers = new HttpHeaders();
-                headers.set('Authorization', (token ? token : ''));
+                let headers = new HttpHeaders();
+                headers = headers.set('Authorization', (token ? token : ''));
                 this.http.get(uri + '/auth/oauth/token/info', { headers }).subscribe(
                     (data: any) => cb_fn(data),
                     (err: any) => this.processLoginError(err).then((i) => null, (e) => null),
