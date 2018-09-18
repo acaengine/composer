@@ -631,18 +631,19 @@ export class CommsService {
         const hash = this.hash(req.url + req.body);
         if (!this.retry[hash]) { this.retry[hash] = 0; }
         COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}. ${err ? err.message : ''}`);
-        if (err && err.status === 401 && this.retry[hash] < 3) {
+        const mock = this.http instanceof MockHttp;
+        if (err && err.status === 401 && this.retry[hash] < 3 && !mock) {
             // Re-authenticate if authentication error.
             COMPOSER.log('COMMS', `Re-authenticating...`);
             this.retryAfterAuth(err, req, obs, hash);
-        } else if (err && err.status === 401) {
+        } else if (err && err.status === 401 && !mock) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
             this.oAuthService.reset();
             obs.error(err);
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
-            if (this.retry[hash] < 3) {
+            if (this.retry[hash] < 3 && !mock) {
                 this.retryAfterAuth(err, req, obs, hash);
             } else {
                 obs.error(err);
