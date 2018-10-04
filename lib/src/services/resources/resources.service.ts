@@ -56,6 +56,7 @@ export class ResourcesService {
                     url = auth.login_url.replace('{{url}}', url);
                     this.http.setupOAuth({
                         login_redirect: (uri && location.origin.indexOf(uri) === 0 ? `${url}` : ((uri || '') + url)),
+                        logout_url: auth.logout_url,
                         authority_loaded: true
                     });
                     this.authLoaded = true;

@@ -1,6 +1,6 @@
 {
   "name": "@acaprojects/ngx-composer",
-  "version": "0.9.13",
+  "version": "0.9.15",
   "license": "MIT",
   "scripts": {
     "ng": "ng",

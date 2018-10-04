@@ -252,17 +252,13 @@ export class OAuthService {
     /**
      * Clears storage and redirects to logout URL
      */
-    public logOut() {
+    public logout() {
         COMPOSER.log('OAUTH', 'Logging out. Clear access tokens...');
         const id_token = this.getIdToken();
         this.clearAuth();
         if (!this.model.logout_url) {
-            setTimeout(() => {
-                this.location.replaceState(this.location.path(), '');
-            }, 100);
-            return;
+            return setTimeout(() => this.location.replaceState(this.location.path(), ''), 100);
         }
-
         const logout_url = this.model.logout_url.replace(/\{\{id_token\}\}/, id_token);
         COMPOSER.log('OAUTH', 'Redirecting to logout URL...');
         location.href = logout_url;

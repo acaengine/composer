@@ -56,12 +56,12 @@ export class CommsService {
                 const c_id = oAuthService.get('client_id');
                 this.store.local.setItem(`${c_id ? c_id + '_' : ''}trust`, 'true');
             }
-            if (params.has('logout')) { this.oAuthService.logOut(); }
+            if (params.has('logout')) { this.oAuthService.logout(); }
         })
         const c_id = oAuthService.get('client_id');
         store.local.getItem(`${c_id ? c_id + '.' : ''}trust`).then((value) => this.trust = (value === 'true'));
         if (location.search.indexOf('logout=') >= 0) {
-            this.oAuthService.logOut();
+            this.oAuthService.logout();
         }
         this.oAuthService.tryLogin().then(() => null, () => null);
     }
@@ -249,7 +249,7 @@ export class CommsService {
     }
 
     public logout() {
-        this.oAuthService.logOut();
+        this.oAuthService.logout();
     }
     /**
      * Get access token
