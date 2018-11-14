@@ -47,7 +47,13 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     private init: boolean = false;
     private debug: boolean = false;
 
-    constructor(private el: ElementRef, private service: SystemsService, private renderer: Renderer2, private _cdr: ChangeDetectorRef, private view: ViewContainerRef) {
+    constructor(
+        private el: ElementRef,
+        private service: SystemsService,
+        private renderer: Renderer2,
+        private _cdr: ChangeDetectorRef,
+        private view: ViewContainerRef
+    ) {
         this.id = (Math.floor(Math.random() * 899999) + 100000).toString();
         this.renderer.addClass(this.el.nativeElement, `binding-directive-${this.id}`);
     }
@@ -287,8 +293,8 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
                 // Changes to local value
             this.value = this.binding.value();
             this.valueChange.emit(this.value);
-            if (this.view) {
-                this._cdr.detectChanges();
+            if (this.view && this.view.length > 0) {
+                setTimeout(() => this._cdr.detectChanges(), 10);
             }
         }).then((unbind) => {
             this.unbind = unbind;

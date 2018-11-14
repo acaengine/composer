@@ -22,6 +22,7 @@ const NOTIFY = 'notify';
 // timers
 const SECONDS = 1000;
 const RECONNECT_TIMER = 5 * SECONDS;
+const MAX_RECONNECT_TIMER = 80 * SECONDS;
 const KEEP_ALIVE_TIMER = 55 * SECONDS;
 
 export class WebSocketInterface {
@@ -42,6 +43,7 @@ export class WebSocketInterface {
     private connect_promise: any = null;
     private requests: any = {};
     private fixed: boolean = false;
+    private reconnect_tries = 0;
 
     constructor(srv: any, auth: any, fixed: boolean = false, host?: string, port?: string) {
         this.session_id = Math.floor(Math.random() * 89999 + 10000).toString();
@@ -294,6 +296,7 @@ export class WebSocketInterface {
      * @param evt Event returned by the websocket
      */
     private onopen(evt: any) {
+        this.reconnect_tries = 0;
         COMPOSER.log('WS', 'Websocket connected');
         this.connect_promise = null;
         this.startKeepAlive();
@@ -303,7 +306,7 @@ export class WebSocketInterface {
         }
         this.reconnected = false;
         if (!this.connect_check) {
-            this.connect_check = setInterval(() => { this.reconnect(); }, RECONNECT_TIMER);
+            this.connect_check = setInterval(() => { this.reconnect(); }, Math.min(++this.reconnect_tries * RECONNECT_TIMER, MAX_RECONNECT_TIMER));
         }
     }
 
