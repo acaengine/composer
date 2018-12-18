@@ -18,6 +18,7 @@ export class ResourceFactory {
     public service: ResourcesService;  // Parent service
     public methods: any;        // Methods available to Factory
     private url: string;        // Factory Resource API URL
+    private promise: any = {};  //
 
     constructor(url: string, route_params: any, methods: any, private http: CommsService) {
         this.url = url;
@@ -124,39 +125,57 @@ export class ResourceFactory {
      * @param params URL parameters(Route/Query)
      * @return Promise of the result of the http GET
      */
-    private _get(method: any, params: any) {
-        const url = method.url ? this.createUrl(params, method.url) : this.createUrl(params);
-        return new Promise<any>((resolve, reject) => this.__get(url, method, resolve, reject));
+    private _get(method: any, params: any, tries: number = 0) {
+        return this.sendAction(method, params)
     }
 
     /**
-     * Wrapper for a GET request
-     * @param url     Request URL
-     * @param method  Object describing the handling of the method
-     * @param resolve Promise resolve function
-     * @param reject  Promise reject function
+     * Wrapper for a DELETE request
+     * @param method Object describing the handling of the method
+     * @param params URL parameters(Route/Query)
+     * @return Promise of the result of the http DELETE
      */
-    private __get(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 3) {
-            return reject({ status: 401, message: 'No auth tokens loaded.' });
-        }
-        if (this.service.authLoaded) {
-            this.service.is_ready.then((ready: boolean) => {
-                if (ready) {
-                    let result: any;
-                    this.http.get(url, method)
-                        .subscribe(
-                        (data) => result = this.processData(data, url, method.isArray),
-                        (err) => reject(err),
-                        () => resolve(result),
-                    );
-                } else {
-                    setTimeout(() => this.__get(url, method, resolve, reject, tries), 500 * ++tries);
+    private _delete(method: any, params: any, tries: number = 0) {
+        return this.sendAction(method, params, tries);
+    }
+
+
+    private sendAction(method: any, params: any, tries: number = 0) {
+        const url = this.createUrl(params);
+        const type = method.method.toLowerCase();
+        const key = `${type}|${url}`;
+        if (!this.promise[key]) {
+            this.promise[key] = new Promise<any>((resolve, reject) => {
+                if (!this.service || !this.service.authLoaded) {
+                    return setTimeout(() => {
+                        this.promise[key] = null;
+                        this.sendAction(method, params).then(d => resolve(d), e => reject(e));
+                    }, 300);
                 }
+                if (tries > 3) {  return reject({ status: 503, message: 'Authentication is not ready' }); }
+                this.service.is_ready.then((ready: boolean) => {
+                    if (!ready) {
+                        return setTimeout(() => {
+                            this.promise[key] = null;
+                            this.sendAction(method, params).then(d => resolve(d), e => reject(e));
+                        }, 300 * ++tries);
+                    }
+                    let result: any;
+                    this.http[type](url, method)
+                        .subscribe(
+                        (d) => result = this.processData(d, url, method.isArray),
+                        (e) => {
+                            this.promise[key] = null;
+                            reject(e);
+                        }, () => {
+                            this.promise[key] = null;
+                            resolve(result);
+                        }
+                    );
+                });
             });
-        } else {
-            setTimeout(() => this.__get(url, method, resolve, reject), 500);
         }
+        return this.promise[key];
     }
 
     /**
@@ -166,40 +185,8 @@ export class ResourceFactory {
      * @param data   POST data
      * @return Promise of the result of the http POST
      */
-    private _post(method: any, params: any, data: any) {
-        const url = this.createUrl(params);
-        return new Promise<any>((resolve, reject) => this.__post(url, method, data, resolve, reject));
-    }
-
-    /**
-     * Wrapper for a POST request
-     * @param url     Request URL
-     * @param method  Object describing the handling of the method
-     * @param data    POST data
-     * @param resolve Promise resolve function
-     * @param reject  Promise reject function
-     */
-    private __post(url: any, method: any, req_data: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 3) {
-            return reject({ status: 401, message: 'No auth tokens loaded.' });
-        }
-        if (this.service.authLoaded) {
-            this.service.is_ready.then((ready: boolean) => {
-                if (ready) {
-                    let result: any;
-                    this.http.post(url, req_data, method)
-                        .subscribe(
-                        (data) => result = this.processData(data, url, method.isArray),
-                        (err) => reject(err),
-                        () => resolve(result),
-                    );
-                } else {
-                    setTimeout(() => this.__post(url, method, req_data, resolve, reject, tries), 500 * ++tries);
-                }
-            });
-        } else {
-            setTimeout(() => this.__post(url, req_data, method, resolve, reject), 500);
-        }
+    private _post(method: any, params: any, data: any, tries: number = 0) {
+        return this.sendData(method, params, data, tries);
     }
 
     /**
@@ -209,81 +196,31 @@ export class ResourceFactory {
      * @param data   PUT data
      * @return Promise of the result of the http PUT
      */
-    private _put(method: any, params: any, data: any) {
+    private _put(method: any, params: any, data: any, tries: number = null) {
+        return this.sendData(method, params, data, tries);
+    }
+
+    private sendData(method, params, data, tries: number = 0) {
         const url = this.createUrl(params);
-        return new Promise<any>((resolve, reject) => this.__put(url, method, data, resolve, reject));
-    }
-
-    /**
-     * Wrapper for a PUT request
-     * @param url     Request URL
-     * @param method  Object describing the handling of the method
-     * @param data    PUT data
-     * @param resolve Promise resolve function
-     * @param reject  Promise reject function
-     */
-    private __put(url: any, method: any, req_data: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 3) {
-            return reject({ status: 401, message: 'No auth tokens loaded.' });
-        }
-        if (this.service.authLoaded) {
+        const type = method.method.toLowerCase();
+        return new Promise<any>((resolve, reject) => {
+            if (!this.service || !this.service.authLoaded) {
+                return setTimeout(() => this.sendData(method, params, data).then(d => resolve(d), e => reject(e)), 300);
+            }
+            if (tries > 3) {  return reject({ status: 503, message: 'Authentication is not ready' }); }
             this.service.is_ready.then((ready: boolean) => {
-                if (ready) {
-                    let result: any;
-                    this.http.put(url, req_data, method)
-                        .subscribe(
-                        (data) => result = this.processData(data, url, method.isArray),
-                        (err) => reject(err),
-                        () => resolve(result),
-                    );
-                } else {
-                    setTimeout(() => this.__put(url, method, req_data, resolve, reject, tries), 500 * ++tries);
+                if (!ready) {
+                    return setTimeout(() => this.sendData(method, params, data).then(d => resolve(d), e => reject(e)), 300 * ++tries);
                 }
+                let result: any;
+                this.http[type](url, method, data)
+                    .subscribe(
+                    (d) => result = this.processData(d, url, method.isArray),
+                    (e) => reject(e),
+                    () => resolve(result)
+                );
             });
-        } else {
-            setTimeout(() => this.__put(url, method, req_data, resolve, reject), 500);
-        }
-    }
-
-    /**
-     * Wrapper for a DELETE request
-     * @param method Object describing the handling of the method
-     * @param params URL parameters(Route/Query)
-     * @return Promise of the result of the http DELETE
-     */
-    private _delete(method: any, params: any) {
-        const url = this.createUrl(params);
-        return new Promise((resolve, reject) => this.__delete(url, method, resolve, reject));
-    }
-
-    /**
-     * Wrapper for a DELETE request
-     * @param url     Request URL
-     * @param method  Object describing the handling of the method
-     * @param resolve Promise resolve function
-     * @param reject  Promise reject function
-     */
-    private __delete(url: any, method: any, resolve: any, reject: any, tries: number = 0) {
-        if (tries > 3) {
-            return reject({ status: 401, message: 'No auth tokens loaded.' });
-        }
-        if (this.service.authLoaded) {
-            this.service.is_ready.then((ready: boolean) => {
-                if (ready) {
-                    let result: any;
-                    this.http.delete(url, method)
-                        .subscribe(
-                        (data) => result = this.processData(data, url, method.isArray),
-                        (err) => reject(err),
-                        () => resolve(result),
-                    );
-                } else {
-                    setTimeout(() => this.__delete(url, method, resolve, reject, tries), 500 * ++tries);
-                }
-            });
-        } else {
-            setTimeout(() => this.__delete(url, method, resolve, reject), 500);
-        }
+        });
     }
 
     /**

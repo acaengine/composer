@@ -137,7 +137,7 @@ export class CommsService {
                             () => observer.complete(),
                     );
                 } else {
-                    this.error({ status: 401, message: 'No auth token.' }, req, observer);
+                    this.error({ status: -1, clear: false, message: 'Authentication not loaded' }, req, observer);
                 }
             });
         });
@@ -162,7 +162,7 @@ export class CommsService {
                             () => observer.complete(),
                     );
                 } else {
-                    this.error({ status: 401, message: 'No auth token.' }, req, observer);
+                    this.error({ status: -1, clear: false, message: 'Authentication not loaded' }, req, observer);
                 }
             });
         });
@@ -187,7 +187,7 @@ export class CommsService {
                             () => observer.complete(),
                     );
                 } else {
-                    this.error({ status: 401, message: 'No auth token.' }, req, observer);
+                    this.error({ status: -1, clear: false, message: 'Authentication not loaded' }, req, observer);
                 }
             });
         });
@@ -203,12 +203,16 @@ export class CommsService {
         return new Observable((observer: any) => {
             this.processOptions(url, null, options).then((req: any) => {
                 req.type = 'delete';
-                this.http.delete(req.url, req.options)
-                    .subscribe(
-                        (data: any) => observer.next(data),
-                        (err: any) => this.error(err, req, observer),
-                        () => observer.complete(),
-                );
+                if (req.auth) {
+                    this.http.delete(req.url, req.options)
+                        .subscribe(
+                            (data: any) => observer.next(data),
+                            (err: any) => this.error(err, req, observer),
+                            () => observer.complete(),
+                    );
+                } else {
+                    this.error({ status: -1, clear: false, message: 'Authentication not loaded' }, req, observer);
+                }
             });
         });
     }
@@ -636,7 +640,7 @@ export class CommsService {
             // Re-authenticate if authentication error.
             COMPOSER.log('COMMS', `Re-authenticating...`);
             this.retryAfterAuth(err, req, obs, hash);
-        } else if (err && err.status === 401 && !mock) {
+        } else if (err && err.status === 401 && !mock && err.clear !== false) {
             COMPOSER.error('COMMS', `Error with auth details restarting fresh.`);
             this.oAuthService.reset();
             obs.error(err);
@@ -674,7 +678,9 @@ export class CommsService {
             }, 300 * this.retry[hash]);
         }, (retry_err) => {
             COMPOSER.error('COMMS', `Error logging in.`, retry_err);
-            this.oAuthService.reset();
+            if (!err || err.clear !== false) {
+                this.oAuthService.reset();
+            }
             obs.error(err);
             this.retry[hash] = 0;
         });

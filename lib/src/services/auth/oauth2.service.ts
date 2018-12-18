@@ -239,7 +239,7 @@ export class OAuthService {
                 this.getAccessToken().then((token: string) => {
                     resolve(`Bearer ${token}`);
                     if (token) {
-                        setTimeout(() => this.promises.auth_header = null, 1000);
+                        setTimeout(() => this.promises.auth_header = null, 300);
                     } else {
                         this.promises.auth_header = null;
                     }

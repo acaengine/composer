@@ -18,6 +18,9 @@ import { DebugDirective } from './directives/debug.directive';
 
 import { COMPOSER } from './settings';
 
+import * as moment_api from 'moment';
+const moment = moment_api;
+
 @NgModule({
     declarations: [
         // Declare Directive
@@ -38,13 +41,15 @@ import { COMPOSER } from './settings';
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private version: string = '0.10.2';
-    private build: string = '2018-11-12.v1';
+    private build = moment(1545104220000);
+    public static version = '0.10.4';
 
     constructor() {
         if (!ComposerModule.init) {
+            const now = moment();
             ComposerModule.init = true;
-            COMPOSER.version(this.version, this.build);
+            const build = now.isSame(this.build, 'd') ? `Today at ${this.build.format('h:mmA')}` : this.build.format('Do MMM YYYY, h:mmA');
+            COMPOSER.version(ComposerModule.version, build);
         }
     }
 
