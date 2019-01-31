@@ -117,26 +117,10 @@ export class SystemsService {
         if (!this.mock) {
             if (!this.system_promises[sys_id] && system) {
                 this.system_promises[sys_id] = new Promise((resolve) => {
-                    if (this.system_exists[sys_id]) {
-                        const s = this.getSystem(sys_id);
-                        s.exists = true;
-                        this.system_promises[sys_id] = null;
-                        resolve();
-                    } else {
-                        system.get({ id: sys_id }).then((check_sys: any) => {
-                            this.system_exists[sys_id] = true;
-                            const s = this.getSystem(sys_id);
-                            s.exists = true;
-                            this.system_promises[sys_id] = null;
-                            resolve();
-                        }, (err: any) => {
-                            this.system_exists[sys_id] = false;
-                            const sys = this.getSystem(sys_id);
-                            sys.exists = false;
-                            this.system_promises[sys_id] = null;
-                            resolve();
-                        });
-                    }
+                    const s = this.getSystem(sys_id);
+                    // s.exists = true;
+                    this.system_promises[sys_id] = null;
+                    resolve();
                 });
             }
         }
@@ -217,11 +201,11 @@ export class SystemsService {
     /**
      * Checks if each system stored exists on the server
      */
-    private updateSystems() {
+    private updateSystems(check: boolean = false) {
         if (this.r && this.io) {
             for (let i = 0; this.systems && i < this.systems.length; i++) {
                 const system = this.systems[i];
-                if (!system.exists) {
+                if (check && !system.exists) {
                     const sys = this.r.get('System');
                     if (sys) {
                         const mod = sys.get({ id: system.id });
