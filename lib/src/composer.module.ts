@@ -41,7 +41,7 @@ const moment = moment_api;
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private build = moment(1550200980000);
+    private build = moment(1550201940000);
     public static version = '0.10.6';
 
     constructor() {

@@ -58,6 +58,11 @@ export class ResourceFactory {
 
     public get_authority() { return new Promise<{ [name: string]: string}>((resolve) => resolve({})); }
 
+    public get(params: { [name: string]: any }) { return this._get({ method: 'GET' }, params) }
+    public post(params: { [name: string]: any }, data: any) { return this._get({ method: 'POST' }, params, data) }
+    public put(params: { [name: string]: any }, data: any) { return this._get({ method: 'PUT' }, params, data) }
+    public delete(params: { [name: string]: any }) { return this._get({ method: 'DELETE' }, params) }
+
     /**
      * Builds a url to use by the factory
      * @param params Parameters to be injected into the url
