@@ -647,7 +647,7 @@ export class CommsService {
             this.retry[hash] = 0;
         } else { // Return error
             COMPOSER.log('COMMS', `Error processing request(${err.status}).`, err);
-            if (this.retry[hash] < 3 && !mock) {
+            if ((!err || err.status === 502 || err.status === 504) && this.retry[hash] < 3 && !mock) {
                 this.retryAfterAuth(err, req, obs, hash);
             } else {
                 obs.error(err);
