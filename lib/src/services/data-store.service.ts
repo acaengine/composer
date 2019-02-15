@@ -155,8 +155,8 @@ export class DataStoreService {
         });
     }
 
-    protected keys(type: string): Promise<any[]> {
-        return new Promise<any>((resolve, reject) => {
+    protected keys(type: string): Promise<string[]> {
+        return new Promise<string[]>((resolve, reject) => {
             const keys: string[] = [];
             if (type === 'local') {
                 for (let i = 0; i < localStorage.length; i++) {

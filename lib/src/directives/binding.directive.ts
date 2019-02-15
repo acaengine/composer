@@ -12,6 +12,7 @@ import { ChangeDetectorRef, OnChanges, OnDestroy, OnInit } from '@angular/core';
 
 import { COMPOSER } from '../settings';
 import { SystemsService } from '../services/systems/systems.service';
+import { EngineSystem, EngineStatusVariable, EngineModule } from '../services/systems/classes';
 
 const INVALID_STATES: any[] = [null, undefined];
 
@@ -39,9 +40,9 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
     private id: string = '';
     private started: boolean = false;
     private module_id: string = '';
-    private system: any;
-    private module: any;
-    private binding: any;
+    private system: EngineSystem;
+    private module: EngineModule;
+    private binding: EngineStatusVariable;
     private unbind: () => void;
     private i: number = 0;
     private init: boolean = false;
@@ -161,7 +162,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
      * @return
      */
     @HostListener('tap', ['$event'])
-    private onClick(e: any) { this.emit(e, this.ontap); }
+    private onClick(e: Event) { this.emit(e, this.ontap); }
 
     /**
      * () => void call when the element that this is attached emits a mouseup/touchend
@@ -170,7 +171,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
      * @return
      */
     @HostListener('pressup', ['$event'])
-    private onRelease(e: any) { this.emit(e, this.onrelease); }
+    private onRelease(e: Event) { this.emit(e, this.onrelease); }
 
     /**
      * () => void call when the element that this is attached to is tapped
@@ -179,7 +180,7 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
      * @return
      */
     @HostListener('press', ['$event'])
-    private onPress(e: any) { this.emit(e, this.onpress); }
+    private onPress(e: Event) { this.emit(e, this.onpress); }
 
     /**
      * Checks if the element is exists on the page and binds/unbinds from the
@@ -241,10 +242,10 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
      */
     private hasChanged(type: string) {
         if (type === 'system') {
-            return (this.sys && this.sys !== this.system && (typeof this.system !== 'object' ||
+            return (this.sys && this.sys !== this.system.id && (typeof this.system !== 'object' ||
                 (this.sys !== this.system.id && this.sys !== '')));
         } else if (type === 'module') {
-            return (this.module_id && this.mod !== this.module && (typeof this.module !== 'object' ||
+            return (this.module_id && this.mod !== this.module.id && (typeof this.module !== 'object' ||
                 (this.module_id !== this.module.id && this.module_id !== '')));
         } else {
             return true;

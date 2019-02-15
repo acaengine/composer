@@ -56,6 +56,8 @@ export class ResourceFactory {
         }
     }
 
+    public get_authority() { return new Promise<{ [name: string]: string}>((resolve) => resolve({})); }
+
     /**
      * Builds a url to use by the factory
      * @param params Parameters to be injected into the url

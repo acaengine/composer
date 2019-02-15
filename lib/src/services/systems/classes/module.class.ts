@@ -9,17 +9,20 @@ import { Observable } from 'rxjs';
 
 import { COMPOSER } from '../../../settings';
 import { EngineStatusVariable } from './status-variable.class';
+import { EngineSystem } from './system.class';
+import { SystemsService } from '../systems.service';
+
 
 export class EngineModule {
     public id: string;         // Module name
-    public parent: any;        // Module's system
+    public parent: EngineSystem;        // Module's system
     public index: number = 0;  // Module Index
-    public status_variables: any = {};
+    public status_variables: { [name: string]: EngineStatusVariable } = {};
     public debugger: any;
     private _debug: boolean = false;
-    private service: any;       // Systems Service
+    private service: SystemsService;       // Systems Service
 
-    constructor(srv: object, parent: any, name: string, i: number) {
+    constructor(srv: SystemsService, parent: EngineSystem, name: string, i: number) {
         this.id = name;
         this.service = srv;
         this.parent = parent;
@@ -27,7 +30,7 @@ export class EngineModule {
         if (isNaN(this.index)) {
             this.index = 1;
         }
-        COMPOSER.observe('debug').subscribe((data: any) => this._debug = data);
+        COMPOSER.observe('debug').subscribe((data: boolean) => this._debug = data);
     }
     /**
      * Bind to status variable on module
@@ -35,7 +38,7 @@ export class EngineModule {
      * @param cb_fn Callback for changes of the binding's value
      * @return Unbind callback
      */
-    public bind(name: string, next: (change: boolean) => void) {
+    public bind(name: string, next: (change: boolean) => void): Promise<() => void> {
         const variable = this.get(name);
         return variable.bind(next);
     }
@@ -47,10 +50,10 @@ export class EngineModule {
      * @param args  Arguments to pass to the function
      * @return  Promise for the result of the excute on the server
      */
-    public exec(fn: string, args: any[] = []) {
+    public exec(fn: string, args: any[] = []): Promise<any> {
         return new Promise((resolve, reject) => {
             const system = this.parent;
-            this.service.io.exec(system.id, this.id, this.index, fn, args)
+            (this.service as any).io.exec(system.id, this.id, this.index, fn, args)
                 .then((result) => resolve(result), (err) => reject(err));
         });
     }
@@ -68,14 +71,14 @@ export class EngineModule {
      * Send debug command to the server
      */
     public debug() {
-        const id = this.service.io.debug(this.parent.id, this.id, this.index);
+        const id = (this.service as any).io.debug(this.parent.id, this.id, this.index);
     }
 
     /**
      * Send ignore command to the server
      */
     public ignore() {
-        const id = this.service.io.ignore(this.parent.id, this.id, this);
+        const id = (this.service as any).io.ignore(this.parent.id, this.id, this);
     }
 
     /**
@@ -83,7 +86,7 @@ export class EngineModule {
      * @param name Name of status variable to get
      * @return  Status variable
      */
-    public get(name: string) {
+    public get(name: string): EngineStatusVariable {
         if (this.status_variables[name]) {
             return this.status_variables[name];
         }

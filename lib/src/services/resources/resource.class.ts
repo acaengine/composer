@@ -6,13 +6,14 @@
  */
 
 import { COMMON } from './common';
+import { ResourceFactory } from './resource-factory.class';
 
 export class Resource {
-    public factory: any;   // Parent Factory for resource
-    public url: any;       // Resource URL
-    public id: any;        // Resource Identifier
+    public factory: ResourceFactory;   // Parent Factory for resource
+    public url: string;       // Resource URL
+    public id: string;        // Resource Identifier
 
-    constructor(factory: any, data: any, url: any) {
+    constructor(factory: ResourceFactory, data: any, url: string) {
         this.factory = factory;
         this.url = url;
         if (typeof data === 'object') {
@@ -42,7 +43,7 @@ export class Resource {
             let result: any;
             const method = JSON.parse(JSON.stringify(COMMON.crud.save));
             method.url = url;
-            this.factory._put(COMMON.crud.save, { id: this.id }, req_data)
+            (this.factory as any)._put(COMMON.crud.save, { id: this.id }, req_data)
                 .subscribe(
                     (data: any) => result = data,
                     (err: any) => reject(err),

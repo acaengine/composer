@@ -9,12 +9,20 @@ import { Observable } from 'rxjs';
 
 import { MOCK_REQ_HANDLER } from './request-handler.mock';
 
-export class MockRequest {
-    private resp_fn: any = null;
-    private response: any = null;
-    private fragments: any = {};
+export interface IMockResponseEvent {
+    url?: string;
+    method?: string;
+    data: any;
+    params: { [name: string]: any };
+    fragments: { [name: string]: any };
+}
 
-    constructor(private method: string, private url: string, private data: any, private options: any) {
+export class MockRequest {
+    private resp_fn: (r: IMockResponseEvent) => void = null;
+    private response: any = null;
+    private fragments: { [name: string]: any } = {};
+
+    constructor(private method: string, private url: string, private data: any, private options: { [name: string]: any }) {
         this.getFragments(url);
         // Remove origin from URL
         if (url.indexOf('http') === 0) {
@@ -23,7 +31,7 @@ export class MockRequest {
         this.getFragments(url);
     }
 
-    public map(fn: (response: any) => void) {
+    public map(fn: (response: IMockResponseEvent) => void) {
         this.resp_fn = fn;
         return this;
     }

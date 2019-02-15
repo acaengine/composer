@@ -5,21 +5,20 @@
  * @Last Modified time: 2017-05-02 10:51:11
  */
 
- import { COMPOSER } from '../../../settings';
- import { EngineModule } from './module.class';
+import { COMPOSER } from '../../../settings';
+import { EngineModule } from './module.class';
+import { SystemsService } from '../systems.service';
 
- export class EngineSystem {
-     public id: string;
-     public service: any;
-     public parent: any;
-     public modules: any = {};
-     public exists = true;
+export class EngineSystem {
+    public id: string;
+    public service: SystemsService;
+    public modules: { [name: string]: EngineModule } = {};
+    public exists = true;
 
-     constructor(srv: object, sys_id: string) {
-         this.service = srv;
-         this.parent = srv;
-         this.id = sys_id;
-     }
+    constructor(srv: SystemsService, sys_id: string) {
+        this.service = srv;
+        this.id = sys_id;
+    }
 
     /**
      * Gets the module with the given id and index
@@ -49,12 +48,12 @@
     /**
      * Rebinds all bound status variables on existing modules in the system
      */
-     public rebind() {
-         for (const id in this.modules) {
-             if (this.modules.hasOwnProperty(id) && this.modules[id]) {
-                 this.modules[id].rebind();
-             }
-         }
-     }
+    public rebind() {
+        for (const id in this.modules) {
+            if (this.modules.hasOwnProperty(id) && this.modules[id]) {
+                this.modules[id].rebind();
+            }
+        }
+    }
 
- }
+}

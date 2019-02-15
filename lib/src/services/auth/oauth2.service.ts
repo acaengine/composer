@@ -9,7 +9,7 @@
 
 import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 import * as sha256 from 'fast-sha256';
 
@@ -20,17 +20,17 @@ import { DataStoreService } from '../data-store.service';
     providedIn: 'root'
 })
 export class OAuthService {
-    public model: any = {}
+    public model: { [name: string]: any } = {}
     public validationHandler: any;
 
     private debug: boolean = false;
     private _storage: string = 'local';
     private needs_login: boolean = false;
 
-    private promises: any = {};
-    private subjects: any = {};
-    private observers: any = {};
-    private timers: any = {};
+    private promises: { [name: string]: Promise<any> } = {};
+    private subjects: { [name: string]: BehaviorSubject<any> } = {};
+    private observers: { [name: string]: Observable<any> } = {};
+    private timers: { [name: string]: any } = {};
 
     constructor(private location: Location, private store: DataStoreService) {
         if (!this.subjects.login) {
@@ -83,7 +83,7 @@ export class OAuthService {
      * Listen to auth state of the user
      * @param next Callback for auth state of user
      */
-    public needsLogin(next: (state: any) => void) {
+    public needsLogin(next: (state: boolean) => void) {
         if (!this.subjects.login) {
             this.subjects.login = new BehaviorSubject(this.needs_login);
             this.observers.login = this.subjects.login.asObservable();
@@ -96,7 +96,7 @@ export class OAuthService {
      * @param options Login processing options
      * @return Promise of login success
      */
-    public tryLogin(options?: any) {
+    public tryLogin(options?: { [name: string]: any }) {
         return this.attemptLogin(options);
     }
 
@@ -104,7 +104,7 @@ export class OAuthService {
         throw new Error('tryLoginWithIFrame has not been implemented so far');
     }
 
-    public tryRefresh(timeoutInMsec: any) {
+    public tryRefresh(timeoutInMsec: number) {
         throw new Error('tryRefresh has not been implemented so far');
     }
 
@@ -393,7 +393,7 @@ export class OAuthService {
      * @param state OAuth State
      * @return Generated login URL
      */
-    private createLoginUrl(state?: any) {
+    private createLoginUrl(state?: string): Promise<string> {
         if (!state) { state = ''; }
         return this.createAndSaveNonce().then((nonce: any) => {
             if (state) { state = nonce + ';' + state; }
@@ -423,10 +423,10 @@ export class OAuthService {
      * @param state OAuth State
      * @return Generated refresh URL
      */
-    private createRefreshUrl(state: any) {
+    private createRefreshUrl(state: string): Promise<string> {
         if (typeof state === 'undefined') { state = ''; }
 
-        return this.createAndSaveNonce().then((nonce: any) => {
+        return this.createAndSaveNonce().then((nonce: string) => {
             let url = this.model.refresh_uri
                 + '?client_id='
                 + encodeURIComponent(this.model.client_id)
@@ -472,11 +472,11 @@ export class OAuthService {
      * Attempts to process login information
      * @param options Login processing options
      */
-    private attemptLogin(options: any, tries: number = 0) {
+    private attemptLogin(options: { [name: string]: any }, tries: number = 0) {
         if (!this.promises.login) {
             this.promises.login = new Promise((resolve) => {
                 if (tries > 10) {
-                    this.promises.login = false;
+                    this.promises.login = null;
                     return resolve();
                 }
                 if (this.model.client_id && this.model.client_id !== '') {
@@ -488,17 +488,17 @@ export class OAuthService {
                             if (item) { parts = JSON.parse(item); }
                             this.store.session.removeItem('OAUTH.params');
                             this.processLogin(parts, options).then(
-                                (i) => { resolve(i); this.promises.login = false; }
+                                (i) => { resolve(i); this.promises.login = null; }
                             );
                         });
                     } else {
                         this.processLogin(parts, options).then(
-                            (i) => { resolve(i); this.promises.login = false; }
+                            (i) => { resolve(i); this.promises.login = null; }
                         );
                     }
                 } else {
                     setTimeout(() => {
-                        this.promises.login = false;
+                        this.promises.login = null;
                         this.attemptLogin(options, ++tries).then((i) => resolve(i));
                     }, 200);
                 }
@@ -507,7 +507,7 @@ export class OAuthService {
         return this.promises.login;
     }
 
-    private processLogin(parts: any, options: any) {
+    private processLogin(parts: { [name: string]: any }, options: { [name: string]: any }) {
         return new Promise((resolve) => {
             const access_token = parts.access_token;
             const idToken = parts.id_token;
@@ -554,7 +554,7 @@ export class OAuthService {
                 }
 
                 if (this.model.oidc) {
-                    this.processIdToken(idToken, access_token).then((success: string) => {
+                    this.processIdToken(idToken, access_token).then((success) => {
                         if (!success) {
                             return resolve(false);
                         }
@@ -594,7 +594,7 @@ export class OAuthService {
      * @param access_token Access Token
      * @return  Promise of success of processing tokens
      */
-    private processIdToken(idToken: any, access_token: any) {
+    private processIdToken(idToken: string, access_token: string): Promise<boolean> {
         return new Promise((resolve) => {
             const tokenParts = idToken.split('.');
             const claimsBase64 = this.padBase64(tokenParts[1]);
@@ -651,7 +651,7 @@ export class OAuthService {
         });
     }
 
-    private padBase64(base64data: any) {
+    private padBase64(base64data: string) {
         while (base64data.length % 4 !== 0) {
             base64data += '=';
         }
@@ -694,7 +694,7 @@ export class OAuthService {
      * Break up URL hash/query into a key, value map
      * @return Map of key, value pairs from the URL hash/query
      */
-    private getFragment() {
+    private getFragment(): { [name: string]: any } {
         const hash = location.hash;
         let hash_content = hash ? hash.substr(1) : '';
         const search = location.search;
@@ -766,7 +766,7 @@ export class OAuthService {
      * @param idClaims     ID Claims
      * @return Claims and tokens correctly in hash
      */
-    private checkAtHash(access_token: any, idClaims: any) {
+    private checkAtHash(access_token: string, idClaims: { [name: string]: any, at_hash: string }) {
         if (!access_token || !idClaims || !idClaims.at_hash) {
             return true;
         }

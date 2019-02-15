@@ -11,7 +11,7 @@ import { Location } from '@angular/common';
 import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscriber } from 'rxjs';
 
 import { Md5 } from 'ts-md5/dist/md5';
 import { COMPOSER } from '../../settings';
@@ -27,10 +27,10 @@ const MAX_ERROR_COUNT = 5;
 export class CommsService {
     private trust: boolean = false;
     private refresh = false;
-    private login_promise: Promise<any> = null;
-    private retry: any = {};
+    private login_promise: Promise<string> = null;
+    private retry: { [name: string]: number } = {};
     private debug: boolean = true;
-    private http: any = null;
+    private http: HttpClient | MockHttp = null;
     private simple: boolean = false;
     private local_auth = false;
     private authority_loaded = false;
@@ -39,7 +39,7 @@ export class CommsService {
         'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local', 'authority_loaded'
     ];
 
-    private model: any = {};
+    private model: { [name: string]: any } = {};
 
     constructor(
         private http_service: HttpClient,
@@ -70,7 +70,7 @@ export class CommsService {
      * Initialises OAuth
      * @param options OAuth options
      */
-    public setupOAuth(options: any) {
+    public setupOAuth(options: { [name: string]: any }) {
         const oauth = this.oAuthService;
         if (options) {
             for (const i in options) {
@@ -116,7 +116,7 @@ export class CommsService {
         this.login().then(() => COMPOSER.log('COMMS', `Got Access Token.`), (e) => null);
     }
 
-    public needsLogin(next: (state: any) => void) {
+    public needsLogin(next: (state: boolean) => void) {
         return this.oAuthService.needsLogin(next);
     }
 
@@ -126,11 +126,11 @@ export class CommsService {
      * @param options Request Options
      * @return Observable wrapper for HTTPClient.get
      */
-    public get(url: string, options?: any) {
-        return new Observable((observer: any) => {
+    public get(url: string, options?: { [name: string]: any }) {
+        return new Observable((observer) => {
             this.processOptions(url, null, options).then((req: any) => {
                 if (req.auth) {
-                    this.http.get(req.url, req.options)
+                    (this.http as any).get(req.url, req.options)
                         .subscribe(
                             (data: any) => observer.next(data),
                             (err: any) => this.error(err, req, observer),
@@ -150,12 +150,12 @@ export class CommsService {
      * @param options (Optional)Request Options
      * @return Observable wrapper for HTTPClient.post
      */
-    public post(url: string, body?: any, options?: any) {
+    public post(url: string, body?: { [name:string]: any } | string, options?: { [name:string]: any }) {
         return new Observable((observer: any) => {
             this.processOptions(url, body, options).then((req: any) => {
                 req.type = 'post';
                 if (req.auth) {
-                    this.http.post(req.url, req.body, req.options)
+                    (this.http as any).post(req.url, req.body, req.options)
                         .subscribe(
                             (data: any) => observer.next(data),
                             (err: any) => this.error(err, req, observer),
@@ -175,12 +175,12 @@ export class CommsService {
      * @param options (Optional)Request Options
      * @return Observable wrapper for HTTPClient.put
      */
-    public put(url: string, body?: any, options?: any) {
-        return new Observable((observer: any) => {
+    public put(url: string, body?: { [name:string]: any }, options?: { [name:string]: any }) {
+        return new Observable((observer) => {
             this.processOptions(url, body, options).then((req: any) => {
                 req.type = 'put';
                 if (req.auth) {
-                    this.http.put(req.url, req.body, req.options)
+                    (this.http as any).put(req.url, req.body, req.options)
                         .subscribe(
                             (data: any) => observer.next(data),
                             (err: any) => this.error(err, req, observer),
@@ -199,12 +199,12 @@ export class CommsService {
      * @param options (Optional)Request Options
      * @return Observable wrapper for HTTPClient.delete
      */
-    public delete(url: string, options?: any) {
-        return new Observable((observer: any) => {
+    public delete(url: string, options?: { [name:string]: any }) {
+        return new Observable((observer) => {
             this.processOptions(url, null, options).then((req: any) => {
                 req.type = 'delete';
                 if (req.auth) {
-                    this.http.delete(req.url, req.options)
+                    (this.http as any).delete(req.url, req.options)
                         .subscribe(
                             (data: any) => observer.next(data),
                             (err: any) => this.error(err, req, observer),
@@ -293,11 +293,11 @@ export class CommsService {
      */
     public refreshToken(retries: number = 0) {
         return new Promise((resolve, reject) => {
-            const oauth: any = this.oAuthService;
+            const oauth: OAuthService = this.oAuthService;
             this.refresh = true;
-            oauth.refresh_url.then((url: any) => {
+            oauth.refresh_url.then((url: string) => {
                 let tokens: any;
-                this.http.post(url, '')
+                (this.http as any).post(url, '', null)
                     .subscribe(
                         (data: any) => tokens = data,
                         (err: any) => {
@@ -307,7 +307,7 @@ export class CommsService {
 
                                 COMPOSER.log('COMMS', `Failed token refresh request for ${url}`);
                                 oauth.getRefreshToken().then((rt: string) => {
-                                    oauth.redirectUri = `${location.origin}/oauth-resp.html`;
+                                    oauth.model.redirect_uri = `${location.origin}/oauth-resp.html`;
                                     const client_id = this.hash(`${location.origin}/oauth-resp.html`);
                                     this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
                                         if (rt && !rt_root) {
@@ -336,7 +336,7 @@ export class CommsService {
      * @param status Logged in status
      */
     public setLoginStatus(status: boolean) {
-        const client_id: any = this.oAuthService.get('client_id');
+        const client_id = this.oAuthService.get('client_id');
         const store = this.store.session;
         this.oAuthService.set('has_session', status);
         return status === true ? store.setItem(`${client_id}_login`, 'true') : store.removeItem(`${client_id}_login`);
@@ -346,15 +346,15 @@ export class CommsService {
      * Check if user is authorised
      * @param cb_fn Callback for the auth token state
      */
-    public checkAuth(cb_fn: any) {
+    public checkAuth(cb_fn: (token: string) => void) {
         COMPOSER.log('COMMS', `Checking Auth.`);
         if (this.login_promise === null) {
-            const parts: any = this.oAuthService.model.login_url.split('/');
-            const uri: any = parts.splice(0, 3).join('/');
+            const parts: string[] = this.oAuthService.model.login_url.split('/');
+            const uri: string = parts.splice(0, 3).join('/');
             this.oAuthService.authorizationHeader().then((token: string) => {
                 let headers = new HttpHeaders();
                 headers = headers.set('Authorization', (token ? token : ''));
-                this.http.get(uri + '/auth/oauth/token/info', { headers }).subscribe(
+                (this.http as any).get(uri + '/auth/oauth/token/info', { headers, observe: "response" }).subscribe(
                     (data: any) => cb_fn(data),
                     (err: any) => this.processLoginError(err).then((i) => null, (e) => null),
                     () => null
@@ -372,7 +372,7 @@ export class CommsService {
                 this.login_promise = null;
                 return resolve('mock_token');
             }
-            const oauth: any = this.oAuthService;
+            const oauth = this.oAuthService;
             if (!oauth || !oauth.model.client_id || oauth.model.client_id === '') {
                 COMPOSER.log('COMMS', `OAuth is not initialised.`);
                 return setTimeout(() => this.performLogin().then((d) => resolve(d), (e) => reject(e)), 500);
@@ -519,17 +519,17 @@ export class CommsService {
         const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
         const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'NOV', 'DEC'];
         const date = new Date();
-        let hour: any = date.getHours();
+        let hour: number | string = date.getHours();
         hour = hour < 10 ? '0' + hour : hour;
-        let min: any = date.getMinutes();
+        let min: number | string = date.getMinutes();
         min = min < 10 ? '0' + min : min;
-        let sec: any = date.getSeconds();
+        let sec: number | string = date.getSeconds();
         sec = sec < 10 ? '0' + sec : sec;
         let now = `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${hour}:${min}:${sec}`;
         now = now.toLowerCase();
         this.store.local.setItem((`${type}_error: ${now}`), JSON.stringify(error));
         this.store.local.getItem(`${type}_error`).then((value: string) => {
-            let error_list: any[] = [];
+            let error_list: string[] = [];
             if (value) {
                 error_list = JSON.parse(value);
                 if (error_list) {
@@ -554,8 +554,8 @@ export class CommsService {
      * @param data    Object contain new tokens and expiry
      * @param resolve Login resolve function
      */
-    private updateToken(data: any, resolve: any) {
-        const oauth: any = this.oAuthService;
+    private updateToken(data: { access_token?: string, refresh_token?: string, expires_in?: number }, resolve?: () => void) {
+        const oauth = this.oAuthService;
         if (data.access_token) {
             this.store.local.setItem(`${oauth.get('client_id')}_access_token`, data.access_token);
         }
@@ -596,7 +596,7 @@ export class CommsService {
      * @param options Request Options
      * @returns Details for the request
      */
-    private processOptions(url: string, body?: any, options?: any) {
+    private processOptions(url: string, body?: { [name:string]: any } | string, options?: { [name:string]: any }) {
         return new Promise((resolve) => {
             let headers: HttpHeaders = new HttpHeaders();
             this.oAuthService.authorizationHeader().then((auth_header: string) => {
@@ -631,7 +631,7 @@ export class CommsService {
      * @param req Request details
      * @param obs Request observable
      */
-    private error(err: any, req: any, obs: any) {
+    private error(err: any, req: any, obs: Subscriber<{}>) {
         const hash = this.hash(req.url + req.body);
         if (!this.retry[hash]) { this.retry[hash] = 0; }
         COMPOSER.error('COMMS', `Request to ${req.url} failed with code ${err ? err.status : 0}. ${err ? err.message : ''}`);
@@ -656,7 +656,7 @@ export class CommsService {
         }
     }
 
-    private retryAfterAuth(err, req, obs, hash) {
+    private retryAfterAuth(err, req, obs: Subscriber<{}>, hash: string) {
         this.login().then(() => {
             COMPOSER.log('COMMS', `Retrying request to '${req.url}'...`);
             this.retry[hash] = this.retry[hash] ? this.retry[hash] + 1 : 1;

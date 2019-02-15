@@ -5,10 +5,11 @@
  * @Last Modified time: 2018-06-12 10:07:27
  */
 
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription, Observable } from 'rxjs';
 import { EngineModule } from './module.class';
 
 import { COMPOSER } from '../../../settings';
+import { SystemsService } from '../systems.service';
 
 const EXEC_LIMIT = 10;
 const EXEC_TIME_DELAY = 100;
@@ -16,14 +17,14 @@ const EXEC_TIME_DELAY = 100;
 export class EngineStatusVariable {
     public id: string;           // Name of status variable
     public parent: EngineModule; // Module connected to status variable
-    public model: any = {};
-    private service: any;           // System service
-    private promises: any = {};
-    private timers: any = {};
-    private subjects: any = {};
-    private observers: any = {};
+    public model: { [name: string]: any } = {};
+    private service: SystemsService;           // System service
+    private promises: { [name: string]: Promise<any> } = {};
+    private timers: { [name: string]: any } = {};
+    private subjects: { [name: string]: BehaviorSubject<any> } = {};
+    private observers: { [name: string]: Observable<any> } = {};
 
-    constructor(srv: object, parent: any, name: string, init_val?: any) {
+    constructor(srv: SystemsService, parent: EngineModule, name: string, init_val?: any) {
         this.id = name;
         this.service = srv;
         this.parent = parent;
@@ -74,7 +75,7 @@ export class EngineStatusVariable {
     /**
      * Get the name of the binding
      */
-    get binding() {
+    get binding(): string {
         const module = this.parent;
         const system = module.parent;
         return `${system.id}, ${module.id} ${module.index}, ${this.id}`
@@ -83,7 +84,7 @@ export class EngineStatusVariable {
     /**
      * Number of bindings to the status variable
      */
-    public count() {
+    public count(): number {
         return this.value('bindings');
     }
 
@@ -91,7 +92,7 @@ export class EngineStatusVariable {
      * Bind to the status variable on the server
      * @param next Callback function which posts the changes to the status variable
      */
-    public bind(next: (value: any) => void) {
+    public bind(next: (value: any) => void): Promise<() => void> {
         return new Promise((resolve, reject) => {
             const mod = `${this.parent.id} ${this.parent.index}`;
             const msg = `Binding to '${this.id}' on ${this.parent.parent.id}, ${mod}`;
@@ -99,7 +100,7 @@ export class EngineStatusVariable {
             if (this.value('bindings') <= 0) {
                 const module = this.parent;
                 const system = module.parent;
-                this.service.io.bind(system.id, module.id, module.index, this.id).then(() => {
+                (this.service as any).io.bind(system.id, module.id, module.index, this.id).then(() => {
                     COMPOSER.log('STATUS', `Bound to '${this.id}' on ${this.parent.parent.id}, ${mod}`, this.value());
                     resolve(() => { this.unbind() });
                 }, (err) => {
@@ -120,7 +121,7 @@ export class EngineStatusVariable {
             const module = this.parent;
             const system = module.parent;
             COMPOSER.log('STATUS', `Rebinding to ${this.id} on ${system.id}, ${module.id} ${module.index}`);
-            this.service.io.bind(system.id, module.id, module.index, this.id).then(() => {
+            (this.service as any).io.bind(system.id, module.id, module.index, this.id).then(() => {
                 COMPOSER.log('STATUS', `Rebound to ${this.id} on ${system.id}, ${module.id} ${module.index}`, this.value());
             }, (err) => COMPOSER.error('STATUS', 'Binding to status variable failed.', err));
         }
@@ -131,7 +132,7 @@ export class EngineStatusVariable {
      * @param name Name of the property
      * @param next Callback which is passed the current value of the property
      */
-    public listen(name: string, next: (value: any) => void) {
+    public listen(name: string, next: (value: any) => void): Subscription {
         if (this.subjects[name]) {
             return this.observers[name].subscribe(next);
         }
@@ -162,7 +163,7 @@ export class EngineStatusVariable {
             const module = this.parent;
             const system = module.parent;
             this.subjects.bindings.next(count - 1);
-            this.service.io.unbind(system.id, module.id, module.index, this.id).then(() => {
+            (this.service as any).io.unbind(system.id, module.id, module.index, this.id).then(() => {
                 this.subjects.bindings.next(0);
                 COMPOSER.log('STATUS', `Unbound binding(${this.binding}). 0 remaining.`);
             }, (err) => {
@@ -202,7 +203,7 @@ export class EngineStatusVariable {
     /**
      * Executes a function on the module that this status variable is associated with
      */
-    private exec() {
+    private exec(): Promise<any> {
         if (!this.promises.exec) {
             this.promises.exec = new Promise((resolve, reject) => {
                 const count = this.value('bindings');
@@ -210,7 +211,7 @@ export class EngineStatusVariable {
                 if (count > 0) {
                     const module = this.parent;
                     const system = module.parent;
-                    this.service.io.exec(system.id, module.id, module.index, this.id, this.value())
+                    (this.service as any).io.exec(system.id, module.id, module.index, this.id, this.value())
                         .then(() => {
                             this.promises.exec = null;
                             resolve();

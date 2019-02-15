@@ -8,7 +8,7 @@
 import { COMPOSER } from '../../../settings';
 
 export class MockRequestHandler {
-    private handlers: any = {};
+    private handlers: { [name: string]: any } = {};
 
     /**
      * Register a mock resource
@@ -54,7 +54,7 @@ export class MockRequestHandler {
      * @param url URL of the request
      * @param fragment Parsed URL fragments
      */
-    public response(method: string, url: string, fragment?: any, data?: any) {
+    public response(method: string, url: string, fragment?: { [name: string]: any }, data?: { [name: string]: any }) {
         const handler: any = this.getHandler(url, method.toUpperCase());
         if (handler) {
             let resp: any = null;

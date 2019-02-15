@@ -19,6 +19,7 @@ import { COMPOSER } from '../../settings';
 
 import { EngineSystem } from './classes/system.class';
 import { EngineModule } from './classes/module.class';
+import { Subscription } from 'rxjs';
 
 @Injectable({
     providedIn: 'root'
@@ -26,16 +27,12 @@ import { EngineModule } from './classes/module.class';
 export class SystemsService {
     public is_setup: boolean = false;
     private systems: EngineSystem[] = [];
-    private bound_systems: EngineSystem[] = [];
     private io: any;
-    private connected = false;
-    private request_id = 0;
     private mock: boolean = false;
+    private sub: Subscription;
     private fixed_device: boolean = false;
-    private sub: any = null;
-    private system_promises: any = {};
-    private system_exists: any = {};
-    protected model: any = {};
+    private system_promises: { [name: string]: Promise<any> } = {};
+    protected model: { [name: string]: any } = {};
 
     constructor(private r: ResourcesService, private route: ActivatedRoute, private store: DataStoreService) {
         this.store.local.getItem(`fixed_device`).then((value: string) => {
@@ -208,7 +205,7 @@ export class SystemsService {
                 if (check && !system.exists) {
                     const sys = this.r.get('System');
                     if (sys) {
-                        const mod = sys.get({ id: system.id });
+                        const mod = (sys as any).get({ id: system.id });
                         if (mod) {
                             mod.then((check_sys: any) => system.exists = true, (err: any) => false);
                         }

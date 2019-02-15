@@ -20,8 +20,8 @@ import { ResourceFactory } from './resource-factory.class';
 })
 export class ResourcesService {
     public authLoaded: boolean = false;
-    private model: any = {};
-    private factories: any; // key, value map of factories
+    private model: { [name: string]: any } = {};
+    private factories: { [name: string]: ResourceFactory }; // key, value map of factories
     private url: string;
     private mock: boolean = false;
 
@@ -84,7 +84,7 @@ export class ResourcesService {
      * Setup OAuth
      * @param options OAuth options
      */
-    public setup(options: any) {
+    public setup(options: { [name: string]: any }) {
         this.http.setupOAuth({
             login_url: options.oauth_server,
             refresh_uri: options.oauth_tokens,

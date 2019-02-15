@@ -21,22 +21,22 @@ export class MockHttp {
 
     public type = 'MockHttp';
 
-    public get(url: string, options: any) {
+    public get(url: string, options?: { [name: string]: any } ) {
         COMPOSER.log(`HTTP(M)`, `GET Request made to url "${url}"`);
         return new MockRequest('GET', url, null, options);
     }
 
-    public post(url: string, data: any, options: any) {
+    public post(url: string, data: { [name: string]: any } | string, options?: { [name: string]: any }) {
         COMPOSER.log(`HTTP(M)`, `POST Request made to url "${url}"`, data);
         return new MockRequest('POST', url, data, options);
     }
 
-    public put(url: string, data: any, options: any) {
+    public put(url: string, data: { [name: string]: any } | string, options?: { [name: string]: any }) {
         COMPOSER.log(`HTTP(M)`, `PUT Request made to url "${url}"`, data);
         return new MockRequest('PUT', url, data, options);
     }
 
-    public delete(url: string, options: any) {
+    public delete(url: string, options?: { [name: string]: any }) {
         COMPOSER.log(`HTTP(M)`, `DELETE Request made to url "${url}"`);
         return new MockRequest('DELETE', url, null, options);
     }
