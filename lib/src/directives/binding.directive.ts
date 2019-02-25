@@ -242,10 +242,10 @@ export class BindingDirective implements OnChanges, OnDestroy, OnInit {
      */
     private hasChanged(type: string) {
         if (type === 'system') {
-            return (this.sys && this.sys !== this.system.id && (typeof this.system !== 'object' ||
+            return !this.system || (this.sys && this.sys !== this.system.id && (typeof this.system !== 'object' ||
                 (this.sys !== this.system.id && this.sys !== '')));
         } else if (type === 'module') {
-            return (this.module_id && this.mod !== this.module.id && (typeof this.module !== 'object' ||
+            return !this.module || (this.module_id && this.mod !== this.module.id && (typeof this.module !== 'object' ||
                 (this.module_id !== this.module.id && this.module_id !== '')));
         } else {
             return true;
