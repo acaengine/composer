@@ -297,7 +297,7 @@ export class CommsService {
             this.refresh = true;
             oauth.refresh_url.then((url: string) => {
                 let tokens: any;
-                (this.http as any).post(url, '', null)
+                (this.http as any).post(url, '')
                     .subscribe(
                         (data: any) => tokens = data,
                         (err: any) => {
