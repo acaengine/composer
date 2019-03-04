@@ -18,6 +18,7 @@ export class MockRequestHandler {
      * @param method Request method verb. GET, POST, PUT, DELETE etc.
      */
     public register(url: string, data: any, fn?: (handler: any) => any, method: string = 'GET') {
+        method = method.toUpperCase();
         const parts = url.split('/');
         const params: string[] = [];
         for (const i of parts) {
@@ -41,6 +42,7 @@ export class MockRequestHandler {
      * @param method Request method verb. GET, POST, PUT, DELETE etc.
      */
     public unregister(url: string, method: string = 'GET') {
+        method = method.toUpperCase();
         if (this.handlers[`${method}:${url}`]) {
             this.handlers[`${method}:${url}`] = null;
             delete this.handlers[`${method}:${url}`];
@@ -55,7 +57,9 @@ export class MockRequestHandler {
      * @param fragment Parsed URL fragments
      */
     public response(method: string, url: string, fragment?: { [name: string]: any }, data?: { [name: string]: any }) {
+        method = method.toUpperCase();
         const handler: any = this.getHandler(url, method.toUpperCase());
+        if (method === 'PUT') { console.log('Handler:', handler, this.handlers); }
         if (handler) {
             let resp: any = null;
             if (handler.fn) {
@@ -116,9 +120,9 @@ export class MockRequestHandler {
         const parts = url.split('/');
             // Search for match in handlers with URL parameters.
         for (const h in this.handlers) {
-            if (this.handlers.hasOwnProperty(h) &&
-                this.handlers[h].route_params &&
-                this.handlers[h].route_params.length > 0) {
+            if (this.handlers.hasOwnProperty(h) && this.handlers[h].route_params &&
+                this.handlers[h].route_params.length > 0 && h.indexOf(method) === 0) {
+
                 const handler: any = this.handlers[h];
                 let count = 0;
                 for (let i = 0; i < handler.parts.length; i++) {
