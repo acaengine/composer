@@ -616,6 +616,10 @@ export class CommsService {
                     type: 'get',
                     body,
                     url,
+                    options: {
+                        ...options,
+                        headers
+                    },
                     auth: ((auth_header !== '' && auth_header.indexOf('Bearer nul') < 0) || this.http instanceof MockHttp),
                 };
                 if (!req.options) { req.options = { headers }; }
