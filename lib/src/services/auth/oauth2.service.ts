@@ -14,7 +14,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import * as sha256 from 'fast-sha256';
 
 import { COMPOSER } from '../../settings';
-import { DataStoreService } from '../data-store.service';
+import { DataStoreService, IDataStore } from '../data-store.service';
 
 @Injectable({
     providedIn: 'root'
@@ -45,6 +45,10 @@ export class OAuthService {
      */
     public setStorage(storage: string) {
         this._storage = storage;
+    }
+
+    get storage(): IDataStore {
+        return this.store[this._storage];
     }
 
     /**
@@ -112,9 +116,8 @@ export class OAuthService {
      * Get the identity claims from storage
      * @return Identity claims
      */
-    public getIdentityClaims() {
-        const claims = this.store[this._storage].getItem(`${this.model.client_id}_id_token_claims_obj`)
-            .then((res: string) => res);
+    public async getIdentityClaims() {
+        const claims = await this.storage.getItem(`${this.model.client_id}_id_token_claims_obj`);
         if (!claims) { return null; }
         return JSON.parse(claims);
     }
@@ -124,7 +127,7 @@ export class OAuthService {
      * @return  ID Token
      */
     public getIdToken() {
-        return this.store[this._storage].getItem(`${this.model.client_id}_id_token`).then((res: string) => res);
+        return this.storage.getItem(`${this.model.client_id}_id_token`).then((res: string) => res);
     }
 
     /**
@@ -134,9 +137,9 @@ export class OAuthService {
     public getAccessToken() {
         if (!this.promises.access_token) {
             this.promises.access_token = new Promise((resolve) => {
-                this.store[this._storage].getItem(`${this.model.client_id}_access_token`).then((token: string) => {
+                this.storage.getItem(`${this.model.client_id}_access_token`).then((token: string) => {
                     if (!token) {
-                        this.store[this._storage].getItem(`access_token`).then((token_local: string) => {
+                        this.storage.getItem(`access_token`).then((token_local: string) => {
                             resolve(token_local);
                             this.promises.access_token = null;
                         }, () => this.promises.access_token = null);
@@ -156,9 +159,9 @@ export class OAuthService {
     public getRefreshToken() {
         if (!this.promises.refresh_token) {
             this.promises.refresh_token = new Promise((resolve) => {
-                this.store[this._storage].getItem(`${this.model.client_id}_refresh_token`).then((token: string) => {
+                this.storage.getItem(`${this.model.client_id}_refresh_token`).then((token: string) => {
                     if (!token) {
-                        this.store[this._storage].getItem(`refresh_token`).then((token_local: string) => {
+                        this.storage.getItem(`refresh_token`).then((token_local: string) => {
                             resolve(token_local);
                             this.promises.refresh_token = null;
                         });
@@ -180,10 +183,10 @@ export class OAuthService {
         if (!this.promises.valid_access_token) {
             this.promises.valid_access_token = new Promise<boolean>((resolve) => {
                 this.getAccessToken().then(() => {
-                    this.store[this._storage].getItem(`${this.model.client_id}_expires_at`).then((expiresAt: string) => {
+                    this.storage.getItem(`${this.model.client_id}_expires_at`).then((expiresAt: string) => {
                         setTimeout(() => this.promises.valid_access_token = null, 10);
                         if (!expiresAt) {
-                            this.store[this._storage].getItem(`accessExpiry`).then((expiresAt_local: string) => {
+                            this.storage.getItem(`accessExpiry`).then((expiresAt_local: string) => {
                                 const now = new Date();
                                 if (!expiresAt || parseInt(expiresAt_local, 10) < now.getTime()) {
                                     return resolve(false);
@@ -213,7 +216,7 @@ export class OAuthService {
         if (!this.promises.id_token) {
             this.promises.id_token = new Promise<boolean>((resolve) => {
                 if (this.getIdToken) {
-                    this.store[this._storage].getItem(`${this.model.client_id}_id_token_expires_at`)
+                    this.storage.getItem(`${this.model.client_id}_id_token_expires_at`)
                         .then((expiresAt: string) => {
                             const now = new Date();
                             if (expiresAt && parseInt(expiresAt, 10) < now.getTime()) {
@@ -276,13 +279,13 @@ export class OAuthService {
                     'id_token', 'idtoken', 'nonce', 'expires', 'expiry', 'login', 'oauth',
                 ];
                 const test_map: any = {};
-                this.store[this._storage].keys().then((keys) => {
+                this.storage.keys().then((keys) => {
                     for (const key of keys) {
                         const lkey = key.toLowerCase();
                         for (const i of items) {
                             if (lkey.indexOf(i) >= 0) {
                                 test_map[key] = false;
-                                this.store[this._storage].removeItem(key).then(() => {
+                                this.storage.removeItem(key).then(() => {
                                     COMPOSER.log('OAUTH', `Remove key '${key}' from ${this._storage} storage`);
                                     test_map[key] = true;
                                     let finished = true;
@@ -432,10 +435,10 @@ export class OAuthService {
                 + encodeURIComponent(this.model.client_id)
                 + '&redirect_uri='
                 + encodeURIComponent(this.model.redirect_uri);
-            return this.store[this._storage].getItem(`${this.model.client_id}_refresh_token`)
+            return this.storage.getItem(`${this.model.client_id}_refresh_token`)
                 .then((refresh_token: string) => {
                     if (!refresh_token) {
-                        return this.store[this._storage].getItem(`refresh_token`).then((refresh_token_local: string) => {
+                        return this.storage.getItem(`refresh_token`).then((refresh_token_local: string) => {
                             if (refresh_token_local) {
                                 url += `&refresh_token=${encodeURIComponent(refresh_token_local)}`;
                                 url += `&grant_type=${encodeURIComponent('refresh_token')}`;
@@ -525,15 +528,15 @@ export class OAuthService {
             if (code) { this.model.code = code; }
             if (refresh_token) {
                 COMPOSER.log('OAUTH', `Refresh: ${refresh_token}`);
-                this.store[this._storage].setItem(`${this.model.client_id}_refresh_token`, refresh_token);
+                this.storage.setItem(`${this.model.client_id}_refresh_token`, refresh_token);
             }
 
-            this.store[this._storage].getItem(`${this.model.client_id}_nonce`).then((savedNonce: string) => {
+            this.storage.getItem(`${this.model.client_id}_nonce`).then((savedNonce: string) => {
                 const stateParts = state.split(';');
                 const nonceInState = stateParts[0];
                 if (savedNonce === nonceInState) {
                     if (access_token) {
-                        this.store[this._storage].setItem(`${this.model.client_id}_access_token`, access_token);
+                        this.storage.setItem(`${this.model.client_id}_access_token`, access_token);
                     }
 
                     const expiresIn = parts.expires_in;
@@ -542,7 +545,7 @@ export class OAuthService {
                         const expiresInMilliSeconds = parseInt(expiresIn, 10) * 1000;
                         const now = new Date();
                         const expiresAt = now.getTime() + expiresInMilliSeconds;
-                        this.store[this._storage].setItem(`${this.model.client_id}_expires_at`, '' + expiresAt);
+                        this.storage.setItem(`${this.model.client_id}_expires_at`, '' + expiresAt);
                     }
                     if (stateParts.length > 1) { this.model.state = stateParts[1]; }
                     oauthSuccess = true;
@@ -580,8 +583,8 @@ export class OAuthService {
                 */
 
                 // Clean up after token has been received
-                this.store[this._storage].removeItem('oauth_redirect');
-                this.store[this._storage].setItem('oauth_finished', 'true');
+                this.storage.removeItem('oauth_redirect');
+                this.storage.setItem('oauth_finished', 'true');
                 this.location.replaceState(this.location.path());
                 return resolve(true);
             });
@@ -600,7 +603,7 @@ export class OAuthService {
             const claimsBase64 = this.padBase64(tokenParts[1]);
             const claimsJson = ''; // Base64.decode(claimsBase64);
             const claims = JSON.parse(claimsJson);
-            this.store[this._storage].getItem(`${this.model.client_id}_nonce`).then((savedNonce: string) => {
+            this.storage.getItem(`${this.model.client_id}_nonce`).then((savedNonce: string) => {
 
                 if (claims.aud !== this.model.client_id) {
                     COMPOSER.log('OAUTH', 'Wrong audience: ' + claims.aud, null, 'warn');
@@ -639,9 +642,9 @@ export class OAuthService {
                     return resolve(false);
                 }
 
-                this.store[this._storage].setItem(`${this.model.client_id}_id_token`, idToken);
-                this.store[this._storage].setItem(`${this.model.client_id}_id_token_claims_obj`, claimsJson);
-                this.store[this._storage].setItem(`${this.model.client_id}_id_token_expires_at`, '' + expiresAtMSec);
+                this.storage.setItem(`${this.model.client_id}_id_token`, idToken);
+                this.storage.setItem(`${this.model.client_id}_id_token_claims_obj`, claimsJson);
+                this.storage.setItem(`${this.model.client_id}_id_token_expires_at`, '' + expiresAtMSec);
 
                 if (this.validationHandler) {
                     this.validationHandler(idToken);
@@ -664,7 +667,7 @@ export class OAuthService {
      */
     private createAndSaveNonce() {
         return this.createNonce().then((nonce: any) => {
-            this.store[this._storage].setItem(`${this.model.client_id}_nonce`, nonce);
+            this.storage.setItem(`${this.model.client_id}_nonce`, nonce);
             return nonce;
         });
 

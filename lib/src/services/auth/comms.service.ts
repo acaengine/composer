@@ -15,9 +15,9 @@ import { Observable, Subscriber } from 'rxjs';
 
 import { Md5 } from 'ts-md5/dist/md5';
 import { COMPOSER } from '../../settings';
-import { DataStoreService } from '../data-store.service';
 import { MockHttp } from './mock-http/http.mock';
 import { OAuthService } from './oauth2.service';
+import { DataStoreService } from '../data-store.service';
 
 const MAX_ERROR_COUNT = 5;
 
@@ -44,7 +44,7 @@ export class CommsService {
     constructor(
         private http_service: HttpClient,
         private oAuthService: OAuthService,
-        private store: DataStoreService,
+        private data_store: DataStoreService,
         private loc: Location,
         private route: ActivatedRoute,
         private injector: Injector
@@ -54,16 +54,20 @@ export class CommsService {
             if (params.has('trust')) {
                 this.trust = params.get('trust') !== 'false';
                 const c_id = oAuthService.get('client_id');
-                this.store.local.setItem(`${c_id ? c_id + '_' : ''}trust`, 'true');
+                this.store.setItem(`${c_id ? c_id + '_' : ''}trust`, 'true');
             }
             if (params.has('logout')) { this.oAuthService.logout(); }
         })
         const c_id = oAuthService.get('client_id');
-        store.local.getItem(`${c_id ? c_id + '.' : ''}trust`).then((value) => this.trust = (value === 'true'));
+        this.store.getItem(`${c_id ? c_id + '.' : ''}trust`).then((value) => this.trust = (value === 'true'));
         if (location.search.indexOf('logout=') >= 0) {
             this.oAuthService.logout();
         }
         this.oAuthService.tryLogin().then(() => null, () => null);
+    }
+
+    get store() {
+        return this.oAuthService.storage;
     }
 
     /**
@@ -89,9 +93,9 @@ export class CommsService {
             }
                 // Set trust to local storage
             if (this.trust) {
-                this.store.local.setItem(`${oauth.get('client_id')}_trust`, 'true');
+                this.store.setItem(`${oauth.get('client_id')}_trust`, 'true');
             }
-            this.store.local.getItem(`${oauth.get('client_id')}_trust`).then((value) => this.trust = (value === 'true') || this.trust);
+            this.store.getItem(`${oauth.get('client_id')}_trust`).then((value) => this.trust = (value === 'true') || this.trust);
         }
     }
     /**
@@ -309,9 +313,9 @@ export class CommsService {
                                 oauth.getRefreshToken().then((rt: string) => {
                                     oauth.model.redirect_uri = `${location.origin}/oauth-resp.html`;
                                     const client_id = this.hash(`${location.origin}/oauth-resp.html`);
-                                    this.store.local.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
+                                    this.store.getItem(`${client_id}_refresh_token`).then((rt_root: string) => {
                                         if (rt && !rt_root) {
-                                            this.store.local.setItem(`${oauth.get('client_id')}_refresh_token`, rt);
+                                            this.store.setItem(`${oauth.get('client_id')}_refresh_token`, rt);
                                         }
                                         setTimeout(() => this.refreshToken(retries).then((v) => resolve(v), (e) => reject(e)), 500 * ++retries);
                                     });
@@ -337,7 +341,7 @@ export class CommsService {
      */
     public setLoginStatus(status: boolean) {
         const client_id = this.oAuthService.get('client_id');
-        const store = this.store.session;
+        const store = this.data_store.session;
         this.oAuthService.set('has_session', status);
         return status === true ? store.setItem(`${client_id}_login`, 'true') : store.removeItem(`${client_id}_login`);
     }
@@ -430,7 +434,7 @@ export class CommsService {
                             }
                         }
                         const here = path;
-                        this.store.local.setItem(`oauth_redirect`, here);
+                        this.store.setItem(`oauth_redirect`, here);
                         setTimeout(() => {
                             this.oAuthService.initImplicitFlow();
                             setTimeout(() => this.checkAccessToken(tries).then((d) => resolve(d), (e) => reject(e)), 600 * ++tries);
@@ -448,7 +452,7 @@ export class CommsService {
         return new Promise((resolve, reject) => {
             this.model.refresh = true;
             const oauth: any = this.oAuthService;
-            this.store.local.getItem(`${oauth.get('client_id')}_refresh_token`).then((refresh: string) => {
+            this.store.getItem(`${oauth.get('client_id')}_refresh_token`).then((refresh: string) => {
                 if (refresh || oauth.model.code) { // Refresh token exists
                     COMPOSER.log('COMMS', `Refresh token found. Refreshing access token...`);
                     // Perform refresh
@@ -471,7 +475,7 @@ export class CommsService {
                         if (path.indexOf('?') >= 0) {  path = path.split('?')[0]; }
                     }
                     const here = path;
-                    this.store.local.setItem(`oauth_redirect`, here);
+                    this.store.setItem(`oauth_redirect`, here);
                     setTimeout(() => {
                         oauth.initImplicitFlow();
                         setTimeout(() => reject('Not logged in'), 1000);
@@ -527,8 +531,8 @@ export class CommsService {
         sec = sec < 10 ? '0' + sec : sec;
         let now = `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${hour}:${min}:${sec}`;
         now = now.toLowerCase();
-        this.store.local.setItem((`${type}_error: ${now}`), JSON.stringify(error));
-        this.store.local.getItem(`${type}_error`).then((value: string) => {
+        this.store.setItem((`${type}_error: ${now}`), JSON.stringify(error));
+        this.store.getItem(`${type}_error`).then((value: string) => {
             let error_list: string[] = [];
             if (value) {
                 error_list = JSON.parse(value);
@@ -536,7 +540,7 @@ export class CommsService {
                     error_list.push(now);
                     if (error_list.length >= MAX_ERROR_COUNT) {
                         for (let i = 0; i < error_list.length - MAX_ERROR_COUNT; i++) {
-                            this.store.local.removeItem(`${type}_error: ${error_list[i]}`);
+                            this.store.removeItem(`${type}_error: ${error_list[i]}`);
                         }
                         error_list.splice(0, error_list.length - MAX_ERROR_COUNT);
                     }
@@ -546,7 +550,7 @@ export class CommsService {
             } else {
                 error_list = [now];
             }
-            this.store.local.setItem(`${type}_error`, JSON.stringify(error_list));
+            this.store.setItem(`${type}_error`, JSON.stringify(error_list));
         });
     }
     /**
@@ -557,14 +561,14 @@ export class CommsService {
     private updateToken(data: { access_token?: string, refresh_token?: string, expires_in?: number }, resolve?: () => void) {
         const oauth = this.oAuthService;
         if (data.access_token) {
-            this.store.local.setItem(`${oauth.get('client_id')}_access_token`, data.access_token);
+            this.store.setItem(`${oauth.get('client_id')}_access_token`, data.access_token);
         }
         if (data.refresh_token) {
-            this.store.local.setItem(`${oauth.get('client_id')}_refresh_token`, data.refresh_token);
+            this.store.setItem(`${oauth.get('client_id')}_refresh_token`, data.refresh_token);
         }
         if (data.expires_in) {
             const expiry: any = ((new Date()).getTime() + data.expires_in * 1000);
-            this.store.local.setItem(`${oauth.get('client_id')}_expires_at`, expiry.toString());
+            this.store.setItem(`${oauth.get('client_id')}_expires_at`, expiry.toString());
         }
         if (resolve) { setTimeout(() => { this.model.refresh = false; resolve(); }, 300); }
     }
@@ -577,14 +581,14 @@ export class CommsService {
         if (location.search.indexOf('access_token') >= 0 || location.search.indexOf('code') >= 0) {
             this.loc.go(path, '');
             setTimeout(() => {
-                this.store.local.removeItem('oauth_redirect');
-                this.store.local.removeItem('oauth_finished');
+                this.store.removeItem('oauth_redirect');
+                this.store.removeItem('oauth_finished');
             }, 5000);
         } else if (path.indexOf('?') >= 0 && (path.indexOf('access_token') >= 0 || path.indexOf('code') >= 0)) {
             this.loc.go(path.split('?')[0], '');
             setTimeout(() => {
-                this.store.local.removeItem('oauth_redirect');
-                this.store.local.removeItem('oauth_finished');
+                this.store.removeItem('oauth_redirect');
+                this.store.removeItem('oauth_finished');
             }, 5000);
         }
     }
