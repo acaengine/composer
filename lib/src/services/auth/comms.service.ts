@@ -11,7 +11,7 @@ import { Location } from '@angular/common';
 import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, Subscriber } from 'rxjs';
+import { Observable, Subscriber, BehaviorSubject } from 'rxjs';
 
 import { Md5 } from 'ts-md5/dist/md5';
 import { COMPOSER } from '../../settings';
@@ -39,6 +39,11 @@ export class CommsService {
         'client_id', 'issuer', 'scope', 'oidc', 'logout_url', 'login_local', 'authority_loaded'
     ];
 
+    private _offline = new BehaviorSubject<boolean>(false);
+    private _offline_obs: Observable<boolean>;
+    private _auth_issue = new BehaviorSubject<boolean>(false);
+    private _auth_issue_obs: Observable<boolean>;
+
     private model: { [name: string]: any } = {};
 
     constructor(
@@ -63,11 +68,21 @@ export class CommsService {
         if (location.search.indexOf('logout=') >= 0) {
             this.oAuthService.logout();
         }
+        this._offline_obs = this._offline.asObservable();
+        this._auth_issue_obs = this._auth_issue.asObservable();
         this.oAuthService.tryLogin().then(() => null, () => null);
     }
 
     get store() {
         return this.oAuthService.storage;
+    }
+
+    public offline(next: (x: boolean) => void) {
+        return this._offline_obs.subscribe(next);
+    }
+
+    public reinitAuth(next: (x: boolean) => void) {
+        return this._auth_issue_obs.subscribe(next);
     }
 
     /**
@@ -507,7 +522,7 @@ export class CommsService {
                     location.reload();
                 });
             } else {
-                setTimeout(() => this.oAuthService.reload(), 5000);
+                setTimeout(() => this._auth_issue.next(true), 5000);
             }
             setTimeout(() => this.cleanUrl(), 100);
         });

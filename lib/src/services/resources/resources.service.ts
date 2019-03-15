@@ -25,7 +25,15 @@ export class ResourcesService {
     private url: string;
     private mock: boolean = false;
 
-    constructor(public http: CommsService, private http_unauth: HttpClient) { }
+    constructor(public http: CommsService, private http_unauth: HttpClient) {
+        this.http.reinitAuth((state) => {
+            if (state) {
+                this.authLoaded = false;
+                this.http.setLoginStatus(false);
+                this.initAuth();
+            }
+        })
+    }
 
     get is_ready() { return this.http.hasToken; }
 

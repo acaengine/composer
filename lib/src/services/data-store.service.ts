@@ -7,11 +7,19 @@
 
 import { Injectable } from '@angular/core';
 
+export interface IDataStore {
+    getItem: (key: string) => Promise<string>;
+    setItem: (key: string, value: string) => Promise<string>;
+    removeItem: (key: string) => Promise<null>;
+    keys: () => Promise<string[]>;
+    cache: { [name: string]: { value: string, time: number } };
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class DataStoreService {
-    protected store: any = {};
+    protected store: { local?: IDataStore, session?: IDataStore } = {};
 
     constructor() {
 
@@ -44,7 +52,7 @@ export class DataStoreService {
                 });
             },
             removeItem: (key: string) => {
-                return new Promise<string>((resolve, reject) => {
+                return new Promise<null>((resolve, reject) => {
                     this.removeItem('local', key).then((item) => {
                         this.store.local.cache[key] = {
                             value: item,
@@ -94,7 +102,7 @@ export class DataStoreService {
                 });
             },
             removeItem: (key: string) => {
-                return new Promise<string>((resolve, reject) => {
+                return new Promise<null>((resolve, reject) => {
                     this.removeItem('session', key).then((item) => {
                         this.store.session.cache[key] = {
                             value: item,
