@@ -3,7 +3,7 @@ import * as del from 'del';
 import * as gulp from 'gulp';
 import * as bump from 'gulp-bump';
 import * as replace from 'gulp-string-replace';
-import * as moment from 'moment';
+import * as dayjs from 'dayjs';
 import * as runSequence from 'run-sequence';
 import * as yargs from 'yargs';
 import * as fs from 'fs-extra';
@@ -143,35 +143,35 @@ gulp.task('check:flags', (next) => {
 
 gulp.task('update:version', (next) => {
     const v = npmconfig.version;
-    const b = moment().seconds(0).milliseconds(0).valueOf();
+    const b = dayjs().startOf('m').valueOf();
     return gulp.src(['./src/app/services/settings.service.ts']) // Any file globs are supported
         .pipe(replace(/this.log\('SYSTEM', 'Version: [0-9a-zA-Z.-]*'/g, `this.log('SYSTEM', 'Version: ${v}'`, { logs: { enabled: true } }))
-        .pipe(replace(/const built = moment\([0-9]*\);/g, `const built = moment(${b});`, { logs: { enabled: true } }))
+        .pipe(replace(/const built = dayjs\([0-9]*\);/g, `const built = dayjs(${b});`, { logs: { enabled: true } }))
         .pipe(gulp.dest('./src/app/services'));
 });
 
 gulp.task('update:version-lib', (next) => {
     const v = npmconfig.version;
-    const b = moment().seconds(0).milliseconds(0).valueOf();
+    const b = dayjs().startOf('m').valueOf();
     return gulp.src(['./lib/src/composer.module.ts']) // Any file globs are supported
         .pipe(replace(/public static version = '[0-9a-zA-Z.-]*'/g, `public static version = '${v}'`, { logs: { enabled: true } }))
-        .pipe(replace(/private build = moment\([0-9]*\);/g, `private build = moment(${b});`, { logs: { enabled: true } }))
+        .pipe(replace(/private build = dayjs\([0-9]*\);/g, `private build = dayjs(${b});`, { logs: { enabled: true } }))
         .pipe(gulp.dest('./lib/src'));
 });
 
 gulp.task('clean:version', (next) => {
     return gulp.src(['./src/app/services/settings.service.ts']) // Any file globs are supported
         .pipe(replace(/this.log\('SYSTEM', 'Version: [0-9a-zA-Z.-]*'/g, `this.log('SYSTEM', 'Version: local-dev'`, { logs: { enabled: true } }))
-        .pipe(replace(/const built = moment\([0-9]*\);/g, `const built = moment();`, { logs: { enabled: true } }))
+        .pipe(replace(/const built = dayjs\([0-9]*\);/g, `const built = dayjs();`, { logs: { enabled: true } }))
         .pipe(gulp.dest('./src/app/services'));
 });
 
 gulp.task('clean:version-lib', (next) => {
     const v = npmconfig.version;
-    const b = moment().seconds(0).milliseconds(0).valueOf();
+    const b = dayjs().startOf('m').valueOf();
     return gulp.src(['./lib/src/composer.module.ts']) // Any file globs are supported
         .pipe(replace(/public static version = '[0-9a-zA-Z.-]*'/g, `public static version = 'local-dev'`, { logs: { enabled: true } }))
-        .pipe(replace(/private build = moment\([0-9]*\);/g, `private build = moment();`, { logs: { enabled: true } }))
+        .pipe(replace(/private build = dayjs\([0-9]*\);/g, `private build = dayjs();`, { logs: { enabled: true } }))
         .pipe(gulp.dest('./lib/src'));
 });
 

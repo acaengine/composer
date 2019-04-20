@@ -18,8 +18,8 @@ import { DebugDirective } from './directives/debug.directive';
 
 import { COMPOSER } from './settings';
 
-import * as moment_api from 'moment';
-const moment = moment_api;
+import * as dayjs_api from 'dayjs';
+const dayjs = dayjs_api;
 
 @NgModule({
     declarations: [
@@ -41,12 +41,12 @@ const moment = moment_api;
 })
 export class ComposerModule {
     private static init: boolean = false;
-    private build = moment(1552621020000);
+    private build = dayjs(1555724760000);
     public static version = '0.10.12';
 
     constructor() {
         if (!ComposerModule.init) {
-            const now = moment();
+            const now = dayjs();
             ComposerModule.init = true;
             const build = now.isSame(this.build, 'd') ? `Today at ${this.build.format('h:mmA')}` : this.build.format('Do MMM YYYY, h:mmA');
             COMPOSER.version(ComposerModule.version, build);

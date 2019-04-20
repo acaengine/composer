@@ -5,7 +5,6 @@
  * @Last Modified time: 2017-05-02 10:51:11
  */
 
-import { COMPOSER } from '../../../settings';
 import { EngineModule } from './module.class';
 import { SystemsService } from '../systems.service';
 
