@@ -1,20 +1,22 @@
 {
   "name": "@acaprojects/ngx-composer",
-  "version": "0.0.0-development",
+  "version": "0.11.0",
   "publishConfig": {
     "access": "public"
   },
   "keywords": [
     "angular",
-    "pipes"
+    "composer"
   ],
-  "description": "Assortment of Pipes for Angular 8+",
+  "description": "Engine Composer API for Angular 8+",
   "homepage": "https://github.com/acaprojects/ngx-composer#readme",
   "bugs": {
       "url": "https://github.com/acaprojects/ngx-composer/issues"
   },
   "peerDependencies": {
     "@angular/common": "^8.0.0",
-    "@angular/core": "^8.0.0"
+    "@angular/core": "^8.0.0",
+    "ts-md5": "^1.2.4",
+    "watch-object": "^1.1.2"
   }
 }
