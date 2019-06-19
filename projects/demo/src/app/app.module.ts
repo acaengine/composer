@@ -1,10 +1,9 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
 import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
 
 import { AppComponent } from './app.component';
-import { ACheckboxModule } from 'projects/library/src/public-api';
-import { FormsModule } from '@angular/forms';
+import { ComposerModule } from 'projects/library/src/public-api';
 
 @NgModule({
   declarations: [
@@ -12,9 +11,7 @@ import { FormsModule } from '@angular/forms';
   ],
   imports: [
     BrowserModule,
-    ACheckboxModule,
-    FormsModule,
-    BrowserAnimationsModule,
+    ComposerModule
   ],
   providers: [],
   bootstrap: [AppComponent]

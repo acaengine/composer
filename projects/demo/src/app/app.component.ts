@@ -1,5 +1,4 @@
 import { Component, ViewEncapsulation, ViewChild } from '@angular/core';
-import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 import * as dayjs from 'dayjs';
 

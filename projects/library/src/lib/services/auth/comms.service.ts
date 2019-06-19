@@ -733,6 +733,6 @@ export class CommsService {
         if (this.offline_timer) {
             clearTimeout(this.offline_timer);
         }
-        this.offline_timer = setTimeout(() => this._offline.next(true), 3000);
+        this.offline_timer = <any>setTimeout(() => this._offline.next(true), 3000);
     }
 }
