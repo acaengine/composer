@@ -54,6 +54,9 @@ export class MockWebSocketInterface {
     constructor(srv: any, auth: any, fixed: boolean = false, host: string = location.hostname, port: string = '3000') {
         this.fixed = fixed;
         this.serv = srv;
+        if (!(window as any).control) {
+            (window as any).control = { systems: {} };
+        }
         this.systems = (window as any).control.systems;
         this.setup(auth, host, port);
     }

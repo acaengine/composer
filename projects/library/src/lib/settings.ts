@@ -51,7 +51,7 @@ export function error(type: string, msg: string, args?: any) {
  * @param out
  */
 export function version(version: string, build: string, out: any = 'debug') {
-    const COLOURS = ['color: #f44336', `color: #9c27b0`, 'color:rgba(0,0,0,0.87)'];
+    const COLOURS = ['color: #f44336', `color: #9c27b0`, 'color: default'];
     if (hasColours()) {
         console[out](`%c[ACA]%c[LIB] %c${LIB_NAME} - ${version} | ${build}`, ...COLOURS);
     } else {
