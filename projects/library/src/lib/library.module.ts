@@ -2,19 +2,23 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { version } from './settings';
-
-import * as dayjs_api from 'dayjs';
-const dayjs = dayjs_api;
+import { HttpClientModule } from '@angular/common/http';
 
 import { BindingDirective } from './directives/binding.directive';
 import { DebugDirective } from './directives/debug.directive';
+
+import * as dayjs_api from 'dayjs';
+const dayjs = dayjs_api;
 
 @NgModule({
     declarations: [
         BindingDirective,
         DebugDirective
     ],
-    imports: [CommonModule],
+    imports: [
+        CommonModule,
+        HttpClientModule
+    ],
     exports: [
         BindingDirective,
         DebugDirective
