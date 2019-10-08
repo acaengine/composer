@@ -8,6 +8,8 @@
  */
 
 import { log, error } from '../settings';
+import { SystemsService } from './systems/systems.service';
+import { OAuthService } from './auth/oauth2.service';
 
 const BIND = 'bind';
 const UNBIND = 'unbind';
@@ -31,21 +33,24 @@ export class WebSocketInterface {
     private counters: number[];
     private io: any = null; // Websocket
     private end_point: string; //
-    private serv: any; // Parent service
     private req_id = 0;
     private session_id: string = '';
     private uri: string;
     private connected = false; // Is Websocker connected
     private keepAliveInterval: any;
-    private auth: any;
     private reconnected = false;
     private connect_check: any = null;
     private connect_promise: any = null;
     private requests: any = {};
-    private fixed: boolean = false;
     private reconnect_tries = 0;
 
-    constructor(srv: any, auth: any, fixed: boolean = false, host?: string, port?: string) {
+    constructor(
+        private serv: SystemsService,
+        private auth: OAuthService,
+        private fixed: boolean = false,
+        host: string = location.hostname,
+        port: string = location.port
+    ) {
         this.session_id = Math.floor(Math.random() * 89999 + 10000).toString();
         if (!host) {
             host = location.hostname;
@@ -54,12 +59,11 @@ export class WebSocketInterface {
             port = location.port;
         }
         this.fixed = fixed;
-        const client_id = srv.model.client_id;
+        const client_id = auth.get('client_id');
         if (!this.fixed && localStorage) {
             this.fixed = localStorage.getItem(`${client_id}_fixed_device`) === 'true' || localStorage.getItem('fixed_device') === 'true' ||
                          localStorage.getItem(`${client_id}_trust`) === 'true' ||localStorage.getItem('trust') === 'true';
         }
-        this.serv = srv;
         this.setup(auth, host, port);
     }
 
@@ -70,16 +74,7 @@ export class WebSocketInterface {
      * @param port Port that the websocket is listening on
      * @return
      */
-    public setup(auth: any, host?: string, port?: string, protocol?: string) {
-        if (!host) {
-            host = location.hostname;
-        }
-        if (!port) {
-            port = location.port;
-        }
-        if (!protocol) {
-            port = location.protocol;
-        }
+    public setup(auth: OAuthService, host?: string, port?: string, protocol: string = location.protocol) {
         this.auth = auth;
         const prot = (protocol === 'https:' ? 'wss://' : 'ws://');
         const use_port = (port === '80' || port === '443' || !port ? '' : (':' + port));
@@ -179,7 +174,11 @@ export class WebSocketInterface {
     private connect(tries: number = 0) {
         if (!this.connect_promise) {
             this.connect_promise = new Promise((resolve, reject) => {
-                if (tries > 10) { reject(); }
+                if (tries > 10) {
+                    this.serv.resources.checkAuth();
+                    this.connect_promise = null;
+                    return reject();
+                }
                 if (this.io && this.io.readyState !== this.io.CLOSED) {
                     if (this.io.readyState === this.io.CONNECTING) {
                         reject({ message: 'Already attempting to connect to websocket.' });
@@ -197,8 +196,8 @@ export class WebSocketInterface {
                     }
                 } else {
                     if (this.auth) {
-                        this.auth.getToken().then((token: any) => {
-                            log('WS', `Retrieved token '${token}'`);
+                        this.auth.getAccessToken().then((token: string) => {
+                            log('WS', `Retrieved token:`, [token]);
                             if (token) {
                                 let uri = this.uri;
                                 // Setup URI
@@ -221,7 +220,7 @@ export class WebSocketInterface {
                                     }, 100);
                                 };
                                 this.io.onerror = (evt: any) => {
-                                    this.serv.r.checkAuth();
+                                    this.serv.resources.checkAuth();
                                     this.io = null;
                                     if (!this.connected) {
                                         error('WS', 'Websocket Error:', evt);
@@ -250,7 +249,7 @@ export class WebSocketInterface {
                             }, 100);
                         };
                         this.io.onerror = (evt: any) => {
-                            this.serv.r.checkAuth();
+                            this.serv.resources.checkAuth();
                             this.io = null;
                             error('WS', 'Websocket Error:', evt);
                             reject();

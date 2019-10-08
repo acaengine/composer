@@ -527,11 +527,19 @@ export class CommsService {
             // Clear storage
             if (err.status === 401) {
                 log('COMMS', `Error with credentials. Getting new credentials...`);
-                this.oAuthService.clearAuth().then(() => {
-                    this.oAuthService.set('code', undefined);
-                    this.login_promise = null;
-                    location.reload();
-                });
+                const clear = () => {
+                    this.oAuthService.clearAuth().then(() => {
+                        this.oAuthService.set('code', undefined);
+                        this.login_promise = null;
+                        location.reload();
+                    });
+                }
+                if (this.trust || location.search.indexOf('trust=') >= 0) {
+                    log('COMMS', `Device is trusted. Trying to refresh tokens...`);
+                    this.checkRefreshToken().then((token) => resolve(token), clear);
+                } else {
+                    clear();
+                }
             } else {
                 setTimeout(() => this._auth_issue.next(true), 5000);
             }

@@ -286,18 +286,19 @@ export class OAuthService {
                                 this.storage.removeItem(key).then(() => {
                                     log('OAUTH', `Remove key '${key}' from ${this._storage} storage`);
                                     test_map[key] = true;
-                                    let finished = true;
                                     for (const k in test_map) {
                                         if (test_map.hasOwnProperty(k) && !test_map[k]) { return; }
                                     }
-                                    resolve();
-                                    this.promises.clear_auth = null;
                                 });
                                 break;
                             }
                         }
                     }
                 });
+                setTimeout(() => {
+                    resolve();
+                    this.promises.clear_auth = null;
+                }, 300);
             });
         }
         return this.promises.clear_auth;

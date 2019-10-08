@@ -20,6 +20,7 @@ import { log } from '../../settings';
 import { EngineSystem } from './classes/system.class';
 import { EngineModule } from './classes/module.class';
 import { Subscription } from 'rxjs';
+import { OAuthService } from '../auth/oauth2.service';
 
 @Injectable({
     providedIn: 'root'
@@ -34,7 +35,7 @@ export class SystemsService {
     private system_promises: { [name: string]: Promise<any> } = {};
     protected model: { [name: string]: any } = {};
 
-    constructor(private r: ResourcesService, private route: ActivatedRoute, private store: DataStoreService) {
+    constructor(private r: ResourcesService, private route: ActivatedRoute, private store: DataStoreService, private auth: OAuthService) {
         this.store.local.getItem(`fixed_device`).then((value: string) => {
             this.fixed_device = (value === 'true');
         });
@@ -95,9 +96,9 @@ export class SystemsService {
                 // Running live data
              log('Systems', 'Setting up websocket.');
              if (!this.io) {
-                 this.io = new $WebSocket(this, this.r, this.fixed_device);
+                 this.io = new $WebSocket(this, this.auth, this.fixed_device);
              }
-             this.io.setup(this.r, host, port, prot);
+             this.io.setup(this.auth, host, port, prot);
              return this.r.init(o.api_endpoint).then(() => true, (err) => false);
          }
     }
