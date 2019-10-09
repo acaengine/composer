@@ -22,8 +22,6 @@ if (argv.aot || (argv.demo === true && argv.aot !== 'false')) { ngargs.push('--a
 if (argv.port && !isNaN(parseInt(argv.port, 10))) { ngargs.push(`--port=${parseInt(argv.port, 10)}`); }
 if (argv.ssl) { ngargs.push('--ssl'); }
 
-ngargs.push('--disableHostCheck');
-
 Dashboard.show(argv.prod ? 'prod' : 'dev');
 
 /** Nuke old build assets */
