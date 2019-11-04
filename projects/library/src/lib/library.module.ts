@@ -2,30 +2,25 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { version } from './settings';
-import { HttpClientModule } from '@angular/common/http';
 
 import { BindingDirective } from './directives/binding.directive';
-import { DebugDirective } from './directives/debug.directive';
 
 import * as dayjs_api from 'dayjs';
 const dayjs = dayjs_api;
 
 @NgModule({
     declarations: [
-        BindingDirective,
-        DebugDirective
+        BindingDirective
     ],
     imports: [
-        CommonModule,
-        HttpClientModule
+        CommonModule
     ],
     exports: [
-        BindingDirective,
-        DebugDirective
+        BindingDirective
     ]
 })
 export class LibraryModule {
-    public static version = 'local-dev';
+    public static version = '0.11.3';
     private static init = false;
     readonly build = dayjs();
 

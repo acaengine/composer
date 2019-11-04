@@ -1,10 +1,11 @@
 import { Component, ViewEncapsulation, OnInit } from '@angular/core';
 
-import { SystemsService } from 'projects/library/src/public-api';
+import { ComposerService } from 'projects/library/src/lib/services/composer.service';
+import { ComposerOptions } from '@acaprojects/ts-composer';
 
 declare global {
     interface Window {
-        composer: SystemsService;
+        composer: ComposerService;
         debug: boolean;
     }
 }
@@ -18,10 +19,10 @@ declare global {
 export class AppComponent implements OnInit {
     public model: { [name: string]: any } = {};
 
-    constructor(private _systems: SystemsService) { }
+    constructor(private _composer: ComposerService) { }
 
     public ngOnInit(): void {
-        window.composer = this._systems;
+        window.composer = this._composer;
         window.debug = true;
         this.initialiseComposer();
     }
@@ -33,19 +34,16 @@ export class AppComponent implements OnInit {
         const port = location.port;
         const url = location.origin;
             // Generate configuration for composer
-        const config: any = {
-            id: 'AcaEngine',
+        const config: ComposerOptions = {
             scope: 'public',
-            protocol, host, port,
-            oauth_server: `${url}/auth/oauth/authorize`,
-            oauth_tokens: `${url}/auth/token`,
+            host: `${host}:${port}`,
+            auth_uri: `${url}/auth/oauth/authorize`,
+            token_uri: `${url}/auth/token`,
             redirect_uri: `${location.origin}/oauth-resp.html`,
-            api_endpoint: `${url}/control/`,
-            proactive: true,
-            login_local: false,
-            http: true,
+            handle_login: true,
+            mock: false
         };
             // Setup/Initialise composer
-        this._systems.setup(config);
+        this._composer.setup(config);
     }
 }
