@@ -14,9 +14,8 @@
       "url": "https://github.com/acaprojects/ngx-composer/issues"
   },
   "peerDependencies": {
+    "@acaprojects/ts-composer": "^1.0.0",
     "@angular/common": "^8.0.0",
-    "@angular/core": "^8.0.0",
-    "ts-md5": "^1.2.4",
-    "watch-object": "^1.1.2"
+    "@angular/core": "^8.0.0"
   }
 }

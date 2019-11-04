@@ -1,5 +1,5 @@
 
-const domain = 'localhost:8443';
+const domain = 'dev.aca.im:8443';
 const secure = true;
 const valid_ssl = false;
 
