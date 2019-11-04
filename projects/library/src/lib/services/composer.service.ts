@@ -10,7 +10,6 @@ import {
     providedIn: 'root'
 })
 export class ComposerService {
-    constructor() { }
 
     /** Initialise Composer */
     public setup(options: ComposerOptions) {
@@ -37,7 +36,7 @@ export class ComposerService {
         return Composer.bindings;
     }
     /** HTTP service for engine applications */
-    public static get applications(): EngineApplicationsService {
+    public get applications(): EngineApplicationsService {
         return Composer.applications;
     }
 

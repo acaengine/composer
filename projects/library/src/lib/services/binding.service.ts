@@ -16,7 +16,7 @@ export class BindingService extends EngineBindingService {
         this.composer.is_initialised.subscribe((init) => {
             this._initialised = init;
             if (init) {
-                this.websocket = this.composer.realtime;
+                this._websocket = this.composer.realtime;
             }
         });
     }

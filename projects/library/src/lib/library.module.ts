@@ -20,7 +20,7 @@ const dayjs = dayjs_api;
     ]
 })
 export class LibraryModule {
-    public static version = '0.11.3';
+    public static version = 'local-dev';
     private static init = false;
     readonly build = dayjs();
 
