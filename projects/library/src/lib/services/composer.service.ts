@@ -17,7 +17,12 @@ export class ComposerService {
     }
 
     /** Observable for the intialised state of composer */
-    public get is_initialised(): Observable<boolean> {
+    public get initialised(): Observable<boolean> {
+        return Composer.initialised;
+    }
+
+    /** Observable for the intialised state of composer */
+    public get is_initialised(): boolean {
         return Composer.is_initialised;
     }
 
