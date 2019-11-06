@@ -14,7 +14,7 @@
       "url": "https://github.com/acaprojects/ngx-composer/issues"
   },
   "dependencies": {
-    "@acaprojects/ts-composer": "^1.0.3"
+    "@acaprojects/ts-composer": "^1.0.5"
   },
   "peerDependencies": {
     "@angular/common": "^8.0.0",
