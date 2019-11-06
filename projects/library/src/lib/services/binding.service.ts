@@ -13,7 +13,7 @@ export class BindingService extends EngineBindingService {
 
     constructor(private composer: ComposerService) {
         super(undefined);
-        this.composer.is_initialised.subscribe((init) => {
+        this.composer.initialised.subscribe((init) => {
             this._initialised = init;
             if (init) {
                 (this as any)._websocket = this.composer.realtime;
@@ -28,6 +28,6 @@ export class BindingService extends EngineBindingService {
 
     /** Observable */
     public get is_initialised(): Observable<boolean> {
-        return this.composer.is_initialised;
+        return this.composer.initialised;
     }
 }
