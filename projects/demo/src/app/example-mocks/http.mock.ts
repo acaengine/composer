@@ -9,6 +9,15 @@ const handlers: MockHttpRequestHandlerOptions[] = [
         metadata: {},
         method: 'GET',
         callback: (request) => MOCK_SYSTEMS
+    },
+    {
+        path: '/api/engine/v1/systems/:id',
+        metadata: {},
+        method: 'GET',
+        callback: (request) => {
+            console.log('Event:', request);
+            return MOCK_SYSTEMS.find(i => request.route_params.id === i.id);
+        }
     }
 ]
 
