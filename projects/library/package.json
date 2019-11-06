@@ -13,8 +13,10 @@
   "bugs": {
       "url": "https://github.com/acaprojects/ngx-composer/issues"
   },
+  "dependencies": {
+    "@acaprojects/ts-composer": "^1.0.3"
+  },
   "peerDependencies": {
-    "@acaprojects/ts-composer": "^1.0.0",
     "@angular/common": "^8.0.0",
     "@angular/core": "^8.0.0"
   }
