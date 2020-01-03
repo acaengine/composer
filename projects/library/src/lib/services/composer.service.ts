@@ -3,7 +3,8 @@ import { Observable } from 'rxjs';
 import {
     Composer, EngineAuthService, EngineBindingService, EngineWebsocket, EngineApplicationsService,
     EngineAuthSourcesService, EngineDriversService, EngineModulesService, EngineSystemsService,
-    EngineZonesService, EngineUsersService, EngineHttpClient, EngineDomainsService, ComposerOptions
+    EngineZonesService, EngineUsersService, EngineHttpClient, EngineDomainsService,
+    EngineSettingsService, ComposerOptions, EngineTriggersService, EngineSystemTriggersService
 } from '@acaprojects/ts-composer';
 
 @Injectable({
@@ -75,10 +76,25 @@ export class ComposerService {
         return Composer.systems;
     }
 
+    /** HTTP service for engine triggers */
+    public get triggers(): EngineTriggersService {
+        return Composer.triggers;
+    }
+
+    /** HTTP service for engine system triggers */
+    public get system_triggers(): EngineSystemTriggersService {
+        return Composer.system_triggers;
+    }
+
     /** HTTP service for engine auth sources */
     public get users(): EngineUsersService {
         return Composer.users;
     }
+
+    /** HTTP service for engine auth sources */
+    // public get settings(): EngineSettingsService {
+    //     return Composer.settings;
+    // }
 
     /** HTTP service for engine auth sources */
     public get zones(): EngineZonesService {
