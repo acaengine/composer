@@ -4,7 +4,7 @@ import {
     Composer, EngineAuthService, EngineBindingService, EngineWebsocket, EngineApplicationsService,
     EngineAuthSourcesService, EngineDriversService, EngineModulesService, EngineSystemsService,
     EngineZonesService, EngineUsersService, EngineHttpClient, EngineDomainsService,
-    EngineSettingsService, ComposerOptions, EngineTriggersService, EngineSystemTriggersService
+    ComposerOptions, EngineTriggersService, EngineSystemTriggersService
 } from '@acaprojects/ts-composer';
 
 @Injectable({
