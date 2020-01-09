@@ -4,7 +4,7 @@ import {
     Composer, EngineAuthService, EngineBindingService, EngineWebsocket, EngineApplicationsService,
     EngineAuthSourcesService, EngineDriversService, EngineModulesService, EngineSystemsService,
     EngineZonesService, EngineUsersService, EngineHttpClient, EngineDomainsService,
-    ComposerOptions, EngineTriggersService, EngineSystemTriggersService
+    ComposerOptions, EngineTriggersService, EngineSystemTriggersService, EngineSettingsService
 } from '@acaprojects/ts-composer';
 
 @Injectable({
@@ -92,9 +92,9 @@ export class ComposerService {
     }
 
     /** HTTP service for engine auth sources */
-    // public get settings(): EngineSettingsService {
-    //     return Composer.settings;
-    // }
+    public get settings(): EngineSettingsService {
+        return Composer.settings;
+    }
 
     /** HTTP service for engine auth sources */
     public get zones(): EngineZonesService {

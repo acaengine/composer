@@ -1,11 +1,15 @@
 import { Component, ViewEncapsulation, OnInit } from '@angular/core';
 
 import { ComposerService } from 'projects/library/src/lib/services/composer.service';
-import { ComposerOptions } from '@acaprojects/ts-composer';
+import { ComposerOptions, EngineZone, EngineSettings } from '@acaprojects/ts-composer';
+
+import { Md5 } from 'ts-md5';
 
 declare global {
     interface Window {
         composer: ComposerService;
+        EngineZone: any;
+        EngineSettings: any;
         debug: boolean;
     }
 }
@@ -23,6 +27,8 @@ export class AppComponent implements OnInit {
 
     public ngOnInit(): void {
         window.composer = this._composer;
+        window.EngineZone = EngineZone;
+        window.EngineSettings = EngineSettings;
         window.debug = true;
         this.initialiseComposer();
     }
