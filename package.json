@@ -16,7 +16,7 @@
   },
   "private": true,
   "dependencies": {
-    "@acaprojects/ts-composer": "^2.1.1",
+    "@acaengine/ts-client": "^3.0.0",
     "@angular/common": "^8.0.3",
     "@angular/compiler": "^8.0.3",
     "@angular/core": "^8.0.3",
@@ -53,7 +53,7 @@
     "karma-jasmine-html-reporter": "^1.4.0",
     "ng-packagr": "^5.7.1",
     "protractor": "~5.4.0",
-    "semantic-release": "^15.14.0",
+    "semantic-release": "^16.0.1",
     "ts-md5": "^1.2.7",
     "ts-node": "^7.0.1",
     "tsickle": "^0.35.0",
@@ -63,6 +63,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/acaprojects/ngx-composer.git"
+    "url": "https://github.com/acaengine/composer.git"
   }
 }

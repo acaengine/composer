@@ -1,5 +1,5 @@
 {
-  "name": "@acaprojects/ngx-composer",
+  "name": "@acaengine/composer",
   "version": "0.0.0-development",
   "publishConfig": {
     "access": "public"
@@ -9,12 +9,12 @@
     "composer"
   ],
   "description": "Engine Composer API for Angular 8+",
-  "homepage": "https://github.com/acaprojects/ngx-composer#readme",
+  "homepage": "https://github.com/acaengine/composer#readme",
   "bugs": {
-      "url": "https://github.com/acaprojects/ngx-composer/issues"
+      "url": "https://github.com/acaengine/composer/issues"
   },
   "dependencies": {
-    "@acaprojects/ts-composer": "^2.1.1"
+    "@acaengine/ts-client": "^3.0.0"
   },
   "peerDependencies": {
     "@angular/common": "^8.0.0",

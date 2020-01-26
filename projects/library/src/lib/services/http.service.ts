@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { EngineHttpClient } from '@acaprojects/ts-composer';
+import { EngineHttpClient } from '@acaengine/ts-client';
 
 import { ComposerService } from './composer.service';
 

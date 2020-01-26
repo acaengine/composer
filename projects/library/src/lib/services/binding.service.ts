@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { EngineBindingService } from '@acaprojects/ts-composer';
+import { EngineBindingService } from '@acaengine/ts-client';
 
 import { ComposerService } from './composer.service';
 import { Observable } from 'rxjs';

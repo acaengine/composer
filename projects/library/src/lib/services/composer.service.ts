@@ -1,108 +1,108 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-    Composer, EngineAuthService, EngineBindingService, EngineWebsocket, EngineApplicationsService,
+    ACAEngine, EngineAuthService, EngineBindingService, EngineWebsocket, EngineApplicationsService,
     EngineAuthSourcesService, EngineDriversService, EngineModulesService, EngineSystemsService,
     EngineZonesService, EngineUsersService, EngineHttpClient, EngineDomainsService,
-    ComposerOptions, EngineTriggersService, EngineSystemTriggersService, EngineSettingsService, EngineRepositoriesService
-} from '@acaprojects/ts-composer';
+    ACAEngineOptions, EngineTriggersService, EngineSystemTriggersService, EngineSettingsService, EngineRepositoriesService
+} from '@acaengine/ts-client';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ComposerService {
 
-    /** Initialise Composer */
-    public setup(options: ComposerOptions) {
-        Composer.init(options);
+    /** Initialise ACAEngine API */
+    public setup(options: ACAEngineOptions) {
+        ACAEngine.init(options);
     }
 
     /** Observable for the intialised state of composer */
     public get initialised(): Observable<boolean> {
-        return Composer.initialised;
+        return ACAEngine.initialised;
     }
 
     /** Observable for the intialised state of composer */
     public get is_initialised(): boolean {
-        return Composer.is_initialised;
+        return ACAEngine.is_initialised;
     }
 
     /** HTTP Client for making request with composer credentials */
     public get http(): EngineHttpClient {
-        return Composer.http;
+        return ACAEngine.http;
     }
 
     /** Authentication service for Composer */
     public get auth(): EngineAuthService {
-        return Composer.auth;
+        return ACAEngine.auth;
     }
 
     /** Service for binding to engine's realtime API */
     public get bindings(): EngineBindingService {
-        return Composer.bindings;
+        return ACAEngine.bindings;
     }
     /** HTTP service for engine applications */
     public get applications(): EngineApplicationsService {
-        return Composer.applications;
+        return ACAEngine.applications;
     }
 
     /** HTTP service for engine auth sources */
     public get auth_sources(): EngineAuthSourcesService {
-        return Composer.auth_sources;
+        return ACAEngine.auth_sources;
     }
 
     /** HTTP service for engine domains */
     public get domains(): EngineDomainsService {
-        return Composer.domains;
+        return ACAEngine.domains;
     }
 
     /** Interface for engine realtime API communications */
     public get realtime(): EngineWebsocket {
-        return Composer.realtime;
+        return ACAEngine.realtime;
     }
 
     /** HTTP service for engine drivers */
     public get drivers(): EngineDriversService {
-        return Composer.drivers;
+        return ACAEngine.drivers;
     }
 
     /** HTTP service for engine modules */
     public get modules(): EngineModulesService {
-        return Composer.modules;
+        return ACAEngine.modules;
     }
 
     /** HTTP service for engine repositories */
     public get repositories(): EngineRepositoriesService {
-        return Composer.repositories;
+        return ACAEngine.repositories;
     }
 
     /** HTTP service for engine systems */
     public get systems(): EngineSystemsService {
-        return Composer.systems;
+        return ACAEngine.systems;
     }
 
     /** HTTP service for engine triggers */
     public get triggers(): EngineTriggersService {
-        return Composer.triggers;
+        return ACAEngine.triggers;
     }
 
     /** HTTP service for engine system triggers */
     public get system_triggers(): EngineSystemTriggersService {
-        return Composer.system_triggers;
+        return ACAEngine.system_triggers;
     }
 
     /** HTTP service for engine auth sources */
     public get users(): EngineUsersService {
-        return Composer.users;
+        return ACAEngine.users;
     }
 
     /** HTTP service for engine auth sources */
     public get settings(): EngineSettingsService {
-        return Composer.settings;
+        return ACAEngine.settings;
     }
 
     /** HTTP service for engine auth sources */
     public get zones(): EngineZonesService {
-        return Composer.zones;
+        return ACAEngine.zones;
     }
 }

@@ -1,5 +1,5 @@
 
-import { MockHttpRequestHandlerOptions, generateMockSystem } from '@acaprojects/ts-composer';
+import { MockHttpRequestHandlerOptions, generateMockSystem } from '@acaengine/ts-client';
 
 const MOCK_SYSTEMS = Array(Math.floor(Math.random() * 100 + 5)).fill(0).map(i => generateMockSystem());
 
