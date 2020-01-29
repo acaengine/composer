@@ -1,4 +1,15 @@
-import { Directive, Input, SimpleChanges, OnInit, OnChanges, OnDestroy, ElementRef, Renderer2, EventEmitter, Output } from '@angular/core';
+import {
+    Directive,
+    Input,
+    SimpleChanges,
+    OnInit,
+    OnChanges,
+    OnDestroy,
+    ElementRef,
+    Renderer2,
+    EventEmitter,
+    Output
+} from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { BindingService } from '../services/binding.service';
@@ -78,9 +89,11 @@ export class BindingDirective<T = any> implements OnInit, OnChanges, OnDestroy {
                 this.event_listener();
                 this.event_listener = null;
             }
-            this.event_listener = this._renderer.listen(this._element.nativeElement, this.on_event, () => {
-                this.execute();
-            });
+            this.event_listener = this._renderer.listen(
+                this._element.nativeElement,
+                this.on_event,
+                () => this.execute()
+            );
         }
     }
 
@@ -90,10 +103,10 @@ export class BindingDirective<T = any> implements OnInit, OnChanges, OnDestroy {
             const module = this._service.module(this.sys, this.mod, this.index);
             const binding = module.binding(this.bind);
             this.unbind = binding.bind();
-            this.listener = binding.listen(value => {
+            this.listener = binding.listen(value => setTimeout(() => {
                 this.model = value;
                 this.modelChange.emit(this.model);
-            });
+            }, 10));
         }
     }
 
