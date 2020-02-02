@@ -1,17 +1,32 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-    ACAEngine, EngineAuthService, EngineBindingService, EngineWebsocket, EngineApplicationsService,
-    EngineAuthSourcesService, EngineDriversService, EngineModulesService, EngineSystemsService,
-    EngineZonesService, EngineUsersService, EngineHttpClient, EngineDomainsService,
-    ACAEngineOptions, EngineTriggersService, EngineSystemTriggersService, EngineSettingsService, EngineRepositoriesService
+    ACAEngine,
+    EngineAuthService,
+    EngineBindingService,
+    EngineWebsocket,
+    EngineApplicationsService,
+    EngineDriversService,
+    EngineModulesService,
+    EngineSystemsService,
+    EngineZonesService,
+    EngineUsersService,
+    EngineHttpClient,
+    EngineDomainsService,
+    ACAEngineOptions,
+    EngineTriggersService,
+    EngineSystemTriggersService,
+    EngineSettingsService,
+    EngineRepositoriesService,
+    EngineOAuthSourcesService,
+    EngineSAMLSourcesService,
+    EngineLDAPSourcesService
 } from '@acaengine/ts-client';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ComposerService {
-
     /** Initialise ACAEngine API */
     public setup(options: ACAEngineOptions) {
         ACAEngine.init(options);
@@ -47,8 +62,18 @@ export class ComposerService {
     }
 
     /** HTTP service for engine auth sources */
-    public get auth_sources(): EngineAuthSourcesService {
-        return ACAEngine.auth_sources;
+    public get oauth_sources(): EngineOAuthSourcesService {
+        return ACAEngine.oauth_sources;
+    }
+
+    /** HTTP service for engine auth sources */
+    public get saml_sources(): EngineSAMLSourcesService {
+        return ACAEngine.saml_sources;
+    }
+
+    /** HTTP service for engine auth sources */
+    public get ldap_sources(): EngineLDAPSourcesService {
+        return ACAEngine.ldap_sources;
     }
 
     /** HTTP service for engine domains */
