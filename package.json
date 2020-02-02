@@ -16,7 +16,7 @@
   },
   "private": true,
   "dependencies": {
-    "@acaengine/ts-client": "^3.0.0",
+    "@acaengine/ts-client": "^3.1.0",
     "@angular/common": "^8.0.3",
     "@angular/compiler": "^8.0.3",
     "@angular/core": "^8.0.3",
